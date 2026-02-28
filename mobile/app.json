@@ -12,7 +12,7 @@
       "bundleIdentifier": "com.vibecode.alignsports-jy5wjr",
       "buildNumber": "90",
       "entitlements": {
-        "aps-environment": "production"
+        "aps-environment": "development"
       },
       "infoPlist": {
         "NSCameraUsageDescription": "Align Sports uses the camera to capture photos inside the app before you publish them.",

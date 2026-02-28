@@ -43,7 +43,11 @@ async function sendAPNsNotifications(
     return sendViaExpoPushService(tokens, title, body, data);
   }
 
-  const apnsUrl = "https://api.push.apple.com";
+  // Use sandbox for development builds, production for App Store/TestFlight builds
+  const apnsEnv = process.env.APNS_ENV || "development";
+  const apnsUrl = apnsEnv === "production"
+    ? "https://api.push.apple.com"
+    : "https://api.sandbox.push.apple.com";
 
   for (const token of tokens) {
     // Skip Expo-format tokens — they go through Expo's service
