@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vibecode.alignsports-jy5wjr",
-      "buildNumber": "91",
+      "buildNumber": "90",
       "entitlements": {
         "aps-environment": "production"
       },
