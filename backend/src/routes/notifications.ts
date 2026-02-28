@@ -319,4 +319,66 @@ notificationsRouter.get("/debug-tokens", async (c) => {
   return c.json({ players: result, count: result.length, with_token: result.filter((r: any) => r.has_token).length });
 });
 
+/**
+ * POST /api/notifications/test-apns
+ * Tests APNs JWT generation and sends a real notification to a specific token.
+ * Body: { token: string, title?: string, body?: string }
+ */
+notificationsRouter.post("/test-apns", async (c) => {
+  const req = await c.req.json() as { token?: string; title?: string; body?: string };
+  const token = req.token || "";
+  const title = req.title || "Test";
+  const body = req.body || "APNs test from backend";
+
+  if (!token) return c.json({ error: "token required" }, 400);
+
+  const teamId = process.env.APNS_TEAM_ID;
+  const keyId = process.env.APNS_KEY_ID;
+  const privateKey = process.env.APNS_PRIVATE_KEY;
+  const bundleId = process.env.APNS_BUNDLE_ID || "com.vibecode.alignsports-jy5wjr";
+
+  if (!teamId || !keyId || !privateKey) {
+    return c.json({ error: "APNs env vars missing", teamId: !!teamId, keyId: !!keyId, privateKey: !!privateKey }, 500);
+  }
+
+  let jwtToken: string;
+  try {
+    jwtToken = await generateAPNsJWT(teamId, keyId, privateKey);
+    console.log("[push] test-apns: JWT generated ok, length:", jwtToken.length);
+  } catch (err: any) {
+    console.error("[push] test-apns: JWT generation failed:", err);
+    return c.json({ error: "JWT generation failed", detail: err?.message || String(err) }, 500);
+  }
+
+  const apnsUrl = "https://api.push.apple.com";
+  const payload = JSON.stringify({
+    aps: { alert: { title, body }, sound: "default", badge: 1 },
+  });
+
+  try {
+    const res = await fetch(`${apnsUrl}/3/device/${token}`, {
+      method: "POST",
+      headers: {
+        authorization: `bearer ${jwtToken}`,
+        "apns-topic": bundleId,
+        "apns-push-type": "alert",
+        "apns-priority": "10",
+        "content-type": "application/json",
+      },
+      body: payload,
+    });
+
+    const statusCode = res.status;
+    let apnsId = res.headers.get("apns-id");
+    let responseBody: any = {};
+    try { responseBody = await res.json(); } catch { /* empty response on success */ }
+
+    console.log(`[push] test-apns: APNs responded ${statusCode}`, responseBody);
+    return c.json({ statusCode, apnsId, response: responseBody, bundleId, tokenPrefix: token.substring(0, 16) });
+  } catch (err: any) {
+    console.error("[push] test-apns: fetch failed:", err);
+    return c.json({ error: "fetch to APNs failed", detail: err?.message || String(err) }, 500);
+  }
+});
+
 export { notificationsRouter };

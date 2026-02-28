@@ -52,7 +52,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   console.log('Push token: device?', Device.isDevice, 'platform', Platform.OS);
-  console.log('Push token: requesting Expo push token');
+  console.log('Push token: requesting raw APNs device token');
 
   // Retry loop: iOS can be slow on first install or after reboot.
   // Try immediately, then wait 2s, 5s, 10s before giving up (~17s total).
@@ -61,12 +61,9 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     if (delays[i]) await new Promise<void>((r) => setTimeout(r, delays[i]));
     const startMs = Date.now();
     try {
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: '727371d5-f124-42e2-af0e-40f420477bce',
-      });
-      const token = tokenData.data;
-      console.log(`Push token: obtained on attempt ${i + 1} in ${Date.now() - startMs}ms — ${token.substring(0, 30)}...`);
-      return token;
+      const deviceToken = (await Notifications.getDevicePushTokenAsync()).data as string;
+      console.log(`Push token: obtained on attempt ${i + 1} in ${Date.now() - startMs}ms — ${deviceToken.substring(0, 16)}...`);
+      return deviceToken;
     } catch (error: any) {
       console.log(`Push token: attempt ${i + 1} failed after ${Date.now() - startMs}ms:`, error?.message || error);
     }
