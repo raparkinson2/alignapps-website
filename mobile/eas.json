@@ -14,6 +14,8 @@
       "distribution": "internal"
     },
     "production": {
+      "autoIncrement": true,
+      "environment": "production",
       "env": {
         "SUPABASE_PUBLIC_URL": "https://gcuyaoigmzeyzvxafckp.supabase.co",
         "EXPO_PUBLIC_VIBECODE_BACKEND_URL": "https://stunned-guts.vibecode.run",
