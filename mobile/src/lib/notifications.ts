@@ -43,12 +43,12 @@ async function reportDiagnostic(data: {
 }
 
 /**
- * Register for push notifications and return a native APNs device token.
+ * Register for push notifications and return an Expo push token.
  *
- * Uses getDevicePushTokenAsync which returns the raw 64-char hex token directly from iOS.
- * The backend sends via @parse/node-apn which uses proper HTTP/2 to Apple's APNs.
- * This is the approach that was confirmed working — tokens were successfully registered
- * and stored as raw hex strings in push_tokens.
+ * Uses getExpoPushTokenAsync which returns an ExponentPushToken[...] string.
+ * The backend routes these via Expo's push service (sendViaExpoPushService) or
+ * directly via node-apn for raw hex tokens. getExpoPushTokenAsync is confirmed
+ * working in TestFlight builds.
  */
 export async function registerForPushNotificationsAsync(playerId?: string): Promise<string | null> {
   // Push notifications only work on physical devices
@@ -98,17 +98,18 @@ export async function registerForPushNotificationsAsync(playerId?: string): Prom
     return null;
   }
 
-  console.log('Push token: permissions granted, fetching native device token...');
+  console.log('Push token: permissions granted, fetching Expo push token...');
 
   try {
-    // getDevicePushTokenAsync returns the raw APNs hex token — confirmed working
-    const result = await Notifications.getDevicePushTokenAsync();
-    const deviceToken = result.data;
-    console.log(`Push token: SUCCESS — ${deviceToken.substring(0, 36)}...`);
-    await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: deviceToken.substring(0, 36) });
-    return deviceToken;
+    const result = await Notifications.getExpoPushTokenAsync({
+      projectId: '727371d5-f124-42e2-af0e-40f420477bce',
+    });
+    const expoToken = result.data;
+    console.log(`Push token: SUCCESS — ${expoToken.substring(0, 36)}...`);
+    await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: expoToken.substring(0, 36) });
+    return expoToken;
   } catch (error: any) {
-    const errMsg = `getDevicePushTokenAsync: ${error?.code || ''} ${error?.message || error}`.trim();
+    const errMsg = `getExpoPushTokenAsync: ${error?.code || ''} ${error?.message || error}`.trim();
     console.log('Push token: failed —', errMsg);
     await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: false, errorMessage: errMsg });
     return null;
