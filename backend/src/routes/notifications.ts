@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { createClient } from "@supabase/supabase-js";
+import apn from "@parse/node-apn";
 
 const notificationsRouter = new Hono();
 
@@ -10,7 +11,34 @@ const supabaseAdmin = createClient(
 );
 
 /**
- * Send push notifications directly via APNs HTTP/2 API using a .p8 auth key.
+ * Create a new APNs provider using @parse/node-apn with proper HTTP/2 support.
+ * We create a new provider per call to avoid connection state issues in hot-reload dev.
+ */
+function createAPNsProvider(): apn.Provider | null {
+  const teamId = process.env.APNS_TEAM_ID;
+  const keyId = process.env.APNS_KEY_ID;
+  const privateKey = process.env.APNS_PRIVATE_KEY;
+
+  if (!teamId || !keyId || !privateKey) {
+    console.error("[push] APNs env vars missing: APNS_TEAM_ID, APNS_KEY_ID, APNS_PRIVATE_KEY");
+    return null;
+  }
+
+  // Handle both literal \n from .env and real newlines
+  const normalizedKey = privateKey.replace(/\\n/g, "\n");
+
+  return new apn.Provider({
+    token: {
+      key: normalizedKey,
+      keyId,
+      teamId,
+    },
+    production: true, // Always use production APNs (for TestFlight + App Store)
+  });
+}
+
+/**
+ * Send push notifications via APNs HTTP/2 using @parse/node-apn.
  * Raw APNs device tokens are 64-char hex strings obtained via getDevicePushTokenAsync.
  */
 async function sendAPNsNotifications(
@@ -19,127 +47,69 @@ async function sendAPNsNotifications(
   body: string,
   data?: Record<string, any>
 ): Promise<{ sent: number; failed: number; stale: string[] }> {
-  const teamId = process.env.APNS_TEAM_ID;
-  const keyId = process.env.APNS_KEY_ID;
-  const privateKey = process.env.APNS_PRIVATE_KEY; // PEM string, newlines as \n
   const bundleId = process.env.APNS_BUNDLE_ID || "com.vibecode.alignsports-jy5wjr";
-
-  if (!teamId || !keyId || !privateKey) {
-    console.error("[push] APNs env vars missing: APNS_TEAM_ID, APNS_KEY_ID, APNS_PRIVATE_KEY");
-    // Fallback to Expo push service for any Expo-format tokens
-    return sendViaExpoPushService(tokens, title, body, data);
-  }
 
   let sent = 0;
   let failed = 0;
   const stale: string[] = [];
 
-  // Generate JWT for APNs
-  let jwtToken: string;
-  try {
-    jwtToken = await generateAPNsJWT(teamId, keyId, privateKey);
-  } catch (err) {
-    console.error("[push] Failed to generate APNs JWT:", err);
-    return sendViaExpoPushService(tokens, title, body, data);
+  // Separate Expo-format tokens from raw APNs tokens
+  const expoTokens = tokens.filter(t => t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["));
+  const rawApnsTokens = tokens.filter(t => !t.startsWith("ExponentPushToken[") && !t.startsWith("ExpoPushToken["));
+
+  // Handle Expo-format tokens via Expo's push service
+  if (expoTokens.length > 0) {
+    console.log(`[push] Routing ${expoTokens.length} Expo token(s) via Expo push service`);
+    const expoResult = await sendViaExpoPushService(expoTokens, title, body, data);
+    sent += expoResult.sent;
+    failed += expoResult.failed;
+    stale.push(...expoResult.stale);
   }
 
-  const apnsUrl = "https://api.push.apple.com";
-
-  for (const token of tokens) {
-    // Skip Expo-format tokens — they go through Expo's service
-    if (token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken[")) {
-      console.log(`[push] Expo token found, routing via Expo: ${token.substring(0, 30)}`);
-      const result = await sendViaExpoPushService([token], title, body, data);
-      sent += result.sent;
-      failed += result.failed;
-      stale.push(...result.stale);
-      continue;
+  // Handle raw APNs tokens via node-apn (proper HTTP/2)
+  if (rawApnsTokens.length > 0) {
+    const provider = createAPNsProvider();
+    if (!provider) {
+      console.error("[push] Cannot create APNs provider — credentials missing");
+      failed += rawApnsTokens.length;
+      return { sent, failed, stale };
     }
 
     try {
-      const payload = JSON.stringify({
-        aps: {
-          alert: { title, body },
-          sound: "default",
-          badge: 1,
-          "content-available": 1,
-        },
-        ...data,
-      });
+      const notification = new apn.Notification();
+      notification.alert = { title, body };
+      notification.sound = "default";
+      notification.badge = 1;
+      notification.topic = bundleId;
+      notification.priority = 10;
+      notification.pushType = "alert";
+      if (data && Object.keys(data).length > 0) {
+        notification.payload = data;
+      }
 
-      const res = await fetch(`${apnsUrl}/3/device/${token}`, {
-        method: "POST",
-        headers: {
-          authorization: `bearer ${jwtToken}`,
-          "apns-topic": bundleId,
-          "apns-push-type": "alert",
-          "apns-priority": "10",
-          "content-type": "application/json",
-        },
-        body: payload,
-      });
+      console.log(`[push] Sending APNs to ${rawApnsTokens.length} device token(s) via node-apn`);
+      const result = await provider.send(notification, rawApnsTokens);
 
-      if (res.status === 200) {
-        console.log(`[push] APNs ok for token ${token.substring(0, 16)}...`);
-        sent++;
-      } else {
-        const errBody = await res.json().catch(() => ({})) as { reason?: string };
-        console.error(`[push] APNs error ${res.status} for token ${token.substring(0, 16)}...: ${errBody.reason}`);
-        if (errBody.reason === "BadDeviceToken" || errBody.reason === "Unregistered") {
-          stale.push(token);
+      sent += result.sent.length;
+      console.log(`[push] APNs sent: ${result.sent.length}`);
+
+      for (const failure of result.failed) {
+        const tokenPrefix = failure.device?.substring(0, 16) || "unknown";
+        console.error(`[push] APNs failed for ${tokenPrefix}...: ${failure.status} — ${failure.response?.reason || failure.error}`);
+        if (failure.response?.reason === "BadDeviceToken" || failure.response?.reason === "Unregistered") {
+          stale.push(failure.device);
         }
         failed++;
       }
     } catch (err) {
-      console.error(`[push] APNs request failed for token ${token.substring(0, 16)}...:`, err);
-      failed++;
+      console.error("[push] APNs provider.send error:", err);
+      failed += rawApnsTokens.length;
+    } finally {
+      provider.shutdown();
     }
   }
 
   return { sent, failed, stale };
-}
-
-/**
- * Generate a short-lived APNs JWT using the .p8 private key.
- */
-async function generateAPNsJWT(teamId: string, keyId: string, privateKeyPem: string): Promise<string> {
-  const header = { alg: "ES256", kid: keyId };
-  const payload = { iss: teamId, iat: Math.floor(Date.now() / 1000) };
-
-  const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-  // Parse the PEM key — handle both real newlines and literal \n from .env files
-  const pemBody = privateKeyPem
-    .replace(/\\n/g, "\n")
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/-----BEGIN EC PRIVATE KEY-----/, "")
-    .replace(/-----END EC PRIVATE KEY-----/, "")
-    .replace(/\s/g, "");
-
-  const keyData = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    keyData,
-    { name: "ECDSA", namedCurve: "P-256" },
-    false,
-    ["sign"]
-  );
-
-  const encoder = new TextEncoder();
-  const signature = await crypto.subtle.sign(
-    { name: "ECDSA", hash: "SHA-256" },
-    cryptoKey,
-    encoder.encode(signingInput)
-  );
-
-  const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-
-  return `${signingInput}.${encodedSignature}`;
 }
 
 /**
@@ -349,7 +319,7 @@ notificationsRouter.get("/debug-tokens", async (c) => {
 
 /**
  * POST /api/notifications/test-apns
- * Tests APNs JWT generation and sends a real notification to a specific token.
+ * Sends a test notification to a specific token via node-apn (proper HTTP/2).
  * Body: { token: string, title?: string, body?: string }
  */
 notificationsRouter.post("/test-apns", async (c) => {
@@ -360,52 +330,39 @@ notificationsRouter.post("/test-apns", async (c) => {
 
   if (!token) return c.json({ error: "token required" }, 400);
 
-  const teamId = process.env.APNS_TEAM_ID;
-  const keyId = process.env.APNS_KEY_ID;
-  const privateKey = process.env.APNS_PRIVATE_KEY;
   const bundleId = process.env.APNS_BUNDLE_ID || "com.vibecode.alignsports-jy5wjr";
 
-  if (!teamId || !keyId || !privateKey) {
-    return c.json({ error: "APNs env vars missing", teamId: !!teamId, keyId: !!keyId, privateKey: !!privateKey }, 500);
+  const provider = createAPNsProvider();
+  if (!provider) {
+    return c.json({ error: "APNs credentials missing", teamId: !!process.env.APNS_TEAM_ID, keyId: !!process.env.APNS_KEY_ID, privateKey: !!process.env.APNS_PRIVATE_KEY }, 500);
   }
 
-  let jwtToken: string;
   try {
-    jwtToken = await generateAPNsJWT(teamId, keyId, privateKey);
-    console.log("[push] test-apns: JWT generated ok, length:", jwtToken.length);
+    const notification = new apn.Notification();
+    notification.alert = { title, body };
+    notification.sound = "default";
+    notification.badge = 1;
+    notification.topic = bundleId;
+    notification.priority = 10;
+    notification.pushType = "alert";
+
+    console.log("[push] test-apns: sending via node-apn, token prefix:", token.substring(0, 16));
+    const result = await provider.send(notification, [token]);
+
+    const sent = result.sent.length;
+    const failed = result.failed.map(f => ({
+      device: f.device?.substring(0, 16),
+      status: f.status,
+      reason: f.response?.reason || f.error?.toString(),
+    }));
+
+    console.log(`[push] test-apns: sent=${sent}, failed=${result.failed.length}`);
+    return c.json({ sent, failed, bundleId, tokenPrefix: token.substring(0, 16) });
   } catch (err: any) {
-    console.error("[push] test-apns: JWT generation failed:", err);
-    return c.json({ error: "JWT generation failed", detail: err?.message || String(err) }, 500);
-  }
-
-  const apnsUrl = "https://api.push.apple.com";
-  const payload = JSON.stringify({
-    aps: { alert: { title, body }, sound: "default", badge: 1 },
-  });
-
-  try {
-    const res = await fetch(`${apnsUrl}/3/device/${token}`, {
-      method: "POST",
-      headers: {
-        authorization: `bearer ${jwtToken}`,
-        "apns-topic": bundleId,
-        "apns-push-type": "alert",
-        "apns-priority": "10",
-        "content-type": "application/json",
-      },
-      body: payload,
-    });
-
-    const statusCode = res.status;
-    let apnsId = res.headers.get("apns-id");
-    let responseBody: any = {};
-    try { responseBody = await res.json(); } catch { /* empty response on success */ }
-
-    console.log(`[push] test-apns: APNs responded ${statusCode}`, responseBody);
-    return c.json({ statusCode, apnsId, response: responseBody, bundleId, tokenPrefix: token.substring(0, 16) });
-  } catch (err: any) {
-    console.error("[push] test-apns: fetch failed:", err);
-    return c.json({ error: "fetch to APNs failed", detail: err?.message || String(err) }, 500);
+    console.error("[push] test-apns: error:", err);
+    return c.json({ error: err?.message || String(err) }, 500);
+  } finally {
+    provider.shutdown();
   }
 });
 

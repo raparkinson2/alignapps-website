@@ -43,11 +43,11 @@ async function reportDiagnostic(data: {
 }
 
 /**
- * Register for push notifications and return an Expo push token.
+ * Register for push notifications and return a native APNs/FCM device token.
  *
- * Uses getExpoPushTokenAsync which returns an ExponentPushToken[...] string.
- * The backend sends via Expo's push service which handles the HTTP/2 APNs connection,
- * working around Bun's lack of HTTP/2 support for direct APNs delivery.
+ * Uses getDevicePushTokenAsync which returns the raw device token directly from iOS/Android.
+ * The backend sends via direct APNs HTTP/2 using the .p8 auth key, bypassing Expo's push service.
+ * This is more reliable for TestFlight and production builds.
  */
 export async function registerForPushNotificationsAsync(playerId?: string): Promise<string | null> {
   // Push notifications only work on physical devices
@@ -65,14 +65,30 @@ export async function registerForPushNotificationsAsync(playerId?: string): Prom
   }
 
   // Step 1: Check/request permissions
-  const existing = await Notifications.getPermissionsAsync();
+  let existing: Notifications.NotificationPermissionsStatus;
+  try {
+    existing = await Notifications.getPermissionsAsync();
+  } catch (permErr: any) {
+    const errMsg = `getPermissionsAsync failed: ${permErr?.message || permErr}`;
+    console.log('Push token:', errMsg);
+    await reportDiagnostic({ playerId, permissionStatus: 'error', tokenObtained: false, errorMessage: errMsg });
+    return null;
+  }
+
   let status = existing.status;
   console.log('Push token: permission status:', status);
 
   if (status !== 'granted') {
-    const req = await Notifications.requestPermissionsAsync();
-    status = req.status;
-    console.log('Push token: requested permission, new status:', status);
+    try {
+      const req = await Notifications.requestPermissionsAsync();
+      status = req.status;
+      console.log('Push token: requested permission, new status:', status);
+    } catch (reqErr: any) {
+      const errMsg = `requestPermissionsAsync failed: ${reqErr?.message || reqErr}`;
+      console.log('Push token:', errMsg);
+      await reportDiagnostic({ playerId, permissionStatus: 'error', tokenObtained: false, errorMessage: errMsg });
+      return null;
+    }
   }
 
   if (status !== 'granted') {
@@ -81,18 +97,17 @@ export async function registerForPushNotificationsAsync(playerId?: string): Prom
     return null;
   }
 
-  console.log('Push token: permissions granted, fetching Expo push token...');
+  console.log('Push token: permissions granted, fetching native device push token...');
 
   try {
-    const result = await Notifications.getExpoPushTokenAsync({
-      projectId: '727371d5-f124-42e2-af0e-40f420477bce',
-    });
-    const expoToken = result.data;
-    console.log(`Push token: SUCCESS — ${expoToken.substring(0, 36)}...`);
-    await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: expoToken.substring(0, 36) });
-    return expoToken;
+    // Use getDevicePushTokenAsync for direct APNs/FCM token — more reliable than Expo's push service
+    const result = await Notifications.getDevicePushTokenAsync();
+    const deviceToken = result.data;
+    console.log(`Push token: SUCCESS — ${deviceToken.substring(0, 36)}...`);
+    await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: deviceToken.substring(0, 36) });
+    return deviceToken;
   } catch (error: any) {
-    const errMsg = `${error?.code || ''} ${error?.message || error}`.trim();
+    const errMsg = `getDevicePushTokenAsync: ${error?.code || ''} ${error?.message || error}`.trim();
     console.log('Push token: failed —', errMsg);
     await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: false, errorMessage: errMsg });
     return null;
