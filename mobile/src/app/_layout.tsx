@@ -257,7 +257,7 @@ function AuthNavigator() {
     if (pushTokenRegistered.current === currentPlayerId) return;
 
     const registerToken = async () => {
-      const token = await registerForPushNotificationsAsync();
+      const token = await registerForPushNotificationsAsync(currentPlayerId);
       if (token && currentPlayerId) {
         // Mark as registered only after successfully obtaining a token
         pushTokenRegistered.current = currentPlayerId;

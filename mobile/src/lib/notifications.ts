@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import * as Application from 'expo-application';
 import { BACKEND_URL } from './config';
 
 // Configure how notifications are displayed when the app is in the foreground
@@ -14,13 +15,41 @@ Notifications.setNotificationHandler({
 });
 
 /**
+ * Report push registration outcome to backend so we can debug TestFlight
+ * without needing Xcode or device logs.
+ */
+async function reportDiagnostic(data: {
+  playerId?: string;
+  permissionStatus: string;
+  tokenObtained: boolean;
+  tokenPrefix?: string;
+  errorMessage?: string;
+}): Promise<void> {
+  try {
+    await fetch(`${BACKEND_URL}/api/notifications/registration-diagnostic`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...data,
+        platform: Platform.OS,
+        osVersion: `${Device.osName} ${Device.osVersion}`,
+        appVersion: Application.nativeApplicationVersion || 'unknown',
+        backendUrlSeen: BACKEND_URL,
+      }),
+    });
+  } catch (e) {
+    // Diagnostic reporting is best-effort — never block the main flow
+  }
+}
+
+/**
  * Register for push notifications and return a raw APNs device token.
  *
  * Uses getDevicePushTokenAsync which returns the raw APNs hex token directly
  * from iOS — no Expo push service or EAS project registration required.
  * The backend sends directly via APNs using the configured .p8 key.
  */
-export async function registerForPushNotificationsAsync(): Promise<string | null> {
+export async function registerForPushNotificationsAsync(playerId?: string): Promise<string | null> {
   // Push notifications only work on physical devices
   if (!Device.isDevice) {
     console.log('Push token: skipped — not a physical device');
@@ -48,6 +77,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
   if (status !== 'granted') {
     console.log('Push token: permission denied — user must enable in Settings');
+    await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: false, errorMessage: 'Permission denied' });
     return null;
   }
 
@@ -56,6 +86,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   // Primary: try getDevicePushTokenAsync with retries.
   // iOS can be slow to return the token on first install or after reboot.
   const delays = [0, 3000, 8000, 15000];
+  let lastError = '';
   for (let i = 0; i < delays.length; i++) {
     if (delays[i]) {
       console.log(`Push token: waiting ${delays[i]}ms before attempt ${i + 1}...`);
@@ -68,18 +99,21 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       const elapsed = Date.now() - startMs;
       console.log(`Push token: SUCCESS on attempt ${i + 1} in ${elapsed}ms`);
       console.log(`Push token: type=${result.type} token=${deviceToken.substring(0, 20)}...`);
-      // Validate it looks like a real APNs hex token (64 hex chars)
       if (typeof deviceToken === 'string' && deviceToken.length > 0) {
+        await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: deviceToken.substring(0, 20) });
         return deviceToken;
       }
+      lastError = 'Token was empty';
       console.log('Push token: token was empty or invalid, retrying...');
     } catch (error: any) {
       const elapsed = Date.now() - startMs;
-      console.log(`Push token: attempt ${i + 1} failed in ${elapsed}ms — ${error?.code || ''} ${error?.message || error}`);
+      lastError = `${error?.code || ''} ${error?.message || error}`.trim();
+      console.log(`Push token: attempt ${i + 1} failed in ${elapsed}ms — ${lastError}`);
     }
   }
 
   console.log('Push token: all attempts exhausted, returning null');
+  await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: false, errorMessage: `All retries failed: ${lastError}` });
   return null;
 }
 

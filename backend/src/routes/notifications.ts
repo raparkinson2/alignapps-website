@@ -409,4 +409,53 @@ notificationsRouter.post("/test-apns", async (c) => {
   }
 });
 
+/**
+ * POST /api/notifications/registration-diagnostic
+ * Called by the app on every push registration attempt (success or failure).
+ * Stores the result so we can debug TestFlight issues without Xcode.
+ */
+notificationsRouter.post("/registration-diagnostic", async (c) => {
+  let body: any = {};
+  try { body = await c.req.json(); } catch { /* ignore */ }
+
+  const entry = {
+    player_id: body.playerId || "unknown",
+    platform: body.platform || "unknown",
+    os_version: body.osVersion || "unknown",
+    app_version: body.appVersion || "unknown",
+    permission_status: body.permissionStatus || "unknown",
+    token_obtained: body.tokenObtained ?? false,
+    token_prefix: body.tokenPrefix || null,
+    error_message: body.errorMessage || null,
+    backend_url_seen: body.backendUrlSeen || null,
+    timestamp: new Date().toISOString(),
+  };
+
+  console.log("[push-diag]", JSON.stringify(entry));
+
+  // Also persist to Supabase so you can query it later
+  await supabaseAdmin.from("push_diagnostics").insert(entry).then(({ error }) => {
+    if (error) console.warn("[push-diag] Could not save to push_diagnostics table:", error.message, "(table may not exist yet — log above is sufficient)");
+  });
+
+  return c.json({ received: true });
+});
+
+/**
+ * GET /api/notifications/registration-diagnostics
+ * Returns recent diagnostic entries so you can see what happened on tester devices.
+ */
+notificationsRouter.get("/registration-diagnostics", async (c) => {
+  const { data, error } = await supabaseAdmin
+    .from("push_diagnostics")
+    .select("*")
+    .order("timestamp", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    return c.json({ error: error.message, note: "Run the push_diagnostics SQL to create the table" }, 500);
+  }
+  return c.json({ diagnostics: data, count: data?.length ?? 0 });
+});
+
 export { notificationsRouter };

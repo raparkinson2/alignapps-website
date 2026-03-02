@@ -65,3 +65,23 @@ $$;
 
 -- Realtime (optional)
 ALTER TABLE public.push_tokens REPLICA IDENTITY FULL;
+
+-- =============================================================================
+-- PUSH DIAGNOSTICS TABLE (optional but highly recommended for TestFlight debugging)
+-- Run this to get visibility into registration failures on tester devices.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS public.push_diagnostics (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id        TEXT,
+  platform         TEXT,
+  os_version       TEXT,
+  app_version      TEXT,
+  permission_status TEXT,
+  token_obtained   BOOLEAN DEFAULT false,
+  token_prefix     TEXT,
+  error_message    TEXT,
+  backend_url_seen TEXT,
+  timestamp        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.push_diagnostics ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Open push_diagnostics" ON public.push_diagnostics FOR ALL USING (true) WITH CHECK (true);
