@@ -596,7 +596,6 @@ function GameDetailScreenInner() {
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
-  const releaseScheduledGameInvites = useTeamStore((s) => s.releaseScheduledGameInvites);
   const addGameLog = useTeamStore((s) => s.addGameLog);
   const updateGameLog = useTeamStore((s) => s.updateGameLog);
   const removeGameLog = useTeamStore((s) => s.removeGameLog);
@@ -607,26 +606,6 @@ function GameDetailScreenInner() {
   const isCoach = currentPlayer?.roles?.includes('coach') ?? false;
   const canManageStats = canManageTeam() || isCoach;
 
-  // Check for scheduled invites that need to be released on mount
-  useEffect(() => {
-    const releasedGames = releaseScheduledGameInvites();
-    if (releasedGames.length > 0) {
-      console.log('Released scheduled invites for', releasedGames.length, 'games');
-      // Send push notifications to other players for each released game
-      releasedGames.forEach((releasedGame) => {
-        const formattedDate = format(new Date(releasedGame.date), 'EEE, MMM d');
-        const otherPlayerIds = (releasedGame.invitedPlayers ?? []).filter((id) => id !== currentPlayerId);
-        if (otherPlayerIds.length > 0) {
-          sendPushToPlayers(
-            otherPlayerIds,
-            'New Game Added!',
-            `You've been invited to play vs ${releasedGame.opponent} on ${formattedDate} at ${releasedGame.time}. Make sure to check in or out in the app.`,
-            { gameId: releasedGame.id, type: 'game_invite' }
-          ).catch(console.error);
-        }
-      });
-    }
-  }, [releaseScheduledGameInvites, currentPlayerId]);
 
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [isBeerDutyModalVisible, setIsBeerDutyModalVisible] = useState(false);
