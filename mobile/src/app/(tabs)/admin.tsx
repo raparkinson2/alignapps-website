@@ -1030,16 +1030,15 @@ export default function AdminScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      // Upload to Supabase Storage so all devices can load the logo
-      let logoUrl = result.assets[0].uri;
-      if (activeTeamId) {
-        const uploadResult = await uploadPhotoToStorage(logoUrl, activeTeamId, 'team-logo');
-        if (uploadResult.success && uploadResult.url) {
-          logoUrl = uploadResult.url;
-        }
+      if (!activeTeamId) return;
+      // Upload to Supabase Storage — required so all devices can load the logo
+      const uploadResult = await uploadPhotoToStorage(result.assets[0].uri, activeTeamId, 'team-logo');
+      if (uploadResult.success && uploadResult.url) {
+        setTeamSettingsAndSync({ teamLogo: uploadResult.url });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        Alert.alert('Upload Failed', 'Could not upload team logo. Please check your connection and try again.');
       }
-      setTeamSettingsAndSync({ teamLogo: logoUrl });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
 

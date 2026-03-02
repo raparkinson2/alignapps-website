@@ -175,12 +175,15 @@ export default function CreateNewTeamScreen() {
 
       // Upload team logo to Supabase Storage so all devices can load it
       const newTeamId = useTeamStore.getState().activeTeamId!;
-      let finalLogoUrl = teamLogo ?? undefined;
+      let finalLogoUrl: string | undefined = undefined;
       if (teamLogo && !teamLogo.startsWith('http')) {
         const uploadResult = await uploadPhotoToStorage(teamLogo, newTeamId, 'team-logo');
         if (uploadResult.success && uploadResult.url) {
           finalLogoUrl = uploadResult.url;
         }
+        // If upload fails, leave logo as undefined — never save a local file:// path
+      } else if (teamLogo?.startsWith('http')) {
+        finalLogoUrl = teamLogo;
       }
 
       // Update team settings with jersey colors and logo
