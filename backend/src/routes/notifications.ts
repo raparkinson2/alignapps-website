@@ -256,6 +256,12 @@ notificationsRouter.post("/send-to-players", async (c) => {
 
   if (tokenError) console.error("[push] push_tokens fetch error:", tokenError.message);
 
+  const foundPlayerIds = new Set((tokenRows || []).map((r: any) => r.player_id));
+  const missingPlayerIds = playerIds.filter((id) => !foundPlayerIds.has(id));
+  if (missingPlayerIds.length > 0) {
+    console.log(`[push] send-to-players: NO TOKEN for player IDs: ${missingPlayerIds.join(', ')}`);
+  }
+
   const allTokens: string[] = [];
   for (const row of tokenRows || []) {
     if (row.token) {
