@@ -43,12 +43,12 @@ async function reportDiagnostic(data: {
 }
 
 /**
- * Register for push notifications and return an Expo push token.
+ * Register for push notifications and return a native APNs device token.
  *
- * Uses getExpoPushTokenAsync which returns an ExponentPushToken[...] string.
- * The backend routes these via Expo's push service (sendViaExpoPushService) or
- * directly via node-apn for raw hex tokens. getExpoPushTokenAsync is confirmed
- * working in TestFlight builds.
+ * Uses getDevicePushTokenAsync with addPushTokenListener as a fallback.
+ * On iOS, getDevicePushTokenAsync() can hang forever — the listener fires
+ * when iOS delivers the token asynchronously. Both run in parallel; whichever
+ * resolves first wins. This is the confirmed-working approach for TestFlight.
  */
 export async function registerForPushNotificationsAsync(playerId?: string): Promise<string | null> {
   // Push notifications only work on physical devices
@@ -98,18 +98,50 @@ export async function registerForPushNotificationsAsync(playerId?: string): Prom
     return null;
   }
 
-  console.log('Push token: permissions granted, fetching Expo push token...');
+  console.log('Push token: permissions granted, fetching device token...');
+
+  // On iOS, getDevicePushTokenAsync() can hang forever if APNs hasn't registered yet.
+  // addPushTokenListener fires when the OS delivers the token asynchronously.
+  // Run both in parallel — whichever resolves first wins.
+  const getTokenWithListener = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const subscription = Notifications.addPushTokenListener((token) => {
+        subscription.remove();
+        if (token.data && typeof token.data === 'string' && token.data.length > 0) {
+          console.log('Push token: received via listener, type=', token.type);
+          resolve(token.data);
+        } else {
+          reject(new Error('Listener returned empty token'));
+        }
+      });
+
+      // Also try direct call in parallel — whichever resolves first wins
+      Notifications.getDevicePushTokenAsync()
+        .then((result) => {
+          if (result.data && typeof result.data === 'string' && result.data.length > 0) {
+            subscription.remove();
+            resolve(result.data);
+          }
+        })
+        .catch(() => {
+          // Direct call failed — listener may still fire, keep waiting
+        });
+
+      // Hard timeout: if neither fires in 30s, give up
+      setTimeout(() => {
+        subscription.remove();
+        reject(new Error('Timed out after 30000ms'));
+      }, 30000);
+    });
+  };
 
   try {
-    const result = await Notifications.getExpoPushTokenAsync({
-      projectId: '727371d5-f124-42e2-af0e-40f420477bce',
-    });
-    const expoToken = result.data;
-    console.log(`Push token: SUCCESS — ${expoToken.substring(0, 36)}...`);
-    await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: expoToken.substring(0, 36) });
-    return expoToken;
+    const deviceToken = await getTokenWithListener();
+    console.log(`Push token: SUCCESS — ${deviceToken.substring(0, 20)}...`);
+    await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: true, tokenPrefix: deviceToken.substring(0, 20) });
+    return deviceToken;
   } catch (error: any) {
-    const errMsg = `getExpoPushTokenAsync: ${error?.code || ''} ${error?.message || error}`.trim();
+    const errMsg = `${error?.code || ''} ${error?.message || error}`.trim();
     console.log('Push token: failed —', errMsg);
     await reportDiagnostic({ playerId, permissionStatus: status, tokenObtained: false, errorMessage: errMsg });
     return null;
