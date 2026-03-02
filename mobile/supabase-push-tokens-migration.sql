@@ -30,17 +30,18 @@ BEGIN
 END;
 $$;
 
--- Add unique constraint on player_id to enforce one token per player
--- (drop old one first if exists, then re-add cleanly)
+-- DROP the unique constraint on player_id if it exists.
+-- A player switching devices gets a new token — we must allow that INSERT.
+-- The backend handles "one token per player" by deleting old tokens before inserting.
 DO $$
 BEGIN
-  IF NOT EXISTS (
+  IF EXISTS (
     SELECT 1 FROM pg_constraint
     WHERE conrelid = 'public.push_tokens'::regclass
       AND contype = 'u'
       AND conname = 'push_tokens_player_id_key'
   ) THEN
-    ALTER TABLE public.push_tokens ADD CONSTRAINT push_tokens_player_id_key UNIQUE (player_id);
+    ALTER TABLE public.push_tokens DROP CONSTRAINT push_tokens_player_id_key;
   END IF;
 END;
 $$;
