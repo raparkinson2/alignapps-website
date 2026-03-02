@@ -3,14 +3,14 @@
     "name": "Align Sports",
     "slug": "align-sports",
     "scheme": "vibecode",
-    "version": "6.3.0",
+    "version": "6.4.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vibecode.alignsports-jy5wjr",
-      "buildNumber": "90",
+      "buildNumber": "92",
       "entitlements": {
         "aps-environment": "production"
       },
