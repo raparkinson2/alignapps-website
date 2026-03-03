@@ -2,6 +2,33 @@
 
 A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, Lacrosse, Soccer, and Softball.
 
+## Stripe Payments
+
+Stripe is integrated for in-app payments. Players can pay their outstanding dues directly in the Payments tab.
+
+**Flow**:
+1. Player taps "Pay with Stripe" in the Payment Methods section.
+2. The app calls `POST /api/payments/create-checkout-session` on the backend.
+3. Backend creates a Stripe Checkout Session and returns the URL.
+4. A WebView modal opens showing the hosted Stripe Checkout page.
+5. On success, the WebView detects the `vibecode://payment-success` redirect and closes.
+6. Stripe fires a `payment_intent.succeeded` webhook to `POST /api/payments/webhook`.
+7. The webhook marks the player's payment as "paid" in Supabase, triggering a realtime update.
+
+**Backend env vars** (`backend/.env`):
+- `STRIPE_SECRET_KEY` — Stripe secret key (test: `sk_test_...`, live: `sk_live_...`)
+- `STRIPE_WEBHOOK_SECRET` — from Stripe Dashboard → Webhooks (set after registering webhook endpoint)
+- `STRIPE_PLATFORM_FEE_PERCENT` — platform cut as a percentage (default `0.5` = 0.5%)
+
+**Mobile env vars** (`mobile/.env`):
+- `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` — Stripe publishable key (not currently used for WebView flow, but needed if native PaymentSheet is added later)
+
+**Webhook registration**: In Stripe Dashboard → Developers → Webhooks, add endpoint:
+`https://<your-backend-url>/api/payments/webhook`
+Listen for: `payment_intent.succeeded`, `payment_intent.payment_failed`
+
+**Connected accounts** (optional): If teams have their own Stripe accounts (`acct_xxx`), pass `teamStripeAccountId` in the checkout session request to route funds to them with a platform fee cut.
+
 ## Known Crash Fixes
 
 **Login crash on fresh install**: `teamSettings` can be `null` before Zustand persist hydration completes. All accesses to `teamSettings.*` in `(tabs)/_layout.tsx` and `(tabs)/index.tsx` must use optional chaining (`teamSettings?.field`).
