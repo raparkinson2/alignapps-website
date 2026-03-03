@@ -145,22 +145,46 @@ async function sendViaExpoPushService(
     return { sent: 0, failed: tokens.length, stale: [] };
   }
 
-  const messages = validTokens.map(token => ({ to: token, title, body, data, sound: "default", priority: "high" }));
+  const messages = validTokens.map(token => ({
+    to: token,
+    title,
+    body,
+    data,
+    sound: "default",
+    priority: "high",
+    channelId: "default",
+  }));
   let sent = 0;
   const stale: string[] = [];
 
   try {
+    console.log(`[push] Expo push service: sending ${validTokens.length} message(s)`);
     const res = await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(messages),
     });
+    const rawBody = await res.text();
     if (res.ok) {
-      const responseData = await res.json() as { data: Array<{ status: string; details?: { error?: string } }> };
+      let responseData: { data: Array<{ status: string; id?: string; details?: { error?: string; expoPushToken?: string } }> };
+      try {
+        responseData = JSON.parse(rawBody);
+      } catch {
+        console.error("[push] Expo push service: could not parse response:", rawBody.substring(0, 200));
+        return { sent: 0, failed: validTokens.length, stale };
+      }
       responseData.data?.forEach((ticket, i) => {
-        if (ticket.status === "ok") sent++;
-        else if (ticket.details?.error === "DeviceNotRegistered") stale.push(validTokens[i]!);
+        if (ticket.status === "ok") {
+          sent++;
+        } else {
+          const errDetail = ticket.details?.error || "unknown";
+          console.error(`[push] Expo ticket error for token ${validTokens[i]?.substring(0, 30)}: ${errDetail}`);
+          if (errDetail === "DeviceNotRegistered") stale.push(validTokens[i]!);
+        }
       });
+      console.log(`[push] Expo push service: sent=${sent} failed=${validTokens.length - sent}`);
+    } else {
+      console.error(`[push] Expo push service HTTP error: status=${res.status} body=${rawBody.substring(0, 500)}`);
     }
   } catch (err) {
     console.error("[push] Expo push service error:", err);

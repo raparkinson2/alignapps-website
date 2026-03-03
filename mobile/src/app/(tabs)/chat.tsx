@@ -549,6 +549,15 @@ export default function ChatScreen() {
       };
       addChatMessage(newMessage);
 
+      // Push notification for image — fire immediately so recipients know
+      if (currentPlayer) {
+        const senderName = getPlayerName(currentPlayer);
+        const recipientIds = players
+          .filter((p) => p.id !== currentPlayerId)
+          .map((p) => p.id);
+        sendPushToPlayers(recipientIds, senderName, 'Sent a photo', { type: 'chat_message' }).catch(console.error);
+      }
+
       // Upload image to Supabase Storage in background, then sync the cloud URL
       if (activeTeamId && currentPlayer) {
         const senderName = getPlayerName(currentPlayer);
@@ -602,6 +611,12 @@ export default function ChatScreen() {
       sendChatMessage(newMessage, activeTeamId, senderName).catch(err => {
         console.error('Failed to sync GIF message to cloud:', err);
       });
+
+      // Push notification for GIF
+      const recipientIds = players
+        .filter((p) => p.id !== currentPlayerId)
+        .map((p) => p.id);
+      sendPushToPlayers(recipientIds, senderName, 'Sent a GIF', { type: 'chat_message' }).catch(console.error);
     }
 
     setIsGifModalVisible(false);
