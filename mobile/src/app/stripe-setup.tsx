@@ -21,6 +21,27 @@ export default function StripeSetupScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
 
+  // TEST ONLY: Hardcoded test account for TestFlight testing
+  const TEST_STRIPE_ACCOUNT_ID = 'acct_1T6w9SL8UhXWGxLI';
+
+  const handleUseTestAccount = () => {
+    Alert.alert(
+      'Use Test Account',
+      `Connect test Stripe account?\n\n${TEST_STRIPE_ACCOUNT_ID}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Connect',
+          onPress: () => {
+            setTeamSettingsAndSync({ stripeAccountId: TEST_STRIPE_ACCOUNT_ID, stripeOnboardingComplete: true });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert('Test Account Connected', 'Using test Stripe account for payments.');
+          },
+        },
+      ]
+    );
+  };
+
   const isConnected = !!(teamSettings.stripeAccountId && teamSettings.stripeOnboardingComplete);
 
   const setTeamSettingsAndSync = (updates: Partial<typeof teamSettings>) => {
@@ -243,25 +264,33 @@ export default function StripeSetupScreen() {
               </Pressable>
             </View>
           ) : (
-            <Pressable
-              onPress={handleConnect}
-              disabled={isLoading}
-              style={{ borderRadius: 16, overflow: 'hidden' }}
-            >
-              <LinearGradient
-                colors={['#635BFF', '#7C3AED']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+            <View style={{ gap: 12 }}>
+              <Pressable
+                onPress={handleConnect}
+                disabled={isLoading}
+                style={{ borderRadius: 16, overflow: 'hidden' }}
               >
-                {isLoading ? <ActivityIndicator color="white" size="small" /> : (
-                  <>
-                    <CreditCard size={17} color="white" />
-                    <Text style={{ color: 'white', fontWeight: '700', fontSize: 15, marginLeft: 8 }}>Connect with Stripe</Text>
-                  </>
-                )}
-              </LinearGradient>
-            </Pressable>
+                <LinearGradient
+                  colors={['#635BFF', '#7C3AED']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                >
+                  {isLoading ? <ActivityIndicator color="white" size="small" /> : (
+                    <>
+                      <CreditCard size={17} color="white" />
+                      <Text style={{ color: 'white', fontWeight: '700', fontSize: 15, marginLeft: 8 }}>Connect with Stripe</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
+              <Pressable
+                onPress={handleUseTestAccount}
+                style={{ borderRadius: 16, paddingVertical: 13, alignItems: 'center', backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155' }}
+              >
+                <Text style={{ color: '#94a3b8', fontWeight: '500', fontSize: 13 }}>Use Test Account (TestFlight)</Text>
+              </Pressable>
+            </View>
           )}
         </View>
       </SafeAreaView>
