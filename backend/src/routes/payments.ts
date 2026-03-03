@@ -161,7 +161,7 @@ async function handlePaymentSucceeded({
     const amountInDollars = amountPaid / 100;
 
     // Upsert the player_payment record to mark as paid
-    const { error: upsertError } = await supabase
+    const { data: upsertData, error: upsertError } = await supabase
       .from("player_payments")
       .upsert(
         {
@@ -173,7 +173,9 @@ async function handlePaymentSucceeded({
           notes: "Paid via Stripe",
         },
         { onConflict: "payment_period_id,player_id" }
-      );
+      )
+      .select("id")
+      .single();
 
     if (upsertError) {
       console.error("[payments] Failed to update player_payments:", upsertError.message);
@@ -181,17 +183,19 @@ async function handlePaymentSucceeded({
       console.log(`[payments] Marked player ${playerId} as paid for period ${paymentPeriodId}`);
     }
 
-    // Also insert a payment_entry record for the audit trail
-    const { error: entryError } = await supabase.from("payment_entries").insert({
-      player_payment_id: `${paymentPeriodId}_${playerId}`,
-      amount: amountInDollars,
-      date: new Date().toISOString().split("T")[0],
-      note: "Stripe payment",
-    });
+    // Also insert a payment_entry record for the audit trail (only if we have the real player_payment id)
+    if (upsertData?.id) {
+      const { error: entryError } = await supabase.from("payment_entries").insert({
+        player_payment_id: upsertData.id,
+        amount: amountInDollars,
+        date: new Date().toISOString().split("T")[0],
+        note: "Stripe payment",
+      });
 
-    if (entryError) {
-      // Non-critical — the upsert above is what matters
-      console.warn("[payments] Could not insert payment_entry:", entryError.message);
+      if (entryError) {
+        // Non-critical — the upsert above is what matters
+        console.warn("[payments] Could not insert payment_entry:", entryError.message);
+      }
     }
   } catch (err: any) {
     console.error("[payments] handlePaymentSucceeded error:", err?.message ?? err);
