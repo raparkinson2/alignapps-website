@@ -581,49 +581,6 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave, c
               </View>
             </Pressable>
 
-            {/* Push Token Diagnostics */}
-            <Pressable
-              onPress={async () => {
-                try {
-                  Alert.alert('Step 1', 'Checking permissions...');
-                  const { status } = await Notifications.getPermissionsAsync();
-                  Alert.alert('Step 2', `Permission status: ${status}`);
-
-                  if (status !== 'granted') {
-                    Alert.alert('Blocked', 'Notifications not granted. Enable in iOS Settings.');
-                    return;
-                  }
-
-                  Alert.alert('Step 3', 'Getting raw APNs device token...');
-                  const nativeToken = await Notifications.getDevicePushTokenAsync();
-                  const tokenStr = String(nativeToken.data);
-                  Alert.alert('Step 4 - APNs Token', `Type: ${nativeToken.type}\nToken: ${tokenStr.substring(0, 40)}...`);
-
-                  // Save to backend
-                  if (backendUrl && currentPlayerId) {
-                    const res = await fetch(`${backendUrl}/api/notifications/save-token`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ playerId: currentPlayerId, pushToken: tokenStr, platform: Platform.OS }),
-                    });
-                    const json = await res.json() as { success?: boolean; error?: string };
-                    Alert.alert('Step 5 - Saved', json.success ? 'Token saved to DB!' : `Failed: ${json.error}`);
-                  }
-                } catch (e: any) {
-                  Alert.alert('ERROR', e?.message || String(e));
-                }
-              }}
-              className="bg-slate-800 border border-amber-500/40 rounded-xl p-4 mt-3 flex-row items-center active:bg-slate-700"
-            >
-              <View className="w-10 h-10 rounded-full bg-amber-500/20 items-center justify-center mr-3">
-                <Bug size={20} color="#f59e0b" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-amber-400 font-semibold">Diagnose Push Token</Text>
-                <Text className="text-slate-400 text-sm">Check if APNs token can be obtained</Text>
-              </View>
-            </Pressable>
-
             {/* Info Note */}
             <View className="bg-slate-800/50 rounded-xl p-4 mt-4 mb-4">
               <Text className="text-cyan-400 font-medium mb-1">About Push Notifications</Text>

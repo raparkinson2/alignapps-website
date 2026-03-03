@@ -1522,28 +1522,6 @@ export default function AdminScreen() {
                 <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
-
-            {/* Push Token Diagnostics Button */}
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push('/push-diagnostics');
-              }}
-              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                  <View className="bg-blue-500/20 p-2 rounded-full">
-                    <Bell size={20} color="#60a5fa" />
-                  </View>
-                  <View className="ml-3">
-                    <Text className="text-white font-semibold">Push Token Diagnostics</Text>
-                    <Text className="text-slate-400 text-sm">Check who has tokens registered</Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color="#64748b" />
-              </View>
-            </Pressable>
           </Animated.View>
 
           {/* Team Features Section */}
