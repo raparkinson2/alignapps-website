@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform, Switch, Alert } from 'react-native';
+import * as Device from 'expo-device';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -967,7 +968,8 @@ export default function ScheduleScreen() {
   const notificationPrefs = currentPlayer?.notificationPreferences;
 
   // Responsive layout for iPad — must come before viewMode state
-  const { isTablet, columns, containerPadding } = useResponsive();
+  const { columns, containerPadding } = useResponsive();
+  const isTablet = Device.deviceType === Device.DeviceType.TABLET;
 
   // Get persisted view mode from team settings, default to 'list' (tablet always uses 'calendar')
   const persistedViewMode = teamSettings?.upcomingGamesViewMode ?? 'list';
