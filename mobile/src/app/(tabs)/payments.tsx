@@ -1067,8 +1067,8 @@ export default function PaymentsScreen() {
           paymentPeriodTitle: period.title,
           paymentPeriodId: period.id,
           playerId,
-          successUrl: 'vibecode://payment-success',
-          cancelUrl: 'vibecode://payment-cancel',
+          successUrl: 'alignsports://payment-success',
+          cancelUrl: 'alignsports://payment-cancel',
           teamStripeAccountId: teamSettings?.stripeAccountId ?? undefined,
         }),
       });
@@ -2730,7 +2730,7 @@ export default function PaymentsScreen() {
                 onNavigationStateChange={(navState) => {
                   const url = navState.url ?? '';
                   // Handle success/cancel deep links from Stripe
-                  if (url.startsWith('vibecode://payment-success') || url.includes('payment-success')) {
+                  if (url.startsWith('alignsports://payment-success') || url.includes('payment-success')) {
                     setStripeCheckoutUrl(null);
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     Alert.alert(
@@ -2738,7 +2738,7 @@ export default function PaymentsScreen() {
                       'Your payment is being processed. Your payment status will update shortly.',
                       [{ text: 'Done' }]
                     );
-                  } else if (url.startsWith('vibecode://payment-cancel') || url.includes('payment-cancel')) {
+                  } else if (url.startsWith('alignsports://payment-cancel') || url.includes('payment-cancel')) {
                     setStripeCheckoutUrl(null);
                   }
                 }}

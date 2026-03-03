@@ -77,7 +77,7 @@ connectRouter.get("/callback", async (c) => {
   // Handle user cancellation
   if (error) {
     console.warn(`[connect] OAuth error: ${error} - ${errorDescription}`);
-    return c.redirect("vibecode://stripe-connect-cancel");
+    return c.redirect("alignsports://stripe-connect-cancel");
   }
 
   if (!code || !stateRaw) {
@@ -128,7 +128,7 @@ connectRouter.get("/callback", async (c) => {
     }
 
     // Redirect back into the app with a deep link
-    return c.redirect(`vibecode://stripe-connect-success?teamId=${teamId}&accountId=${stripeAccountId}`);
+    return c.redirect(`alignsports://stripe-connect-success?teamId=${teamId}&accountId=${stripeAccountId}`);
   } catch (err: any) {
     console.error("[connect] callback error:", err?.message);
     return c.html(

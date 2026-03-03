@@ -242,8 +242,8 @@ paymentsRouter.post("/create-checkout-session", async (c) => {
       paymentPeriodTitle,
       paymentPeriodId,
       playerId,
-      successUrl = "vibecode://payment-success",
-      cancelUrl = "vibecode://payment-cancel",
+      successUrl = "alignsports://payment-success",
+      cancelUrl = "alignsports://payment-cancel",
       teamStripeAccountId,
     } = body;
 

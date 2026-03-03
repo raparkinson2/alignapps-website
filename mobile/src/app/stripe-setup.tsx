@@ -100,7 +100,7 @@ export default function StripeSetupScreen() {
             style={{ flex: 1, backgroundColor: '#0f172a' }}
             onShouldStartLoadWithRequest={(request) => {
               const url = request.url ?? '';
-              if (url.startsWith('vibecode://') || url.includes('stripe-connect-success') || url.includes('stripe-connect-cancel')) {
+              if (url.startsWith('alignsports://') || url.includes('stripe-connect-success') || url.includes('stripe-connect-cancel')) {
                 if (url.includes('stripe-connect-success')) {
                   const match = url.match(/accountId=([^&]+)/);
                   const accountId = match?.[1];

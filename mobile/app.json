@@ -2,15 +2,15 @@
   "expo": {
     "name": "Align Sports",
     "slug": "align-sports",
-    "scheme": "vibecode",
-    "version": "7.0.0",
+    "scheme": "alignsports",
+    "version": "7.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vibecode.alignsports-jy5wjr",
-      "buildNumber": "100",
+      "buildNumber": "105",
       "entitlements": {
         "aps-environment": "production"
       },
@@ -26,7 +26,7 @@
     "android": {
       "edgeToEdgeEnabled": true,
       "package": "com.vibecode.alignsports",
-      "versionCode": 5
+      "versionCode": 4
     },
     "extra": {
       "eas": {
