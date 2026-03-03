@@ -1179,22 +1179,45 @@ export default function PaymentsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
-          {/* Payment Methods Section */}
-          <Animated.View entering={FadeInDown.delay(100).springify()}>
+          {/* Section 1: Pay with Stripe */}
+          <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-5">
+            <View className="flex-row items-center mb-3">
+              <CreditCard size={16} color="#635BFF" />
+              <Text className="text-indigo-400 font-semibold ml-2">Pay with Stripe</Text>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsStripeDisclosureVisible(true);
+                }}
+                className="ml-2 p-1.5"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Info size={15} color="#475569" />
+              </Pressable>
+            </View>
+
+            <View className="bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/40">
+              <StripePayButton
+                myPaymentStatus={myPaymentStatus}
+                isStripeLoading={isStripeLoading}
+                onPay={handleStripePayment}
+              />
+              {/* Fee disclosure row */}
+              <View className="flex-row items-center px-4 py-2.5 border-t border-slate-700/40">
+                <Info size={12} color="#475569" />
+                <Text className="text-slate-500 text-xs ml-2">
+                  Stripe processing fee applies · Card info never stored by Align Sports
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* Section 2: Payment Apps (Venmo, PayPal, etc.) */}
+          <Animated.View entering={FadeInDown.delay(130).springify()} className="mb-6">
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
-                <CreditCard size={16} color="#67e8f9" />
-                <Text className="text-cyan-400 font-semibold ml-2">Payment Methods</Text>
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setIsStripeDisclosureVisible(true);
-                  }}
-                  className="ml-2 p-1.5"
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Info size={15} color="#475569" />
-                </Pressable>
+                <ExternalLink size={16} color="#67e8f9" />
+                <Text className="text-cyan-400 font-semibold ml-2">Payment Apps</Text>
               </View>
               {isAdmin() && (
                 <Pressable
@@ -1207,31 +1230,18 @@ export default function PaymentsScreen() {
             </View>
 
             {paymentMethods.length === 0 ? (
-              <View className="bg-slate-800/50 rounded-xl p-4 mb-6">
-                <Text className="text-slate-400 text-sm mb-3">Tap to Pay:</Text>
-                <StripePayButton
-                  myPaymentStatus={myPaymentStatus}
-                  isStripeLoading={isStripeLoading}
-                  onPay={handleStripePayment}
-                />
-                {isAdmin() && (
-                  <Text className="text-slate-600 text-xs text-center mt-3">
-                    Add Venmo, PayPal, etc. with the + button above
-                  </Text>
-                )}
+              <View className="bg-slate-800/50 rounded-2xl p-5 items-center border border-slate-700/40">
+                <ExternalLink size={28} color="#334155" />
+                <Text className="text-slate-500 text-sm text-center mt-2">
+                  {isAdmin() ? 'Add Venmo, PayPal, Zelle, etc. with the + button' : 'No payment apps configured'}
+                </Text>
               </View>
             ) : (
-              <View className="bg-slate-800/50 rounded-xl p-4 mb-6">
-                <Text className="text-slate-400 text-sm mb-3">Tap to Pay:</Text>
-                {/* Stripe always shown first */}
-                <StripePayButton
-                  myPaymentStatus={myPaymentStatus}
-                  isStripeLoading={isStripeLoading}
-                  onPay={handleStripePayment}
-                />
-                <View className="flex-row mt-3" style={{ gap: 8 }}>
+              <View className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/40">
+                <Text className="text-slate-500 text-xs mb-3 uppercase tracking-wider font-medium">Tap to pay externally</Text>
+                <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                   {paymentMethods.map((method, index) => (
-                    <View key={index} className="relative flex-1" style={{ marginTop: 4 }}>
+                    <View key={index} className="relative" style={{ marginTop: 4 }}>
                       <PaymentMethodButton method={method} />
                       {isAdmin() && (
                         <Pressable
