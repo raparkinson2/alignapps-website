@@ -1043,6 +1043,14 @@ export default function PaymentsScreen() {
     );
   };
 
+  // Calculate the gross-up amount so admin receives the full balance after all fees
+  // Formula: total = (balance + 0.30) / (1 - 0.029 - 0.005)
+  // Stripe takes 2.9% + $0.30, platform takes 0.5%
+  const calcTotalWithFees = (balance: number) => {
+    const total = (balance + 0.30) / (1 - 0.029 - 0.005);
+    return Math.ceil(total * 100) / 100; // round up to nearest cent
+  };
+
   // Launch Stripe Checkout in a WebView modal
   const handleStripePayment = async (period: PaymentPeriod, playerId: string) => {
     const balance = period.amount - (period.playerPayments.find(pp => pp.playerId === playerId)?.amount ?? 0);
@@ -1053,7 +1061,8 @@ export default function PaymentsScreen() {
 
     try {
       const player = players.find(p => p.id === playerId);
-      const amountInCents = Math.round(balance * 100);
+      const totalWithFees = calcTotalWithFees(balance);
+      const amountInCents = Math.round(totalWithFees * 100);
 
       const res = await fetch(`${BACKEND_URL}/api/payments/create-checkout-session`, {
         method: 'POST',
@@ -1958,11 +1967,23 @@ export default function PaymentsScreen() {
                           <>
                             <Zap size={18} color="white" />
                             <Text className="text-white font-bold text-base ml-2">
-                              Pay ${Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0))} with Stripe
+                              Pay ${calcTotalWithFees(Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0))).toFixed(2)} with Stripe
                             </Text>
                           </>
                         )}
                       </LinearGradient>
+                      {(() => {
+                        const balance = Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0));
+                        const total = calcTotalWithFees(balance);
+                        const fee = Math.round((total - balance) * 100) / 100;
+                        return (
+                          <View style={{ backgroundColor: '#4a44cc', paddingVertical: 6, alignItems: 'center' }}>
+                            <Text style={{ color: '#c7c4ff', fontSize: 12 }}>
+                              ${balance.toFixed(2)} due + ${fee.toFixed(2)} processing fee
+                            </Text>
+                          </View>
+                        );
+                      })()}
                     </Pressable>
                   )}
 
@@ -2759,6 +2780,9 @@ export default function PaymentsScreen() {
               {/* Body */}
               <Text className="text-slate-300 text-sm leading-6 mb-3">
                 All payments are securely processed by <Text className="text-white font-semibold">Stripe</Text>, a certified PCI-DSS Level 1 payment processor.
+              </Text>
+              <Text className="text-slate-300 text-sm leading-6 mb-3">
+                A processing fee (2.9% + $0.30) is added to your total so your team receives the full amount owed.
               </Text>
               <Text className="text-slate-300 text-sm leading-6 mb-3">
                 Align Sports does not collect, store, or have access to your card number, CVV, or any other payment credentials. All sensitive financial data is handled exclusively by Stripe.
