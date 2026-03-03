@@ -101,8 +101,8 @@ paymentsRouter.post("/webhook", async (c) => {
     const stripe = getStripe();
 
     if (webhookSecret && signature) {
-      // Verify the webhook signature when secret is configured
-      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      // Bun uses Web Crypto API which requires the async variant
+      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
     } else {
       // In development without a webhook secret, parse directly
       event = JSON.parse(rawBody) as Stripe.Event;
