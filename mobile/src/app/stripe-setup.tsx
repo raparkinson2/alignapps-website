@@ -98,6 +98,25 @@ export default function StripeSetupScreen() {
           <WebView
             source={{ uri: webViewUrl }}
             style={{ flex: 1, backgroundColor: '#0f172a' }}
+            onShouldStartLoadWithRequest={(request) => {
+              const url = request.url ?? '';
+              if (url.startsWith('vibecode://') || url.includes('stripe-connect-success') || url.includes('stripe-connect-cancel')) {
+                if (url.includes('stripe-connect-success')) {
+                  const match = url.match(/accountId=([^&]+)/);
+                  const accountId = match?.[1];
+                  setWebViewUrl(null);
+                  if (accountId) {
+                    setTeamSettingsAndSync({ stripeAccountId: accountId, stripeOnboardingComplete: true });
+                  }
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  Alert.alert('Stripe Connected!', 'Your Stripe account is linked. Players can now pay dues directly in the app.', [{ text: 'Done' }]);
+                } else if (url.includes('stripe-connect-cancel')) {
+                  setWebViewUrl(null);
+                }
+                return false; // Block the WebView from navigating to the deep link
+              }
+              return true;
+            }}
             onNavigationStateChange={(navState) => {
               const url = navState.url ?? '';
               if (url.includes('stripe-connect-success')) {
