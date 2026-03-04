@@ -15,7 +15,7 @@
   --border: rgba(255,255,255,0.07); --border-hover: rgba(103,232,249,0.25);
   --cyan: #67e8f9; --purple: #a78bfa; --green: #22c55e;
   --text-primary: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #475569;
-  --radius: 16px;
+  --radius: 16px; --radius-sm: 10px;
 }
 html { scroll-behavior: smooth; }
 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text-primary); line-height: 1.6; overflow-x: hidden; }
@@ -42,16 +42,23 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .gradient-text { background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .hero-sub { font-size: 18px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 36px; max-width: 480px; }
 .hero-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 32px; }
-.btn-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--cyan); color: #080c14; font-size: 15px; font-weight: 700; padding: 13px 26px; border-radius: 50px; text-decoration: none; transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s; box-shadow: 0 0 30px rgba(103,232,249,0.2); }
-.btn-primary:hover { opacity: 0.92; transform: translateY(-2px); box-shadow: 0 8px 40px rgba(103,232,249,0.3); }
-.btn-large { padding: 16px 32px; font-size: 16px; }
-.btn-ghost { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 15px; font-weight: 500; text-decoration: none; padding: 13px 20px; border-radius: 50px; border: 1px solid var(--border); transition: color 0.2s, border-color 0.2s; }
-.btn-ghost:hover { color: var(--text-primary); border-color: var(--border-hover); }
 .hero-social-proof { display: flex; align-items: center; gap: 12px; }
 .proof-avatars { display: flex; }
 .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 16px; margin-left: -8px; }
 .avatar:first-child { margin-left: 0; }
 .proof-text { font-size: 13px; color: var(--text-muted); }
+
+/* STORE BUTTONS */
+.btn-store { display: inline-flex; align-items: center; gap: 10px; padding: 11px 22px; border-radius: 14px; text-decoration: none; transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s; cursor: pointer; }
+.btn-appstore { background: var(--cyan); color: #080c14; box-shadow: 0 0 30px rgba(103,232,249,0.2); }
+.btn-appstore:hover { opacity: 0.92; transform: translateY(-2px); box-shadow: 0 8px 40px rgba(103,232,249,0.3); }
+.btn-playstore { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: var(--text-secondary); }
+.btn-store-soon { cursor: default; opacity: 0.65; }
+.btn-store-lg { padding: 14px 28px; }
+.btn-store-text { display: flex; flex-direction: column; line-height: 1.2; }
+.btn-store-label { font-size: 10px; font-weight: 500; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.4px; }
+.btn-store-name { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+.cta-store-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
 
 /* PHONE MOCKUP */
 .hero-phone-wrap { flex-shrink: 0; position: relative; z-index: 1; }
@@ -65,21 +72,25 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .game-card { display: flex; align-items: center; justify-content: space-between; }
 .mock-card-left { display: flex; align-items: center; gap: 10px; }
 .mock-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.mock-dot.green { background: #22c55e; } .mock-dot.blue { background: #67e8f9; }
+.mock-dot.green { background: #22c55e; }
 .mock-card-title { font-size: 13px; font-weight: 600; color: #e2e8f0; }
 .mock-card-sub { font-size: 10px; color: #475569; margin-top: 2px; }
 .mock-chip { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 50px; }
 .mock-chip.confirmed { background: rgba(34,197,94,0.15); color: #22c55e; }
-.mock-chip.maybe { background: rgba(251,191,36,0.15); color: #fbbf24; }
 .mock-section-title { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; margin: 14px 0 8px; }
-.mock-roster-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.mock-avatar-sm { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#1e3a5f,#0f2a4a); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #67e8f9; flex-shrink: 0; }
 .mock-player-info { flex: 1; }
 .mock-player-name { font-size: 12px; font-weight: 600; color: #e2e8f0; }
-.mock-player-pos { font-size: 10px; color: #475569; }
-.mock-player-badge { font-size: 9px; padding: 2px 7px; border-radius: 50px; background: rgba(255,255,255,0.05); color: #64748b; }
-.mock-player-badge.admin { background: rgba(167,139,250,0.15); color: #a78bfa; }
 .mock-payment-banner { margin-top: 12px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px; padding: 10px 12px; font-size: 11px; color: #22c55e; font-weight: 500; }
+.mock-rsvp-row { display: flex; gap: 8px; margin: 10px 0; }
+.mock-rsvp-stat { flex: 1; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 8px 6px; text-align: center; }
+.mock-rsvp-num { font-size: 18px; font-weight: 800; line-height: 1; }
+.mock-rsvp-label { font-size: 9px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+.green-stat .mock-rsvp-num { color: #22c55e; }
+.yellow-stat .mock-rsvp-num { color: #fbbf24; }
+.red-stat .mock-rsvp-num { color: #f87171; }
+.mock-lineup-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.mock-pos-badge { width: 28px; height: 28px; border-radius: 8px; background: rgba(103,232,249,0.12); color: #67e8f9; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mock-number { font-size: 11px; color: #475569; font-weight: 600; margin-left: auto; }
 
 /* SPORTS STRIP */
 .sports-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 32px 0; background: var(--bg-2); }
@@ -106,6 +117,24 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .feature-list li { font-size: 13px; color: var(--text-secondary); padding-left: 18px; position: relative; }
 .feature-list li::before { content: '→'; position: absolute; left: 0; color: var(--cyan); font-size: 11px; }
 .feature-list li strong { color: var(--text-primary); }
+.coming-soon-inline { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--cyan); font-weight: 500; opacity: 0.85; }
+
+/* WHO IT'S FOR */
+.who-section { padding: 80px 0; background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.who-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.who-list { display: flex; flex-direction: column; gap: 12px; }
+.who-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; color: var(--text-secondary); transition: border-color 0.2s, color 0.2s; }
+.who-item:hover { border-color: var(--border-hover); color: var(--text-primary); }
+.who-icon { font-size: 18px; }
+
+/* COMING SOON SECTION */
+.coming-soon-section { padding: 100px 0; }
+.coming-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; max-width: 900px; margin: 0 auto; }
+.coming-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; transition: border-color 0.25s, transform 0.25s; }
+.coming-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.coming-icon { font-size: 24px; display: block; margin-bottom: 12px; }
+.coming-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.2px; }
+.coming-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
 
 /* HOW IT WORKS */
 .how-it-works { padding: 80px 0 100px; background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -133,9 +162,6 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .cta-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 600px; height: 300px; background: radial-gradient(ellipse, rgba(103,232,249,0.08) 0%, transparent 70%); pointer-events: none; }
 .cta-title { font-size: clamp(34px,5vw,58px); font-weight: 900; letter-spacing: -2px; margin-bottom: 18px; position: relative; z-index: 1; }
 .cta-sub { font-size: 17px; color: var(--text-secondary); margin-bottom: 40px; position: relative; z-index: 1; }
-.cta-actions { position: relative; z-index: 1; margin-bottom: 20px; }
-.cta-android-note { font-size: 13px; color: var(--text-muted); position: relative; z-index: 1; }
-.cta-link { color: var(--cyan); text-decoration: none; }
 
 /* FOOTER */
 .footer { background: var(--bg-2); border-top: 1px solid var(--border); padding: 60px 0 32px; }
@@ -166,6 +192,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   .feature-card--large { grid-column: span 2; }
   .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
   .footer-brand { grid-column: span 2; }
+  .who-grid { grid-template-columns: 1fr; gap: 32px; }
+  .coming-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {
   .nav-links { display: none; }
@@ -177,6 +205,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   .footer-grid { grid-template-columns: 1fr; }
   .footer-brand { grid-column: span 1; }
   .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+  .coming-grid { grid-template-columns: 1fr; }
+  .cta-store-buttons { flex-direction: column; align-items: center; }
+  .hero-actions { flex-direction: column; align-items: flex-start; }
 }
   </style>
 </head>
@@ -191,7 +222,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
         <a href="#faq">FAQ</a>
         <a href="#support">Support</a>
       </div>
-      <a href="#download" class="nav-cta">Download Free</a>
+      <a href="#download" class="nav-cta">Download</a>
     </div>
   </nav>
 
@@ -199,15 +230,24 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
     <div class="hero-glow hero-glow-1"></div>
     <div class="hero-glow hero-glow-2"></div>
     <div class="hero-inner">
-      <div class="hero-badge">Free for your team</div>
+      <div class="hero-badge">Team management without the chaos</div>
       <h1 class="hero-title">Your team,<br /><span class="gradient-text">finally organized.</span></h1>
-      <p class="hero-sub">Align Sports is the all-in-one app for recreational sports teams. Schedules, rosters, payments, group chat, and stats — no more juggling five different apps.</p>
+      <p class="hero-sub">ALIGN Sports is a simple, powerful team management app built for coaches, captains, and organizers who are tired of chasing people down. If your team lives in group texts and "who's coming tonight?" messages — this fixes that.</p>
       <div class="hero-actions">
-        <a href="https://apps.apple.com/us/app/align-sports/id6743450598" target="_blank" class="btn-primary">
+        <a href="https://apps.apple.com/us/app/align-sports/id6743450598" target="_blank" class="btn-store btn-appstore">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-          App Store
+          <div class="btn-store-text">
+            <span class="btn-store-label">Download on the</span>
+            <span class="btn-store-name">App Store</span>
+          </div>
         </a>
-        <a href="#features" class="btn-ghost">See how it works</a>
+        <div class="btn-store btn-playstore btn-store-soon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.35.2.74.24 1.1.14l.06-.03 11.05-6.37-2.4-2.4-9.81 8.66zm-1.3-20.3C1.64 3.8 1.5 4.22 1.5 4.7v14.6c0 .48.14.9.38 1.24l.07.07 8.18-8.18v-.19L1.88 3.46zm16.45 9.08-2.55 1.47-2.7-2.7 2.7-2.7 2.57 1.49c.73.42.73 1.11-.02 1.44zm-14.1 7.95L15.28 14l-2.4-2.4-8.65 8.89z"/></svg>
+          <div class="btn-store-text">
+            <span class="btn-store-label">Coming Soon to</span>
+            <span class="btn-store-name">Google Play</span>
+          </div>
+        </div>
       </div>
       <div class="hero-social-proof">
         <div class="proof-avatars">
@@ -220,19 +260,21 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <div class="phone-mockup">
         <div class="phone-screen">
           <div class="mock-status-bar"><span>9:41</span><span>●●●</span></div>
-          <div class="mock-header"><span class="mock-title">Schedule</span><span class="mock-badge">3 upcoming</span></div>
+          <div class="mock-header"><span class="mock-title">Thunderhawks</span><span class="mock-badge">Hockey</span></div>
           <div class="mock-card game-card">
-            <div class="mock-card-left"><div class="mock-dot green"></div><div><div class="mock-card-title">vs. Thunder Hawks</div><div class="mock-card-sub">Tonight · 7:30 PM · Rink A</div></div></div>
+            <div class="mock-card-left"><div class="mock-dot green"></div><div><div class="mock-card-title">vs. Ice Dogs</div><div class="mock-card-sub">Tonight · 7:30 PM · Rink A</div></div></div>
             <div class="mock-chip confirmed">✓ In</div>
           </div>
-          <div class="mock-card game-card">
-            <div class="mock-card-left"><div class="mock-dot blue"></div><div><div class="mock-card-title">Practice</div><div class="mock-card-sub">Thu · 6:00 PM · East Arena</div></div></div>
-            <div class="mock-chip maybe">?</div>
+          <div class="mock-rsvp-row">
+            <div class="mock-rsvp-stat green-stat"><div class="mock-rsvp-num">11</div><div class="mock-rsvp-label">In</div></div>
+            <div class="mock-rsvp-stat yellow-stat"><div class="mock-rsvp-num">2</div><div class="mock-rsvp-label">Maybe</div></div>
+            <div class="mock-rsvp-stat red-stat"><div class="mock-rsvp-num">1</div><div class="mock-rsvp-label">Out</div></div>
           </div>
-          <div class="mock-section-title">Roster · 14 players</div>
-          <div class="mock-roster-row"><div class="mock-avatar-sm">JD</div><div class="mock-player-info"><div class="mock-player-name">Jake D.</div><div class="mock-player-pos">Center · #11</div></div><div class="mock-player-badge admin">Admin</div></div>
-          <div class="mock-roster-row"><div class="mock-avatar-sm">MR</div><div class="mock-player-info"><div class="mock-player-name">Mike R.</div><div class="mock-player-pos">Defense · #4</div></div><div class="mock-player-badge">Player</div></div>
-          <div class="mock-payment-banner">💳 Dues: $40 collected of $80</div>
+          <div class="mock-section-title">Lineup · Line 1</div>
+          <div class="mock-lineup-row"><div class="mock-pos-badge">LW</div><div class="mock-player-info"><div class="mock-player-name">Jake D.</div></div><div class="mock-number">#11</div></div>
+          <div class="mock-lineup-row"><div class="mock-pos-badge">C</div><div class="mock-player-info"><div class="mock-player-name">Mike R.</div></div><div class="mock-number">#4</div></div>
+          <div class="mock-lineup-row"><div class="mock-pos-badge">RW</div><div class="mock-player-info"><div class="mock-player-name">Chris A.</div></div><div class="mock-number">#17</div></div>
+          <div class="mock-payment-banner">💳 Dues: $240 of $480 collected</div>
         </div>
       </div>
     </div>
@@ -242,7 +284,13 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
     <div class="container">
       <p class="strip-label">Built for every sport</p>
       <div class="sports-pills">
-        <span class="pill">🏒 Hockey</span><span class="pill">⚾ Baseball</span><span class="pill">🏀 Basketball</span><span class="pill">⚽ Soccer</span><span class="pill">🥍 Lacrosse</span><span class="pill">🥎 Softball</span>
+        <span class="pill">🏒 Hockey</span>
+        <span class="pill">⚾ Baseball</span>
+        <span class="pill">🏀 Basketball</span>
+        <span class="pill">⚽ Soccer</span>
+        <span class="pill">🥍 Men's Lacrosse</span>
+        <span class="pill">🥍 Women's Lacrosse</span>
+        <span class="pill">🥎 Softball</span>
       </div>
     </div>
   </section>
@@ -252,14 +300,14 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <div class="section-header">
         <div class="section-tag">Everything your team needs</div>
         <h2 class="section-title">One app.<br />No more chaos.</h2>
-        <p class="section-sub">From game day check-ins to collecting dues, Align Sports handles it all so you can focus on playing.</p>
+        <p class="section-sub">From RSVP tracking to lineups and payment tracking, ALIGN Sports handles it all so you can focus on playing.</p>
       </div>
       <div class="features-grid">
         <div class="feature-card feature-card--large">
           <div class="feature-icon" style="background:rgba(103,232,249,0.12);color:#67e8f9">📅</div>
           <h3>Smart Scheduling</h3>
           <p>Create games, practices, and events in seconds. Players get instant notifications. Track who's in or out — and set jersey colors for each game.</p>
-          <ul class="feature-list"><li>List and calendar views</li><li>Game check-in / check-out</li><li>Schedule invites or release now</li><li>Final scores & game stats</li></ul>
+          <ul class="feature-list"><li>List and calendar views</li><li>Game check-in / check-out</li><li>Schedule invites or release now</li><li>Final scores &amp; game stats</li></ul>
         </div>
         <div class="feature-card">
           <div class="feature-icon" style="background:rgba(167,139,250,0.12);color:#a78bfa">👥</div>
@@ -269,7 +317,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
         <div class="feature-card">
           <div class="feature-icon" style="background:rgba(34,197,94,0.12);color:#22c55e">💳</div>
           <h3>Payment Tracking</h3>
-          <p>Collect dues directly in the app via Stripe, or track Venmo, PayPal, Zelle, and Cash App payments manually. Know exactly who's paid.</p>
+          <p>Assign and track all payments directly in the app. Log Venmo, PayPal, Zelle, and Cash App manually. Know exactly who's paid and who owes. <span class="coming-soon-inline">Payment processing powered by Stripe — coming soon.</span></p>
         </div>
         <div class="feature-card">
           <div class="feature-icon" style="background:rgba(251,191,36,0.12);color:#fbbf24">💬</div>
@@ -278,14 +326,20 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
         </div>
         <div class="feature-card">
           <div class="feature-icon" style="background:rgba(248,113,113,0.12);color:#f87171">📊</div>
-          <h3>Stats & Records</h3>
+          <h3>Stats &amp; Records</h3>
           <p>Track individual and team stats by sport. Season history, win percentages, and career records — all automatically logged.</p>
         </div>
         <div class="feature-card feature-card--large">
           <div class="feature-icon" style="background:rgba(103,232,249,0.12);color:#67e8f9">🏆</div>
           <h3>Sport-Specific Lineups</h3>
-          <p>Not just a generic sports app. Align Sports understands your sport.</p>
-          <ul class="feature-list"><li><strong>Hockey</strong> — Lines, goalie tracking, +/−</li><li><strong>Baseball/Softball</strong> — 9/10-player batting orders</li><li><strong>Soccer</strong> — 4-4-2 & diamond formations</li><li><strong>Basketball</strong> — Starting 5 + bench management</li></ul>
+          <p>Set lineups right in the app. Not just a generic sports tool — ALIGN Sports understands your sport.</p>
+          <ul class="feature-list">
+            <li><strong>Hockey</strong> — Lines, goalie tracking, +/−</li>
+            <li><strong>Baseball/Softball</strong> — 9/10-player batting orders</li>
+            <li><strong>Soccer</strong> — 4-4-2 &amp; diamond formations</li>
+            <li><strong>Basketball</strong> — Starting 5 + bench management</li>
+            <li><strong>Lacrosse</strong> — Men's &amp; Women's formats</li>
+          </ul>
         </div>
         <div class="feature-card">
           <div class="feature-icon" style="background:rgba(167,139,250,0.12);color:#a78bfa">📸</div>
@@ -297,6 +351,47 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
           <h3>Push Notifications</h3>
           <p>Game reminders, chat messages, new lineups, payment updates. Your team stays in the loop — even if they forget to check the app.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHO IT'S FOR -->
+  <section class="who-section">
+    <div class="container">
+      <div class="who-grid">
+        <div class="who-left">
+          <div class="section-tag">Who It's For</div>
+          <h2 class="section-title" style="text-align:left;">Built for the people<br />running the team.</h2>
+          <p class="section-sub" style="text-align:left; max-width:100%;">Anyone who's tired of chasing people down — this is your app.</p>
+        </div>
+        <div class="who-right">
+          <div class="who-list">
+            <div class="who-item"><span class="who-icon">🧢</span><span>Coaches</span></div>
+            <div class="who-item"><span class="who-icon">⭐</span><span>Team captains</span></div>
+            <div class="who-item"><span class="who-icon">🏟️</span><span>Adult recreational leagues</span></div>
+            <div class="who-item"><span class="who-icon">👨‍👩‍👧</span><span>Youth sports organizers</span></div>
+            <div class="who-item"><span class="who-icon">📱</span><span>Anyone tired of group texts</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMING SOON -->
+  <section class="coming-soon-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Coming Soon</div>
+        <h2 class="section-title">More on the way.</h2>
+        <p class="section-sub">Updates are frequent. Your feedback shapes what ships next.</p>
+      </div>
+      <div class="coming-grid">
+        <div class="coming-card"><span class="coming-icon">📅</span><h4>Schedules &amp; Calendar Sync</h4><p>Sync your team schedule to your phone's calendar automatically.</p></div>
+        <div class="coming-card"><span class="coming-icon">📊</span><h4>Attendance Stats</h4><p>Track attendance trends and player availability over the season.</p></div>
+        <div class="coming-card"><span class="coming-icon">💳</span><h4>Stripe Payment Processing</h4><p>Collect dues directly in the app. Payment processing powered by Stripe.</p></div>
+        <div class="coming-card"><span class="coming-icon">🛡️</span><h4>Admin Controls &amp; Roles</h4><p>Granular role management for multi-admin teams.</p></div>
+        <div class="coming-card"><span class="coming-icon">🤖</span><h4>More Automation</h4><p>Less manual work. Smart reminders, auto-lineup suggestions, and more.</p></div>
+        <div class="coming-card"><span class="coming-icon">📱</span><h4>Android App</h4><p>Google Play release coming. Email hello@alignapps.com to get notified.</p></div>
       </div>
     </div>
   </section>
@@ -324,13 +419,12 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
         <h2 class="section-title">Common questions.</h2>
       </div>
       <div class="faq-list">
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Is Align Sports free?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Yes, Align Sports is free to download and use. The only fees are Stripe's standard payment processing fees (2.9% + 30¢ per transaction) if you use in-app payment collection, plus a small 0.5% platform fee.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">What sports does the app support?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Align Sports currently supports Hockey, Baseball, Softball, Basketball, Soccer, and Lacrosse — each with sport-specific stats, positions, and lineup tools. More sports are on the way.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">What sports does the app support?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>ALIGN Sports currently supports Hockey, Baseball, Softball, Basketball, Soccer, Men's Lacrosse, and Women's Lacrosse — each with sport-specific stats, positions, and lineup tools. More sports are on the way.</p></div></div>
         <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Can I manage multiple teams?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Yes. You can be a member of multiple teams and switch between them instantly from the app. Each team has its own schedule, roster, chat, and payments.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Do all players need to download the app?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Players need to download the app to access team features. It's free and takes less than a minute to set up. The admin creates the team, then invites players via a link.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">How does payment collection work?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Admins can set up Stripe to collect dues directly in the app. Players pay with any card — funds go straight to your Stripe account. You can also manually log payments made via Venmo, PayPal, Zelle, or Cash App.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Do all players need to download the app?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Players need to download the app to access team features. Setup takes less than a minute. The admin creates the team, then invites players via a link.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">How does payment tracking work?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Admins can assign dues and track payments directly in the app. Manually log payments made via Venmo, PayPal, Zelle, or Cash App. Direct payment processing powered by Stripe is coming soon.</p></div></div>
         <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Is my team's data private?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Yes. Your team data is private and only accessible to members of your team. We never sell your data or share it with third parties.</p></div></div>
-        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Is Align Sports available on Android?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Currently, Align Sports is available on iOS. Android support is in development — email hello@alignapps.com to be notified when it launches.</p></div></div>
+        <div class="faq-item"><button class="faq-question" onclick="toggleFaq(this)">Is Align Sports available on Android?<span class="faq-arrow">↓</span></button><div class="faq-answer"><p>Currently, ALIGN Sports is available on iOS. Android / Google Play is coming soon — email hello@alignapps.com to be notified when it launches.</p></div></div>
       </div>
     </div>
   </section>
@@ -338,15 +432,24 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   <section class="download-cta" id="download">
     <div class="cta-glow"></div>
     <div class="container">
-      <h2 class="cta-title">Ready to align your team?</h2>
-      <p class="cta-sub">Free to download. No credit card required. Your whole team can be set up today.</p>
-      <div class="cta-actions">
-        <a href="https://apps.apple.com/us/app/align-sports/id6743450598" target="_blank" class="btn-primary btn-large">
+      <h2 class="cta-title">Ready to <span class="gradient-text">ALIGN</span> your team?</h2>
+      <p class="cta-sub">Because teams perform better when everyone is on the same page.</p>
+      <div class="cta-store-buttons">
+        <a href="https://apps.apple.com/us/app/align-sports/id6743450598" target="_blank" class="btn-store btn-appstore btn-store-lg">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-          Download on the App Store
+          <div class="btn-store-text">
+            <span class="btn-store-label">Download on the</span>
+            <span class="btn-store-name">App Store</span>
+          </div>
         </a>
+        <div class="btn-store btn-playstore btn-store-soon btn-store-lg">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.35.2.74.24 1.1.14l.06-.03 11.05-6.37-2.4-2.4-9.81 8.66zm-1.3-20.3C1.64 3.8 1.5 4.22 1.5 4.7v14.6c0 .48.14.9.38 1.24l.07.07 8.18-8.18v-.19L1.88 3.46zm16.45 9.08-2.55 1.47-2.7-2.7 2.7-2.7 2.57 1.49c.73.42.73 1.11-.02 1.44zm-14.1 7.95L15.28 14l-2.4-2.4-8.65 8.89z"/></svg>
+          <div class="btn-store-text">
+            <span class="btn-store-label">Coming Soon to</span>
+            <span class="btn-store-name">Google Play</span>
+          </div>
+        </div>
       </div>
-      <div class="cta-android-note">Android coming soon — <a href="mailto:hello@alignapps.com" class="cta-link">get notified</a></div>
     </div>
   </section>
 
@@ -382,7 +485,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
     </div>
   </footer>
 
-  <!-- PRIVACY PAGE (hidden by default) -->
+  <!-- PRIVACY PAGE -->
   <div id="page-privacy" style="display:none; background: var(--bg); min-height: 100vh;">
     <div class="legal-page">
       <a href="#" class="back-link" onclick="showPage('main')">← Back to home</a>
@@ -391,11 +494,11 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <p>Align Sports ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share information about you when you use the Align Sports mobile application and website at www.alignapps.com.</p>
       <h2>Information We Collect</h2>
       <p>We collect information you provide directly, including:</p>
-      <ul><li>Account information (name, email address, password)</li><li>Team and player information you create or upload</li><li>Photos you share within the app</li><li>Messages sent through the in-app chat</li><li>Payment information (processed securely through Stripe; we do not store card numbers)</li></ul>
+      <ul><li>Account information (name, email address, password)</li><li>Team and player information you create or upload</li><li>Photos you share within the app</li><li>Messages sent through the in-app chat</li></ul>
       <h2>How We Use Your Information</h2>
-      <ul><li>To provide and operate the Align Sports service</li><li>To send push notifications for game reminders, payments, and team updates</li><li>To process payments through Stripe</li><li>To improve and develop the app</li><li>To communicate with you about support requests</li></ul>
+      <ul><li>To provide and operate the Align Sports service</li><li>To send push notifications for game reminders and team updates</li><li>To improve and develop the app</li><li>To communicate with you about support requests</li></ul>
       <h2>Data Sharing</h2>
-      <p>We do not sell your personal data. We share information only with Stripe (payment processing), Supabase (database infrastructure), and Apple (push notification delivery).</p>
+      <p>We do not sell your personal data. We share information only with Supabase (database infrastructure) and Apple (push notification delivery).</p>
       <h2>Team Data Privacy</h2>
       <p>Your team's data — including schedules, rosters, chat messages, and photos — is private and accessible only to members of your team.</p>
       <h2>Contact Us</h2>
@@ -403,7 +506,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
     </div>
   </div>
 
-  <!-- TERMS PAGE (hidden by default) -->
+  <!-- TERMS PAGE -->
   <div id="page-terms" style="display:none; background: var(--bg); min-height: 100vh;">
     <div class="legal-page">
       <a href="#" class="back-link" onclick="showPage('main')">← Back to home</a>
@@ -412,8 +515,6 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <p>By downloading or using Align Sports, you agree to these Terms of Service.</p>
       <h2>Use of the Service</h2>
       <p>You may use Align Sports to create and manage sports teams, communicate with team members, schedule games and events, and track payments and statistics. You agree not to use the service for any unlawful purpose.</p>
-      <h2>Payments</h2>
-      <p>Payment processing is handled by Stripe. Align Sports charges a platform fee of 0.5% per transaction in addition to Stripe's standard processing fees (2.9% + 30¢).</p>
       <h2>User Content</h2>
       <p>You retain ownership of content you post. By posting, you grant Align Sports a license to host and display that content to members of your team as part of the service only.</p>
       <h2>Limitation of Liability</h2>
@@ -435,7 +536,6 @@ function toggleFaq(btn) {
   if (!isOpen) { btn.classList.add('open'); answer.classList.add('open'); }
 }
 
-const mainSections = ['nav','hero','sports-strip','features','how-it-works','faq','download-cta','footer'];
 function showPage(page) {
   document.querySelectorAll('nav, section, footer').forEach(el => el.style.display = '');
   document.getElementById('page-privacy').style.display = 'none';
@@ -454,3 +554,4 @@ function showPage(page) {
   </script>
 </body>
 </html>
+
