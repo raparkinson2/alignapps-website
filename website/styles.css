@@ -731,6 +731,17 @@ body {
   z-index: 1;
 }
 
+.cta-spring {
+  font-size: 13px;
+  color: var(--cyan);
+  font-weight: 600;
+  margin-top: 20px;
+  position: relative;
+  z-index: 1;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
 .cta-actions {
   position: relative;
   z-index: 1;
