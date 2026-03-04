@@ -71,8 +71,11 @@ body {
   letter-spacing: -0.3px;
 }
 
-.logo-icon {
-  font-size: 20px;
+.logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 .nav-links {
