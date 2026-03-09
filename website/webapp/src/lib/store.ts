@@ -117,6 +117,7 @@ interface TeamStore {
   setCurrentPlayerId: (id: string | null) => void;
   setActiveTeamId: (id: string | null) => void;
   setUserEmail: (email: string | null) => void;
+  setUserPhone: (phone: string | null) => void;
   setPendingTeamSelection: (teamIds: string[]) => void;
   clearPendingTeamSelection: () => void;
   switchTeam: (teamId: string) => void;
@@ -320,6 +321,7 @@ export const useTeamStore = create<TeamStore>()(
       setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
       setActiveTeamId: (id) => set({ activeTeamId: id }),
       setUserEmail: (email) => set({ userEmail: email }),
+      setUserPhone: (phone) => set({ userPhone: phone }),
       setPendingTeamSelection: (teamIds) => set({ pendingTeamIds: teamIds }),
       clearPendingTeamSelection: () => set({ pendingTeamIds: null }),
 
