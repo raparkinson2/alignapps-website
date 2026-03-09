@@ -265,13 +265,13 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {FEATURES.map((f, i) => {
             const c = colorClass(f.color as ColorKey);
             return (
               <div
                 key={i}
-                className={`p-6 rounded-2xl border border-white/[0.07] hover:border-white/[0.13] transition-all ${f.large ? 'lg:col-span-2' : ''}`}
+                className="p-6 rounded-2xl border border-white/[0.07] hover:border-white/[0.13] transition-all flex flex-col"
                 style={{ background: '#0f1a2e' }}
               >
                 <div className={`inline-flex w-11 h-11 rounded-xl items-center justify-center text-xl mb-4 border ${c.bg} ${c.border}`}>
