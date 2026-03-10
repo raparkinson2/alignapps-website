@@ -68,123 +68,190 @@ function CalendarView({
     weeks.push(week);
   }
 
-  const getItemsForDate = (date: Date): ScheduleItem[] => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const gameItems: ScheduleItem[] = games
-      .filter((g) => g.date === dateStr)
-      .map((g) => ({ kind: 'game', item: g, sortKey: `${g.date}T${g.time || '00:00'}` }));
-    const eventItems: ScheduleItem[] = events
-      .filter((e) => e.date === dateStr)
-      .map((e) => ({ kind: 'event', item: e, sortKey: `${e.date}T${e.time || '00:00'}` }));
-    return [...gameItems, ...eventItems].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  };
+  const getGamesForDate = (date: Date) =>
+    games.filter((g) => g.date === format(date, 'yyyy-MM-dd'));
+  const getPracticesForDate = (date: Date) =>
+    events.filter((e) => e.date === format(date, 'yyyy-MM-dd') && e.type === 'practice');
+  const getEventsForDate = (date: Date) =>
+    events.filter((e) => e.date === format(date, 'yyyy-MM-dd') && e.type !== 'practice');
 
-  const getDotColor = (item: ScheduleItem) => {
-    if (item.kind === 'game') return '#67e8f9';
-    if (item.item.type === 'practice') return '#f97316';
-    return '#3b82f6';
-  };
+  // Month summary counts
+  const gamesThisMonth = games.filter((g) => g.date.startsWith(format(viewMonth, 'yyyy-MM'))).length;
+  const practicesThisMonth = events.filter((e) => e.date.startsWith(format(viewMonth, 'yyyy-MM')) && e.type === 'practice').length;
+  const eventsThisMonth = events.filter((e) => e.date.startsWith(format(viewMonth, 'yyyy-MM')) && e.type !== 'practice').length;
+  const totalThisMonth = gamesThisMonth + practicesThisMonth + eventsThisMonth;
 
-  const selectedItems = selectedDate ? getItemsForDate(selectedDate) : [];
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Selected date items (for past dates, only show games)
+  const isSelectedDatePast = selectedDate ? selectedDate < today : false;
+  const selectedDateGames = selectedDate ? getGamesForDate(selectedDate) : [];
+  const selectedDatePractices = selectedDate && !isSelectedDatePast ? getPracticesForDate(selectedDate) : [];
+  const selectedDateEvents = selectedDate && !isSelectedDatePast ? getEventsForDate(selectedDate) : [];
+
+  const handleDateClick = (date: Date, hasItems: boolean) => {
+    if (!hasItems) return;
+    setSelectedDate(selectedDate && isSameDay(date, selectedDate) ? null : date);
+  };
 
   return (
     <div>
       {/* Month nav */}
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setViewMonth(subMonths(viewMonth, 1))} className="p-2 rounded-xl hover:bg-white/[0.05] text-slate-400 hover:text-slate-200 transition-all">
-          <ChevronLeft size={18} />
+      <div className="flex items-center justify-between mb-4 px-1">
+        <button onClick={() => { setViewMonth(subMonths(viewMonth, 1)); setSelectedDate(null); }} className="w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center text-[#67e8f9] hover:bg-slate-700/80 transition-all">
+          <ChevronLeft size={20} />
         </button>
-        <h2 className="text-base font-semibold text-slate-200">{format(viewMonth, 'MMMM yyyy')}</h2>
-        <button onClick={() => setViewMonth(addMonths(viewMonth, 1))} className="p-2 rounded-xl hover:bg-white/[0.05] text-slate-400 hover:text-slate-200 transition-all">
-          <ChevronRight size={18} />
+        <div className="text-center">
+          <h2 className="text-lg font-bold text-white">{format(viewMonth, 'MMMM yyyy')}</h2>
+          {totalThisMonth > 0 && (
+            <p className="text-xs text-slate-400 mt-0.5">
+              {gamesThisMonth > 0 && `${gamesThisMonth} game${gamesThisMonth !== 1 ? 's' : ''}`}
+              {gamesThisMonth > 0 && (practicesThisMonth > 0 || eventsThisMonth > 0) && ', '}
+              {practicesThisMonth > 0 && `${practicesThisMonth} practice${practicesThisMonth !== 1 ? 's' : ''}`}
+              {practicesThisMonth > 0 && eventsThisMonth > 0 && ', '}
+              {eventsThisMonth > 0 && `${eventsThisMonth} event${eventsThisMonth !== 1 ? 's' : ''}`}
+            </p>
+          )}
+        </div>
+        <button onClick={() => { setViewMonth(addMonths(viewMonth, 1)); setSelectedDate(null); }} className="w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center text-[#67e8f9] hover:bg-slate-700/80 transition-all">
+          <ChevronRight size={20} />
         </button>
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 mb-1">
+      <div className="grid grid-cols-7 mb-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-          <div key={d} className="text-center text-xs font-medium text-slate-500 py-1">{d}</div>
+          <div key={d} className="text-center text-xs font-semibold text-slate-500 py-2">{d}</div>
         ))}
       </div>
 
-      {/* Weeks */}
-      <div className="space-y-0.5">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7 gap-0.5">
-            {week.map((d, di) => {
-              const items = getItemsForDate(d);
-              const isToday = isSameDay(d, today);
-              const isSelected = selectedDate ? isSameDay(d, selectedDate) : false;
-              const inMonth = isSameMonth(d, viewMonth);
-              return (
-                <button
-                  key={di}
-                  onClick={() => setSelectedDate(isSelected ? null : d)}
-                  className={cn(
-                    'relative flex flex-col items-center py-2 rounded-xl transition-all text-xs',
-                    inMonth ? 'text-slate-200' : 'text-slate-600',
-                    isSelected ? 'bg-[#67e8f9]/15 ring-1 ring-[#67e8f9]/40' : 'hover:bg-white/[0.04]',
-                    isToday && !isSelected && 'bg-white/[0.05]'
-                  )}
-                >
-                  <span className={cn(
-                    'w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium',
-                    isToday ? 'bg-[#67e8f9] text-[#080c14] font-bold' : ''
-                  )}>
-                    {format(d, 'd')}
-                  </span>
-                  {items.length > 0 && (
-                    <div className="flex gap-0.5 mt-0.5">
-                      {items.slice(0, 3).map((item, ii) => (
-                        <span key={ii} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getDotColor(item) }} />
-                      ))}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7">
+        {weeks.flat().map((d, idx) => {
+          const dayGames = getGamesForDate(d);
+          const dayPractices = getPracticesForDate(d);
+          const dayEvents = getEventsForDate(d);
+          const isToday = isSameDay(d, new Date());
+          const isSelected = selectedDate ? isSameDay(d, selectedDate) : false;
+          const inMonth = isSameMonth(d, viewMonth);
+          const isPast = d < today;
+          const hasGames = dayGames.length > 0;
+          const hasPractices = !isPast && dayPractices.length > 0;
+          const hasEvents = !isPast && dayEvents.length > 0;
+          const hasItems = hasGames || hasPractices || hasEvents;
+
+          return (
+            <button
+              key={idx}
+              onClick={() => handleDateClick(d, hasItems)}
+              disabled={!hasItems && !(isToday)}
+              className={cn(
+                'relative flex flex-col items-center justify-center aspect-square p-0.5 transition-all',
+                !inMonth && 'opacity-30',
+                isPast && !hasItems && 'opacity-40 cursor-default',
+                !hasItems && !isToday && 'cursor-default',
+              )}
+            >
+              <div className={cn(
+                'w-full h-full rounded-xl flex flex-col items-center justify-center gap-0.5',
+                isSelected && 'bg-cyan-500/50 border-2 border-cyan-400',
+                !isSelected && isToday && !hasItems && 'border border-cyan-500/50',
+              )}>
+                <span className={cn(
+                  'text-sm font-semibold leading-none',
+                  isSelected && 'text-white',
+                  !isSelected && hasItems && 'text-white',
+                  !isSelected && !hasItems && isToday && 'text-[#67e8f9]',
+                  !isSelected && !hasItems && !isToday && 'text-slate-400',
+                )}>
+                  {format(d, 'd')}
+                </span>
+
+                {/* Indicator bars */}
+                {hasItems && (
+                  <div className="flex items-center gap-0.5 mt-0.5">
+                    {hasGames && (
+                      <span className={cn(
+                        'h-1.5 rounded-full',
+                        isSelected ? 'bg-cyan-400' : isPast ? 'bg-slate-500' : 'bg-emerald-500',
+                        dayGames.length === 1 ? 'w-4' : dayGames.length === 2 ? 'w-6' : 'w-8',
+                      )} />
+                    )}
+                    {hasPractices && (
+                      <span className={cn(
+                        'h-1.5 rounded-full',
+                        isSelected ? 'bg-cyan-400' : 'bg-orange-500',
+                        dayPractices.length === 1 ? 'w-4' : dayPractices.length === 2 ? 'w-6' : 'w-8',
+                      )} />
+                    )}
+                    {hasEvents && (
+                      <span className={cn(
+                        'h-1.5 rounded-full',
+                        isSelected ? 'bg-cyan-400' : 'bg-blue-500',
+                        dayEvents.length === 1 ? 'w-4' : dayEvents.length === 2 ? 'w-6' : 'w-8',
+                      )} />
+                    )}
+                  </div>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected date panel */}
+      {selectedDate && (selectedDateGames.length > 0 || selectedDateEvents.length > 0 || selectedDatePractices.length > 0) && (
+        <div className="mt-3">
+          <div className="flex justify-center mb-2">
+            <div className="w-px h-3 bg-cyan-500/40 rounded-full" />
           </div>
-        ))}
-      </div>
-
-      {/* Selected date items */}
-      {selectedDate && (
-        <div className="mt-4">
-          <p className="text-xs font-medium text-slate-400 mb-2">{format(selectedDate, 'EEEE, MMMM d')}</p>
-          {selectedItems.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-4">No events on this day</p>
-          ) : (
+          <div className="bg-slate-800/50 rounded-2xl p-3 border border-cyan-500/20">
+            <p className="text-cyan-300 font-semibold mb-3 text-sm">{format(selectedDate, 'EEEE, MMMM d')}</p>
             <div className="space-y-3">
-              {selectedItems.map((x) => {
-                if (x.kind === 'game') {
-                  return (
-                    <GameCard
-                      key={x.item.id}
-                      game={x.item}
-                      players={players}
-                      currentPlayerId={currentPlayerId}
-                      isAdmin={isAdmin}
-                      teamSettings={teamSettings}
-                      onEdit={onEditGame}
-                      onRsvp={onGameRsvp}
-                      onLineup={onLineup}
-                    />
-                  );
-                }
-                return (
-                  <EventCard
-                    key={x.item.id}
-                    event={x.item}
-                    currentPlayerId={currentPlayerId}
-                    isAdmin={isAdmin}
-                    onEdit={onEditEvent}
-                    onRsvp={onEventRsvp}
-                  />
-                );
-              })}
+              {selectedDateGames.map((game) => (
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  players={players}
+                  currentPlayerId={currentPlayerId}
+                  isAdmin={isAdmin}
+                  teamSettings={teamSettings}
+                  onEdit={onEditGame}
+                  onRsvp={onGameRsvp}
+                  onLineup={onLineup}
+                />
+              ))}
+              {selectedDatePractices.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  currentPlayerId={currentPlayerId}
+                  isAdmin={isAdmin}
+                  onEdit={onEditEvent}
+                  onRsvp={onEventRsvp}
+                />
+              ))}
+              {selectedDateEvents.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  currentPlayerId={currentPlayerId}
+                  isAdmin={isAdmin}
+                  onEdit={onEditEvent}
+                  onRsvp={onEventRsvp}
+                />
+              ))}
             </div>
-          )}
+          </div>
+        </div>
+      )}
+
+      {/* Nothing scheduled this month */}
+      {totalThisMonth === 0 && (
+        <div className="flex flex-col items-center py-8 text-slate-400">
+          <CalendarDays size={32} className="text-slate-600 mb-2" />
+          <p className="text-sm">Nothing scheduled this month</p>
         </div>
       )}
     </div>
@@ -204,7 +271,7 @@ export default function SchedulePage() {
   const declineEventAttendance = useTeamStore((s) => s.declineEventAttendance);
   const { isAdmin } = usePermissions();
 
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
   const [showAddGame, setShowAddGame] = useState(false);
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [showAddPractice, setShowAddPractice] = useState(false);
