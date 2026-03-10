@@ -5,8 +5,8 @@ import {
   ArrowLeftRight, CalendarOff, Link as LinkIcon, BarChart3, TrendingUp,
   Plus, Trash2, X, Bell, BellRing, Mail, HelpCircle, Lightbulb,
   Bug, FileText, ChevronRight, Check, ExternalLink, LogOut,
-  RefreshCw, UserPlus, Globe, UserCheck, Trophy, Calendar,
-  Minus,
+  UserPlus, Globe, UserCheck, Trophy, Calendar,
+  CheckCircle2, Send, ShieldCheck, Eye,
 } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -580,40 +580,509 @@ function NotificationsPage({ player, activeTeamId, onBack }: { player: Player; a
 
 // ── Email Team ─────────────────────────────────────────────────────────────────
 
-function EmailTeamModal({ isOpen, onClose, players }: { isOpen: boolean; onClose: () => void; players: Player[] }) {
+function EmailTeamModal({ isOpen, onClose, players, teamName }: { isOpen: boolean; onClose: () => void; players: Player[]; teamName: string }) {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const emails = players.filter(p => p.status === 'active' && p.email).map(p => p.email!).join(',');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const handleOpen = () => {
-    window.open(`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-    onClose();
+  const playersWithEmail = players.filter(p => p.email && p.email.trim());
+  const allSelected = playersWithEmail.length > 0 && selectedIds.length === playersWithEmail.length;
+
+  const toggleAll = () => setSelectedIds(allSelected ? [] : playersWithEmail.map(p => p.id));
+  const toggle = (id: string) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const handleSend = async () => {
+    if (!subject.trim() || !body.trim() || selectedIds.length === 0) return;
+    setSending(true);
+    try {
+      const recipientEmails = players.filter(p => selectedIds.includes(p.id) && p.email).map(p => p.email as string);
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/send-team-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
+        body: JSON.stringify({ to: recipientEmails, subject: subject.trim(), body: body.trim(), teamName }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setSent(true);
+      setTimeout(() => { setSent(false); onClose(); setSubject(''); setBody(''); setSelectedIds([]); }, 1800);
+    } catch {
+      // fallback: open mailto
+      const emails = players.filter(p => selectedIds.includes(p.id) && p.email).map(p => p.email!).join(',');
+      window.open(`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+      onClose(); setSubject(''); setBody(''); setSelectedIds([]);
+    }
+    setSending(false);
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Email Team" size="md">
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Subject</label>
-          <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Team announcement..." className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm" />
+      {sent ? (
+        <div className="flex flex-col items-center py-8 gap-3">
+          <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+            <CheckCircle2 size={32} className="text-green-400" />
+          </div>
+          <p className="text-white font-semibold">Email sent!</p>
+          <p className="text-slate-400 text-sm">Your message was sent to {selectedIds.length} player{selectedIds.length !== 1 ? 's' : ''}</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Message</label>
-          <textarea rows={4} value={body} onChange={e => setBody(e.target.value)} placeholder="Write your message..." className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm resize-none" />
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Subject</label>
+            <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Team announcement..." className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Message</label>
+            <textarea rows={4} value={body} onChange={e => setBody(e.target.value)} placeholder="Write your message..." className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm resize-none" />
+          </div>
+
+          {/* Recipients */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-slate-300">Recipients</label>
+              <button onClick={toggleAll} className="text-xs text-[#67e8f9] hover:opacity-80">
+                {allSelected ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+            <div className="bg-white/[0.03] border border-white/[0.07] rounded-xl overflow-hidden max-h-44 overflow-y-auto">
+              {playersWithEmail.map((p, i) => (
+                <button key={p.id} onClick={() => toggle(p.id)}
+                  className={cn('w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-white/[0.04] transition-colors', i < playersWithEmail.length - 1 && 'border-b border-white/[0.05]')}
+                >
+                  <div className={cn('w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0', selectedIds.includes(p.id) ? 'bg-[#67e8f9] border-[#67e8f9]' : 'border-slate-600')}>
+                    {selectedIds.includes(p.id) && <Check size={11} className="text-[#080c14]" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm text-slate-200 font-medium">{p.firstName} {p.lastName}</p>
+                    <p className="text-xs text-slate-500 truncate">{p.email}</p>
+                  </div>
+                </button>
+              ))}
+              {playersWithEmail.length === 0 && <p className="text-slate-500 text-xs text-center py-4">No players have email addresses on file</p>}
+            </div>
+            <p className="text-xs text-slate-600 mt-1.5">{selectedIds.length} of {playersWithEmail.length} selected</p>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl px-3 py-2.5">
+            <p className="text-blue-400 text-xs">Emails will be sent from noreply@alignapps.com</p>
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 text-sm font-medium hover:text-slate-200 transition-all">Cancel</button>
+            <button onClick={handleSend} disabled={sending || !subject.trim() || !body.trim() || selectedIds.length === 0}
+              className="flex-1 py-2.5 rounded-xl bg-[#67e8f9] text-[#080c14] font-bold text-sm hover:bg-[#67e8f9]/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+              <Send size={14} />
+              {sending ? 'Sending...' : 'Send Email'}
+            </button>
+          </div>
         </div>
-        <p className="text-xs text-slate-500">Opens your email client to send to {players.filter(p => p.status === 'active' && p.email).length} active players.</p>
-        <div className="flex gap-3 pt-1">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 text-sm font-medium hover:text-slate-200 transition-all">Cancel</button>
-          <button onClick={handleOpen} className="flex-1 py-2.5 rounded-xl bg-[#67e8f9] text-[#080c14] font-bold text-sm hover:bg-[#67e8f9]/90 transition-all">Open Email Client</button>
+      )}
+    </Modal>
+  );
+}
+
+// ── Notifications ──────────────────────────────────────────────────────────────
+
+function NotificationsViewPage({ onBack }: { onBack: () => void }) {
+  const notifications = useTeamStore((s) => s.notifications);
+  const markNotificationRead = useTeamStore((s) => s.markNotificationRead);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+
+  const myNotifications = notifications.filter(n => n.toPlayerId === currentPlayerId);
+  const unreadCount = myNotifications.filter(n => !n.read).length;
+
+  const handleMarkAllRead = () => myNotifications.forEach(n => { if (!n.read) markNotificationRead(n.id); });
+
+  const getIcon = (type: string) => {
+    if (type === 'game_invite') return <Calendar size={18} className="text-green-400" />;
+    if (type === 'game_reminder') return <BellRing size={18} className="text-amber-400" />;
+    return <Bell size={18} className="text-[#67e8f9]" />;
+  };
+
+  const getBg = (type: string, read: boolean) => {
+    if (read) return 'bg-slate-800/40 border-slate-700/30';
+    if (type === 'game_invite') return 'bg-green-500/10 border-slate-700/50';
+    if (type === 'game_reminder') return 'bg-amber-500/10 border-slate-700/50';
+    return 'bg-[#67e8f9]/10 border-slate-700/50';
+  };
+
+  return (
+    <div className="max-w-lg mx-auto">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all">
+            <ChevronRight size={18} className="rotate-180" />
+          </button>
+          <h1 className="text-xl font-bold text-slate-100">Notifications</h1>
+        </div>
+        {unreadCount > 0 && (
+          <button onClick={handleMarkAllRead} className="flex items-center gap-1.5 text-xs text-green-400 hover:text-green-300 transition-colors">
+            <CheckCircle2 size={14} />Mark all read
+          </button>
+        )}
+      </div>
+
+      {myNotifications.length === 0 ? (
+        <div className="flex flex-col items-center py-16 gap-3">
+          <div className="w-20 h-20 rounded-full bg-slate-800/50 flex items-center justify-center">
+            <Bell size={36} className="text-slate-600" />
+          </div>
+          <p className="text-slate-400 font-medium">No notifications yet</p>
+          <p className="text-slate-500 text-sm text-center">You&apos;ll see game invites and reminders here</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {unreadCount > 0 && <p className="text-[#67e8f9] text-sm font-semibold px-1">{unreadCount} new notification{unreadCount !== 1 ? 's' : ''}</p>}
+          {myNotifications.map(n => (
+            <button key={n.id} onClick={() => markNotificationRead(n.id)}
+              className={cn('w-full flex items-start gap-3 p-4 rounded-xl border text-left transition-all hover:brightness-110', getBg(n.type, n.read))}
+            >
+              <div className={cn('p-2 rounded-full shrink-0', n.read ? 'bg-slate-700/50' : 'bg-slate-800/80')}>
+                {getIcon(n.type)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-0.5">
+                  <p className={cn('text-sm font-semibold', n.read ? 'text-slate-400' : 'text-white')}>{n.title}</p>
+                  {!n.read && <div className="w-2 h-2 rounded-full bg-[#67e8f9] shrink-0" />}
+                </div>
+                <p className={cn('text-xs mb-1', n.read ? 'text-slate-500' : 'text-slate-300')}>{n.message}</p>
+                <p className="text-xs text-slate-600">{new Date(n.createdAt).toLocaleDateString('default', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Create New Team ────────────────────────────────────────────────────────────
+
+function CreateTeamPage({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="max-w-lg mx-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all">
+          <ChevronRight size={18} className="rotate-180" />
+        </button>
+        <h1 className="text-xl font-bold text-slate-100">Create New Team</h1>
+      </div>
+
+      <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl p-6 text-center mb-5">
+        <div className="w-16 h-16 rounded-full bg-[#67e8f9]/10 flex items-center justify-center mx-auto mb-4">
+          <UserPlus size={28} className="text-[#67e8f9]" />
+        </div>
+        <h2 className="text-white font-bold text-lg mb-2">Start a New Team</h2>
+        <p className="text-slate-400 text-sm leading-relaxed mb-6">
+          Creating a new team requires signing up for a separate team account. You can manage multiple teams and switch between them in the app.
+        </p>
+        <a
+          href="https://alignapps.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#67e8f9] text-[#080c14] font-bold text-sm hover:bg-[#67e8f9]/90 transition-all"
+        >
+          <ExternalLink size={15} />
+          Create Team on AlignApps.com
+        </a>
+      </div>
+
+      <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl p-4">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Already created a team?</p>
+        <p className="text-slate-400 text-sm leading-relaxed">
+          If you&apos;ve already created a new team, sign in with your new team credentials or ask your admin to add you. Once added, you&apos;ll be able to switch between teams from the More tab.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── FAQs ───────────────────────────────────────────────────────────────────────
+
+function FAQsPage({ onBack }: { onBack: () => void }) {
+  const faqs = [
+    { q: 'How do I check in for a game?', a: 'Go to the Schedule tab, tap on the game you want to check in for, then tap the check-in button next to your name. You can mark yourself as "In" or "Out".' },
+    { q: 'How do I set my unavailable dates?', a: "Go to More → My Availability. Here you can select dates when you'll be unavailable. The app will automatically check you out for any games or practices that fall on your unavailable dates." },
+    { q: 'How do I create a poll?', a: 'Go to More → Team Polls and tap the "+" button. You can create single or multiple choice polls, set deadlines, and notify team members.' },
+    { q: "What's the difference between roles?", a: 'Admins have full access to all features including payments and player management. Coaches can edit player profiles and stats. Captains can manage games and lineups. Parents have view-only access to schedule, roster, and payments.' },
+    { q: 'How do I switch between teams?', a: "If you're on multiple teams, go to More → Switch Team. You'll see all teams you belong to and can tap to switch between them." },
+    { q: 'How do I delete my account?', a: 'Contact support at rob@alignapps.com to request account deletion. This action is permanent and cannot be undone.' },
+  ];
+
+  return (
+    <div className="max-w-lg mx-auto">
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all">
+          <ChevronRight size={18} className="rotate-180" />
+        </button>
+        <h1 className="text-xl font-bold text-slate-100">FAQs</h1>
+      </div>
+      <div className="space-y-3">
+        {faqs.map((faq, i) => (
+          <div key={i} className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl p-4">
+            <p className="text-green-400 font-semibold text-sm mb-2">{faq.q}</p>
+            <p className="text-slate-400 text-sm leading-relaxed">{faq.a}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Feature Request ────────────────────────────────────────────────────────────
+
+function FeatureRequestPage({ currentPlayer, onBack }: { currentPlayer: Player | null; onBack: () => void }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [reason, setReason] = useState('');
+  const [email, setEmail] = useState(currentPlayer?.email ?? '');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !description.trim() || !reason.trim()) return;
+    setSubmitting(true);
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/send-team-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
+        body: JSON.stringify({
+          to: ['rob@alignapps.com'],
+          subject: `Feature Request: ${title.trim()}`,
+          body: `Title: ${title.trim()}\n\nDescription:\n${description.trim()}\n\nReason:\n${reason.trim()}\n\nContact: ${email.trim() || 'Not provided'}`,
+          teamName: 'Align Sports Web',
+        }),
+      });
+      setSubmitted(true);
+      setTitle(''); setDescription(''); setReason('');
+    } catch { /* silent */ }
+    setSubmitting(false);
+  };
+
+  if (submitted) {
+    return (
+      <div className="max-w-lg mx-auto">
+        <div className="flex items-center gap-3 mb-5">
+          <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all"><ChevronRight size={18} className="rotate-180" /></button>
+          <h1 className="text-xl font-bold text-slate-100">Feature Request</h1>
+        </div>
+        <div className="flex flex-col items-center py-16 gap-4">
+          <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+            <CheckCircle2 size={32} className="text-green-400" />
+          </div>
+          <p className="text-white font-bold text-lg">Request submitted!</p>
+          <p className="text-slate-400 text-sm text-center">Thanks for your suggestion. We&apos;ll review it and get back to you.</p>
+          <button onClick={() => setSubmitted(false)} className="mt-2 px-5 py-2.5 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] text-sm font-medium hover:bg-[#67e8f9]/20 transition-all">Submit Another</button>
         </div>
       </div>
-    </Modal>
+    );
+  }
+
+  return (
+    <div className="max-w-lg mx-auto">
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all"><ChevronRight size={18} className="rotate-180" /></button>
+        <h1 className="text-xl font-bold text-slate-100">Feature Request</h1>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Title *</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} maxLength={100} placeholder="Brief title for your request" className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Description *</label>
+          <textarea rows={4} value={description} onChange={e => setDescription(e.target.value)} maxLength={1000} placeholder="Describe the feature in detail..." className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm resize-none" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Why would this help? *</label>
+          <textarea rows={3} value={reason} onChange={e => setReason(e.target.value)} placeholder="Explain why this feature would be useful..." className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm resize-none" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Contact Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm" />
+        </div>
+        <button onClick={handleSubmit} disabled={submitting || !title.trim() || !description.trim() || !reason.trim()}
+          className="w-full py-3 rounded-xl bg-[#67e8f9] text-[#080c14] font-bold text-sm hover:bg-[#67e8f9]/90 transition-all disabled:opacity-50">
+          {submitting ? 'Submitting...' : 'Submit Request'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Report Bug ─────────────────────────────────────────────────────────────────
+
+function ReportBugPage({ currentPlayer, onBack }: { currentPlayer: Player | null; onBack: () => void }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [steps, setSteps] = useState('');
+  const [email, setEmail] = useState(currentPlayer?.email ?? '');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !description.trim()) return;
+    setSubmitting(true);
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/send-team-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
+        body: JSON.stringify({
+          to: ['rob@alignapps.com'],
+          subject: `Bug Report: ${title.trim()}`,
+          body: `Title: ${title.trim()}\n\nDescription:\n${description.trim()}\n\nSteps to Reproduce:\n${steps.trim() || 'Not provided'}\n\nPlatform: Web\nContact: ${email.trim() || 'Not provided'}`,
+          teamName: 'Align Sports Web',
+        }),
+      });
+      setSubmitted(true);
+      setTitle(''); setDescription(''); setSteps('');
+    } catch { /* silent */ }
+    setSubmitting(false);
+  };
+
+  if (submitted) {
+    return (
+      <div className="max-w-lg mx-auto">
+        <div className="flex items-center gap-3 mb-5">
+          <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all"><ChevronRight size={18} className="rotate-180" /></button>
+          <h1 className="text-xl font-bold text-slate-100">Report Bug</h1>
+        </div>
+        <div className="flex flex-col items-center py-16 gap-4">
+          <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+            <CheckCircle2 size={32} className="text-green-400" />
+          </div>
+          <p className="text-white font-bold text-lg">Bug reported!</p>
+          <p className="text-slate-400 text-sm text-center">Thanks for letting us know. We&apos;ll look into it.</p>
+          <button onClick={() => setSubmitted(false)} className="mt-2 px-5 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm font-medium hover:bg-rose-500/20 transition-all">Report Another</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-lg mx-auto">
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all"><ChevronRight size={18} className="rotate-180" /></button>
+        <h1 className="text-xl font-bold text-slate-100">Report Bug</h1>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Bug Title *</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief description of the bug" className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/40 text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">What happened? *</label>
+          <textarea rows={4} value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe what went wrong..." className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/40 text-sm resize-none" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Steps to reproduce</label>
+          <textarea rows={3} value={steps} onChange={e => setSteps(e.target.value)} placeholder="1. Go to...\n2. Click...\n3. See error" className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/40 text-sm resize-none" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Contact Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/40 text-sm" />
+        </div>
+        <button onClick={handleSubmit} disabled={submitting || !title.trim() || !description.trim()}
+          className="w-full py-3 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-500/90 transition-all disabled:opacity-50">
+          {submitting ? 'Sending...' : 'Submit Bug Report'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Notices ────────────────────────────────────────────────────────────────────
+
+function NoticesPage({ onBack }: { onBack: () => void }) {
+  const [permOpen, setPermOpen] = useState(false);
+  const [privOpen, setPrivOpen] = useState(false);
+
+  const permSections = [
+    { color: 'text-purple-400', title: 'Admin Only', items: ['Access Admin Panel', 'Create & delete payment periods', 'Connect Stripe', 'Delete the team'] },
+    { color: 'text-blue-400', title: 'Admin + Coach', items: ['Edit player profiles', 'Manage player stats', 'Add/remove players from roster'] },
+    { color: 'text-[#67e8f9]', title: 'Admin + Captain + Coach', items: ['Add/edit games and events', 'Set lineups', 'Send invites', 'Create team links & polls', 'Email team'] },
+    { color: 'text-slate-300', title: 'All Players', items: ['View schedule', 'Check in/out of games', 'View roster', 'Participate in polls', 'View team links'] },
+    { color: 'text-amber-400', title: 'Parents (View Only)', items: ['View schedule', 'View roster', 'View payment status', 'No access to Admin Panel'] },
+  ];
+
+  return (
+    <div className="max-w-lg mx-auto">
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={onBack} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all"><ChevronRight size={18} className="rotate-180" /></button>
+        <h1 className="text-xl font-bold text-slate-100">Notices</h1>
+      </div>
+      <div className="space-y-3">
+        {/* Permissions */}
+        <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl overflow-hidden">
+          <button onClick={() => setPermOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-4 hover:bg-white/[0.03] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#a78bfa]/10 flex items-center justify-center">
+                <ShieldCheck size={18} className="text-[#a78bfa]" />
+              </div>
+              <p className="text-sm font-semibold text-slate-100">Permissions Breakdown</p>
+            </div>
+            <ChevronRight size={16} className={cn('text-slate-600 transition-transform', permOpen && 'rotate-90')} />
+          </button>
+          {permOpen && (
+            <div className="px-4 pb-4 border-t border-white/[0.05] pt-3 space-y-4">
+              {permSections.map(s => (
+                <div key={s.title}>
+                  <p className={cn('text-sm font-semibold mb-1.5', s.color)}>{s.title}</p>
+                  <ul className="space-y-1">
+                    {s.items.map(item => (
+                      <li key={item} className="text-xs text-slate-400 flex items-center gap-2">
+                        <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />{item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Privacy Policy */}
+        <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl overflow-hidden">
+          <button onClick={() => setPrivOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-4 hover:bg-white/[0.03] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#67e8f9]/10 flex items-center justify-center">
+                <Eye size={18} className="text-[#67e8f9]" />
+              </div>
+              <p className="text-sm font-semibold text-slate-100">Privacy Policy</p>
+            </div>
+            <ChevronRight size={16} className={cn('text-slate-600 transition-transform', privOpen && 'rotate-90')} />
+          </button>
+          {privOpen && (
+            <div className="px-4 pb-4 border-t border-white/[0.05] pt-3 space-y-3 text-xs text-slate-400 leading-relaxed">
+              <p className="text-[#67e8f9] font-bold text-sm">ALIGN Sports Privacy Policy</p>
+              <p className="text-slate-500 text-[11px]">Effective Date: January 1, 2025</p>
+              <p>ALIGN Sports (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;), operated by ALIGN Apps, provides a team management platform that allows users to manage schedules, track availability, send invites, post announcements, and communicate within teams (the &quot;Services&quot;).</p>
+              <p>This Privacy Policy explains how we collect, use, disclose, store, and protect information when you use the ALIGN Sports application.</p>
+              <p className="font-semibold text-slate-300">Information We Collect</p>
+              <p>We collect information you provide directly (name, email, phone, jersey number), team data (schedules, attendance, payments), and usage data to improve the app.</p>
+              <p className="font-semibold text-slate-300">How We Use Your Information</p>
+              <p>We use your information to provide and improve our services, send notifications, process payments via Stripe, and communicate with you about your team.</p>
+              <p className="font-semibold text-slate-300">Data Security</p>
+              <p>We use industry-standard security measures. Payment data is handled exclusively by Stripe (PCI-DSS Level 1 certified). We never store card numbers or CVVs.</p>
+              <p className="font-semibold text-slate-300">Contact</p>
+              <p>For privacy questions, contact us at <span className="text-[#67e8f9]">rob@alignapps.com</span></p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-type Tab = 'home' | 'availability' | 'links' | 'polls' | 'stats' | 'notifications';
+type Tab = 'home' | 'availability' | 'links' | 'polls' | 'stats' | 'notifications' | 'notif-view' | 'create-team' | 'faqs' | 'feature-request' | 'report-bug' | 'notices';
 
 export default function MorePage() {
   const players = useTeamStore((s) => s.players);
@@ -628,7 +1097,8 @@ export default function MorePage() {
   const teamLinks = useTeamStore((s) => s.teamLinks);
   const setTeamLinks = useTeamStore((s) => s.setTeamLinks);
   const logout = useTeamStore((s) => s.logout);
-  const { isAdmin, canManage } = usePermissions();
+  const notifications = useTeamStore((s) => s.notifications);
+  const { isAdmin } = usePermissions();
   const router = useRouter();
 
   const currentPlayer = players.find(p => p.id === currentPlayerId) ?? null;
@@ -636,6 +1106,7 @@ export default function MorePage() {
   const [showEmailTeam, setShowEmailTeam] = useState(false);
 
   const otherTeams = useMemo(() => teams.filter(t => t.id !== activeTeamId), [teams, activeTeamId]);
+  const unreadCount = notifications.filter(n => n.toPlayerId === currentPlayerId && !n.read).length;
 
   const handleSignOut = async () => {
     await signOut();
@@ -649,6 +1120,12 @@ export default function MorePage() {
   if (tab === 'polls') return <TeamPollsPage activeTeamId={activeTeamId} currentPlayerId={currentPlayerId} isAdmin={isAdmin} polls={polls} setPolls={setPolls} onBack={() => setTab('home')} />;
   if (tab === 'stats') return <StatsAnalyticsPage teamSettings={teamSettings} onBack={() => setTab('home')} />;
   if (tab === 'notifications' && currentPlayer) return <NotificationsPage player={currentPlayer} activeTeamId={activeTeamId} onBack={() => setTab('home')} />;
+  if (tab === 'notif-view') return <NotificationsViewPage onBack={() => setTab('home')} />;
+  if (tab === 'create-team') return <CreateTeamPage onBack={() => setTab('home')} />;
+  if (tab === 'faqs') return <FAQsPage onBack={() => setTab('home')} />;
+  if (tab === 'feature-request') return <FeatureRequestPage currentPlayer={currentPlayer} onBack={() => setTab('home')} />;
+  if (tab === 'report-bug') return <ReportBugPage currentPlayer={currentPlayer} onBack={() => setTab('home')} />;
+  if (tab === 'notices') return <NoticesPage onBack={() => setTab('home')} />;
 
   // Build link sub-text dynamically
   const linksSubText = teamLinks.length > 0 ? `${teamLinks.length} link${teamLinks.length !== 1 ? 's' : ''}` : 'Add useful links for your team';
@@ -672,10 +1149,9 @@ export default function MorePage() {
 
       {/* TEAM section */}
       <SectionCard title="Team">
-        {/* Switch Team — only show if on multiple teams */}
         {otherTeams.length > 0 && (
           <>
-            {otherTeams.map((team, i) => (
+            {otherTeams.map((team) => (
               <MenuItem
                 key={team.id}
                 icon={ArrowLeftRight}
@@ -688,121 +1164,31 @@ export default function MorePage() {
             ))}
           </>
         )}
-        <MenuItem
-          icon={CalendarOff}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="My Availability"
-          sub="Set dates you're unavailable"
-          onClick={() => setTab('availability')}
-        />
-        <MenuItem
-          icon={LinkIcon}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="Team Links"
-          sub={linksSubText}
-          onClick={() => setTab('links')}
-        />
-        <MenuItem
-          icon={BarChart3}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="Team Polls"
-          sub={pollsSubText}
-          onClick={() => setTab('polls')}
-        />
-        <MenuItem
-          icon={TrendingUp}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="Stats and Analytics"
-          sub="Attendance and team statistics"
-          onClick={() => setTab('stats')}
-        />
-        <MenuItem
-          icon={UserPlus}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="Create New Team"
-          sub="Start a new team"
-          href="https://alignapps.com"
-          last
-        />
+        <MenuItem icon={CalendarOff} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="My Availability" sub="Set dates you're unavailable" onClick={() => setTab('availability')} />
+        <MenuItem icon={LinkIcon} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Links" sub={linksSubText} onClick={() => setTab('links')} />
+        <MenuItem icon={BarChart3} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Polls" sub={pollsSubText} onClick={() => setTab('polls')} />
+        <MenuItem icon={TrendingUp} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Stats and Analytics" sub="Attendance and team statistics" onClick={() => setTab('stats')} />
+        <MenuItem icon={UserPlus} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Create New Team" sub="Start a new team" onClick={() => setTab('create-team')} last />
       </SectionCard>
 
       {/* COMMUNICATION & ALERTS section */}
       <SectionCard title="Communication &amp; Alerts">
-        <MenuItem
-          icon={Bell}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="Notifications"
-          sub="Game invites &amp; reminders"
-          onClick={() => router.push('/app/more')}
-        />
-        <MenuItem
-          icon={BellRing}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="Notification Settings"
-          sub="Manage push notification preferences"
-          onClick={() => setTab('notifications')}
-        />
-        <MenuItem
-          icon={Mail}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="Email Team"
-          sub="Send an email to all players"
-          onClick={() => setShowEmailTeam(true)}
-          last
-        />
+        <MenuItem icon={Bell} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Notifications" sub="Game invites &amp; reminders" badge={unreadCount} onClick={() => setTab('notif-view')} />
+        <MenuItem icon={BellRing} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Notification Settings" sub="Manage push notification preferences" onClick={() => setTab('notifications')} />
+        <MenuItem icon={Mail} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Email Team" sub="Send an email to all players" onClick={() => setShowEmailTeam(true)} last />
       </SectionCard>
 
       {/* SUPPORT section */}
       <SectionCard title="Support">
-        <MenuItem
-          icon={HelpCircle}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="FAQs"
-          sub="Frequently asked questions"
-          href="https://alignapps.com/faq"
-        />
-        <MenuItem
-          icon={Lightbulb}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="Feature Request"
-          sub="Suggest a new feature"
-          href="https://alignapps.com/feature-request"
-        />
-        <MenuItem
-          icon={Bug}
-          iconBg="bg-rose-500/10"
-          iconColor="text-rose-400"
-          label="Report Bug"
-          sub="Let us know about issues"
-          href="https://alignapps.com/bug-report"
-        />
-        <MenuItem
-          icon={FileText}
-          iconBg="bg-[#67e8f9]/10"
-          iconColor="text-[#67e8f9]"
-          label="Notices"
-          sub="Policies and additional information"
-          href="https://alignapps.com/notices"
-          last
-        />
+        <MenuItem icon={HelpCircle} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="FAQs" sub="Frequently asked questions" onClick={() => setTab('faqs')} />
+        <MenuItem icon={Lightbulb} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Feature Request" sub="Suggest a new feature" onClick={() => setTab('feature-request')} />
+        <MenuItem icon={Bug} iconBg="bg-rose-500/10" iconColor="text-rose-400" label="Report Bug" sub="Let us know about issues" onClick={() => setTab('report-bug')} />
+        <MenuItem icon={FileText} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Notices" sub="Policies and additional information" onClick={() => setTab('notices')} last />
       </SectionCard>
 
       {/* Sign Out */}
       <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl overflow-hidden mb-6">
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-4 py-4 hover:bg-rose-500/[0.04] transition-colors text-left"
-        >
+        <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-4 hover:bg-rose-500/[0.04] transition-colors text-left">
           <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center shrink-0">
             <LogOut size={20} className="text-rose-400" />
           </div>
@@ -812,7 +1198,7 @@ export default function MorePage() {
 
       <p className="text-center text-xs text-slate-700 pb-6">AlignApps © {new Date().getFullYear()}</p>
 
-      <EmailTeamModal isOpen={showEmailTeam} onClose={() => setShowEmailTeam(false)} players={players} />
+      <EmailTeamModal isOpen={showEmailTeam} onClose={() => setShowEmailTeam(false)} players={players} teamName={teamName} />
     </div>
   );
 }
