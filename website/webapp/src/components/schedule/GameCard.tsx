@@ -129,11 +129,11 @@ export default function GameCard({
       <div className="flex items-center gap-4 mb-3">
         <span className="flex items-center gap-1.5 text-xs text-[#22c55e]">
           <CheckCircle2 size={13} />
-          {inCount} IN
+          {inCount} In
         </span>
         <span className="flex items-center gap-1.5 text-xs text-rose-400">
           <XCircle size={13} />
-          {outCount} OUT
+          {outCount} Out
         </span>
         {(game.invitedPlayers?.length ?? 0) > inCount + outCount && (
           <span className="text-xs text-slate-500">
@@ -154,7 +154,7 @@ export default function GameCard({
                 : 'bg-white/[0.03] border-white/10 text-slate-400 hover:border-[#22c55e]/40 hover:text-[#22c55e]'
             )}
           >
-            IN
+            In
           </button>
           <button
             onClick={() => onRsvp?.(game.id, 'out')}
@@ -165,7 +165,7 @@ export default function GameCard({
                 : 'bg-white/[0.03] border-white/10 text-slate-400 hover:border-rose-500/40 hover:text-rose-400'
             )}
           >
-            OUT
+            Out
           </button>
         </div>
       )}

@@ -87,11 +87,11 @@ export default function EventCard({
       <div className="flex items-center gap-4 mb-3">
         <span className="flex items-center gap-1.5 text-xs text-[#22c55e]">
           <CheckCircle2 size={13} />
-          {confirmedCount} IN
+          {confirmedCount} In
         </span>
         <span className="flex items-center gap-1.5 text-xs text-rose-400">
           <XCircle size={13} />
-          {declinedCount} OUT
+          {declinedCount} Out
         </span>
       </div>
 
@@ -107,7 +107,7 @@ export default function EventCard({
                 : 'bg-white/[0.03] border-white/10 text-slate-400 hover:border-[#22c55e]/40 hover:text-[#22c55e]'
             )}
           >
-            IN
+            In
           </button>
           <button
             onClick={() => onRsvp?.(event.id, 'declined')}
@@ -118,7 +118,7 @@ export default function EventCard({
                 : 'bg-white/[0.03] border-white/10 text-slate-400 hover:border-rose-500/40 hover:text-rose-400'
             )}
           >
-            OUT
+            Out
           </button>
         </div>
       )}
