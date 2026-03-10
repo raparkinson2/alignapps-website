@@ -191,31 +191,90 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* Payment periods */}
-      {paymentPeriods.length === 0 ? (
-        <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl p-8 text-center mb-6">
-          <p className="text-slate-400 text-sm">No payment periods yet</p>
-          {isAdmin && (
-            <p className="text-slate-500 text-xs mt-1">Add a period to track payments</p>
+      {/* Stripe Setup — admin only */}
+      {isAdmin && (
+        <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl p-5 mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 rounded-xl bg-[#635BFF]/10 flex items-center justify-center shrink-0">
+              <CreditCard size={17} className="text-[#635BFF]" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-200">Stripe Payments</h2>
+              <p className="text-xs text-slate-500">Accept payments directly in the app</p>
+            </div>
+          </div>
+
+          {isStripeConnected ? (
+            <div className="flex items-center gap-2 bg-[#22c55e]/10 border border-[#22c55e]/20 rounded-xl px-3 py-2.5 mb-4">
+              <CheckCircle2 size={15} className="text-[#22c55e] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[#22c55e]">Stripe Connected</p>
+                <p className="text-xs text-slate-400 truncate">{teamSettings.stripeAccountId}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5">
+                <AlertCircle size={15} className="text-amber-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-400">Setup Required</p>
+                  <p className="text-xs text-slate-400">Connect a Stripe account to accept payments in the app</p>
+                </div>
+              </div>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5">
+                <p className="text-xs text-slate-400">To set up Stripe payments, go to the <span className="text-[#67e8f9]">Admin panel</span> and connect your Stripe account from there.</p>
+              </div>
+            </div>
           )}
-        </div>
-      ) : (
-        <div className="space-y-3 mb-6">
-          {paymentPeriods.map((period) => (
-            <PaymentPeriodCard
-              key={period.id}
-              period={period}
-              players={activePlayers}
-              teamSettings={teamSettings}
-              isAdmin={isAdmin}
-            />
-          ))}
+
+          <div className="space-y-2 my-4">
+            {[
+              { label: 'Players pay dues directly in the app', sub: 'No more chasing payments' },
+              { label: 'Funds deposited to your bank account', sub: 'Via your connected Stripe account' },
+              { label: 'Stripe processing fee: 2.9% + 30¢', sub: 'Per transaction, billed by Stripe' },
+              { label: 'Platform fee: 0.5% per transaction', sub: '' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <Zap size={12} className="text-[#635BFF] shrink-0 mt-1" />
+                <div>
+                  <p className="text-xs text-slate-300">{item.label}</p>
+                  {item.sub && <p className="text-xs text-slate-500">{item.sub}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {stripeError && (
+            <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl p-2.5 mb-3">{stripeError}</p>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleStripeConnect}
+              disabled={stripeLoading}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all',
+                'bg-[#635BFF] text-white hover:bg-[#635BFF]/90 disabled:opacity-60'
+              )}
+            >
+              <ExternalLink size={14} />
+              {stripeLoading ? 'Loading...' : isStripeConnected ? 'Re-connect Stripe' : 'Connect with Stripe'}
+            </button>
+            {isStripeConnected && (
+              <button
+                onClick={handleStripeDisconnect}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-all"
+              >
+                Disconnect
+              </button>
+            )}
+          </div>
         </div>
       )}
 
       {/* Payment Methods — admin only */}
       {isAdmin && (
-        <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl p-5 mb-4">
+        <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl p-5 mb-6">
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Payment Methods</h2>
           <div className="space-y-2 mb-3">
             {(teamSettings.paymentMethods ?? []).length === 0 && (
@@ -261,79 +320,25 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* Stripe Setup — admin only */}
-      {isAdmin && (
-        <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-[#635BFF]/10 flex items-center justify-center shrink-0">
-              <CreditCard size={17} className="text-[#635BFF]" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-slate-200">Stripe Payments</h2>
-              <p className="text-xs text-slate-500">Accept payments directly in the app</p>
-            </div>
-          </div>
-
-          {isStripeConnected ? (
-            <div className="flex items-center gap-2 bg-[#22c55e]/10 border border-[#22c55e]/20 rounded-xl px-3 py-2.5 mb-4">
-              <CheckCircle2 size={15} className="text-[#22c55e] shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#22c55e]">Stripe Connected</p>
-                <p className="text-xs text-slate-400 truncate">{teamSettings.stripeAccountId}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5 mb-4">
-              <AlertCircle size={15} className="text-amber-400 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-amber-400">Setup Required</p>
-                <p className="text-xs text-slate-400">Connect a Stripe account to accept payments</p>
-              </div>
-            </div>
+      {/* Payment periods */}
+      {paymentPeriods.length === 0 ? (
+        <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl p-8 text-center mb-6">
+          <p className="text-slate-400 text-sm">No payment periods yet</p>
+          {isAdmin && (
+            <p className="text-slate-500 text-xs mt-1">Add a period to track payments</p>
           )}
-
-          <div className="space-y-2 mb-4">
-            {[
-              { label: 'Players pay dues directly in the app', sub: 'No more chasing payments' },
-              { label: 'Funds deposited to your bank account', sub: 'Via your connected Stripe account' },
-              { label: 'Stripe processing fee: 2.9% + 30¢', sub: 'Per transaction, billed by Stripe' },
-              { label: 'Platform fee: 0.5% per transaction', sub: '' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <Zap size={12} className="text-[#635BFF] shrink-0 mt-1" />
-                <div>
-                  <p className="text-xs text-slate-300">{item.label}</p>
-                  {item.sub && <p className="text-xs text-slate-500">{item.sub}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {stripeError && (
-            <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl p-2.5 mb-3">{stripeError}</p>
-          )}
-
-          <div className="flex gap-2">
-            <button
-              onClick={handleStripeConnect}
-              disabled={stripeLoading}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all',
-                'bg-[#635BFF] text-white hover:bg-[#635BFF]/90 disabled:opacity-60'
-              )}
-            >
-              <ExternalLink size={14} />
-              {stripeLoading ? 'Loading...' : isStripeConnected ? 'Re-connect Stripe' : 'Connect with Stripe'}
-            </button>
-            {isStripeConnected && (
-              <button
-                onClick={handleStripeDisconnect}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition-all"
-              >
-                Disconnect
-              </button>
-            )}
-          </div>
+        </div>
+      ) : (
+        <div className="space-y-3 mb-6">
+          {paymentPeriods.map((period) => (
+            <PaymentPeriodCard
+              key={period.id}
+              period={period}
+              players={activePlayers}
+              teamSettings={teamSettings}
+              isAdmin={isAdmin}
+            />
+          ))}
         </div>
       )}
 

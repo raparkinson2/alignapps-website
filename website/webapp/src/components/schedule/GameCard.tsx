@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { MapPin, Pencil, CheckCircle2, XCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Pencil, CheckCircle2, XCircle, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn, getDateLabel, formatTime } from '@/lib/utils';
 import type { Game, Player, TeamSettings } from '@/lib/types';
 
@@ -14,6 +14,7 @@ interface GameCardProps {
   onEdit?: (game: Game) => void;
   onDelete?: (gameId: string) => void;
   onRsvp?: (gameId: string, response: 'in' | 'out') => void;
+  onLineup?: (game: Game) => void;
 }
 
 export default function GameCard({
@@ -24,7 +25,9 @@ export default function GameCard({
   teamSettings,
   onEdit,
   onRsvp,
+  onLineup,
 }: GameCardProps) {
+  const [showNotes, setShowNotes] = useState(false);
   const dateLabel = getDateLabel(game.date);
   const timeFormatted = formatTime(game.time);
   const inCount = game.checkedInPlayers?.length ?? 0;
@@ -64,6 +67,17 @@ export default function GameCard({
   const isToday = dateLabel === 'Today';
   const isTomorrow = dateLabel === 'Tomorrow';
 
+  // Check if any lineup has been set
+  const hasLineup = !!(
+    game.lineup ||
+    game.basketballLineup ||
+    game.baseballLineup ||
+    game.battingOrderLineup ||
+    game.soccerLineup ||
+    game.soccerDiamondLineup ||
+    game.lacrosseLineup
+  );
+
   return (
     <div className={cn(
       'bg-[#0f1a2e] border border-white/10 rounded-2xl p-4 hover:bg-[#152236] hover:border-white/20 transition-all',
@@ -96,6 +110,22 @@ export default function GameCard({
               {scoreLabel}
             </span>
           )}
+          {/* Lineup button */}
+          {teamSettings.showLineups && (isAdmin || hasLineup) && (
+            <button
+              onClick={() => onLineup?.(game)}
+              className={cn(
+                'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg transition-all',
+                hasLineup
+                  ? 'bg-[#a78bfa]/10 border border-[#a78bfa]/20 text-[#a78bfa] hover:bg-[#a78bfa]/20'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/10 border border-white/10'
+              )}
+              title={hasLineup ? 'View/edit lineup' : 'Set lineup'}
+            >
+              <Users size={12} />
+              {hasLineup ? 'Lineup' : 'Lineup'}
+            </button>
+          )}
           {isAdmin && onEdit && (
             <button
               onClick={() => onEdit(game)}
@@ -124,6 +154,24 @@ export default function GameCard({
           </span>
         )}
       </div>
+
+      {/* Notes */}
+      {game.notes && (
+        <div className="mb-3">
+          <button
+            onClick={() => setShowNotes((v) => !v)}
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            {showNotes ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            Notes
+          </button>
+          {showNotes && (
+            <p className="mt-1.5 text-xs text-slate-400 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2 leading-relaxed">
+              {game.notes}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* RSVP counts */}
       <div className="flex items-center gap-4 mb-3">
@@ -168,11 +216,6 @@ export default function GameCard({
             Out
           </button>
         </div>
-      )}
-
-      {/* Notes */}
-      {game.notes && (
-        <p className="mt-2 text-xs text-slate-500 italic truncate">{game.notes}</p>
       )}
     </div>
   );

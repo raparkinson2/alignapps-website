@@ -10,6 +10,7 @@ import EventCard from '@/components/schedule/EventCard';
 import AddGameModal from '@/components/schedule/AddGameModal';
 import AddEventModal from '@/components/schedule/AddEventModal';
 import AddPracticeModal from '@/components/schedule/AddPracticeModal';
+import LineupModal from '@/components/schedule/LineupModal';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import type { Game, Event, TeamSettings, Player } from '@/lib/types';
@@ -32,6 +33,7 @@ function CalendarView({
   onEditEvent,
   onGameRsvp,
   onEventRsvp,
+  onLineup,
   teamSettings,
   players,
 }: {
@@ -43,6 +45,7 @@ function CalendarView({
   onEditEvent: (e: Event) => void;
   onGameRsvp: (id: string, r: 'in' | 'out') => void;
   onEventRsvp: (id: string, r: 'confirmed' | 'declined') => void;
+  onLineup: (g: Game) => void;
   teamSettings: TeamSettings;
   players: Player[];
 }) {
@@ -165,6 +168,7 @@ function CalendarView({
                       teamSettings={teamSettings}
                       onEdit={onEditGame}
                       onRsvp={onGameRsvp}
+                      onLineup={onLineup}
                     />
                   );
                 }
@@ -207,6 +211,7 @@ export default function SchedulePage() {
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingPractice, setEditingPractice] = useState<Event | null>(null);
+  const [lineupGame, setLineupGame] = useState<Game | null>(null);
   const [showPast, setShowPast] = useState(false);
 
   const today = todayStr();
@@ -255,6 +260,10 @@ export default function SchedulePage() {
   const handleEditGame = (game: Game) => {
     setEditingGame(game);
     setShowAddGame(true);
+  };
+
+  const handleLineup = (game: Game) => {
+    setLineupGame(game);
   };
 
   return (
@@ -322,6 +331,7 @@ export default function SchedulePage() {
             onEditEvent={handleEditEvent}
             onGameRsvp={handleGameRsvp}
             onEventRsvp={handleEventRsvp}
+            onLineup={handleLineup}
             teamSettings={teamSettings}
             players={players}
           />
@@ -349,6 +359,7 @@ export default function SchedulePage() {
                         teamSettings={teamSettings}
                         onEdit={handleEditGame}
                         onRsvp={handleGameRsvp}
+                        onLineup={handleLineup}
                       />
                     );
                   }
@@ -390,6 +401,7 @@ export default function SchedulePage() {
                           isAdmin={isAdmin}
                           teamSettings={teamSettings}
                           onEdit={handleEditGame}
+                          onLineup={handleLineup}
                         />
                       );
                     }
@@ -426,6 +438,16 @@ export default function SchedulePage() {
         onClose={() => { setShowAddEvent(false); setEditingEvent(null); }}
         existingEvent={editingEvent}
       />
+      {lineupGame && (
+        <LineupModal
+          isOpen={!!lineupGame}
+          onClose={() => setLineupGame(null)}
+          game={lineupGame}
+          players={players}
+          sport={teamSettings.sport}
+          isAdmin={isAdmin}
+        />
+      )}
     </div>
   );
 }
