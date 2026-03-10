@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, CreditCard, CheckCircle2, AlertCircle, Zap, ExternalLink, Users, X } from 'lucide-react';
+import { Plus, CreditCard, CheckCircle2, AlertCircle, ExternalLink, Users, X, Info } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { pushPaymentPeriodToSupabase, pushTeamSettingsToSupabase } from '@/lib/realtime-sync';
@@ -64,6 +64,7 @@ export default function PaymentsPage() {
   // Stripe state
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripeError, setStripeError] = useState<string | null>(null);
+  const [stripeDisclosureVisible, setStripeDisclosureVisible] = useState(false);
 
   const activePlayers = players.filter((p) => p.status === 'active');
   const paymentMethods = teamSettings.paymentMethods ?? [];
@@ -167,24 +168,18 @@ export default function PaymentsPage() {
         <h1 className="text-xl font-bold text-slate-100">Payments</h1>
       </div>
 
-      {/* Summary banner */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl p-4">
-          <p className="text-xs text-slate-500 mb-1">Collected</p>
-          <p className="text-2xl font-bold text-[#22c55e]">${totalCollected.toFixed(0)}</p>
-        </div>
-        <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl p-4">
-          <p className="text-xs text-slate-500 mb-1">Total Owed</p>
-          <p className="text-2xl font-bold text-slate-100">${totalOwed.toFixed(0)}</p>
-        </div>
-      </div>
-
       {/* ── Section 1: Stripe ──────────────────────────────────────────────── */}
       {isAdmin && (
         <div className="mb-5">
           <div className="flex items-center gap-2 mb-3">
             <CreditCard size={16} className="text-[#635BFF]" />
             <h2 className="text-[#635BFF] font-semibold text-sm">Pay with Stripe</h2>
+            <button
+              onClick={() => setStripeDisclosureVisible(true)}
+              className="p-1.5 hover:bg-white/10 rounded-full transition-all"
+            >
+              <Info size={15} className="text-slate-500" />
+            </button>
           </div>
 
           <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl overflow-hidden">
@@ -197,24 +192,6 @@ export default function PaymentsPage() {
                     <p className="text-sm font-semibold text-[#22c55e]">Stripe Connected</p>
                     <p className="text-xs text-slate-400 truncate">{teamSettings.stripeAccountId}</p>
                   </div>
-                </div>
-
-                {/* Feature bullets */}
-                <div className="px-4 py-3 space-y-2 border-b border-white/[0.07]">
-                  {[
-                    { label: 'Players pay dues directly in the app', sub: 'No more chasing payments' },
-                    { label: 'Funds deposited to your bank account', sub: 'Via your connected Stripe account' },
-                    { label: 'Stripe processing fee: 2.9% + 30¢', sub: 'Per transaction, billed by Stripe' },
-                    { label: 'Platform fee: 0.5% per transaction', sub: '' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <Zap size={12} className="text-[#635BFF] shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs text-slate-300">{item.label}</p>
-                        {item.sub && <p className="text-xs text-slate-500">{item.sub}</p>}
-                      </div>
-                    </div>
-                  ))}
                 </div>
 
                 {/* Buttons */}
@@ -244,24 +221,6 @@ export default function PaymentsPage() {
                     <p className="text-sm font-semibold text-amber-400">Setup Required</p>
                     <p className="text-xs text-slate-400">Connect a Stripe account to accept in-app payments</p>
                   </div>
-                </div>
-
-                {/* Feature bullets */}
-                <div className="px-4 py-3 space-y-2 border-b border-white/[0.07]">
-                  {[
-                    { label: 'Players pay dues directly in the app', sub: 'No more chasing payments' },
-                    { label: 'Funds deposited to your bank account', sub: 'Via your connected Stripe account' },
-                    { label: 'Stripe processing fee: 2.9% + 30¢', sub: 'Per transaction, billed by Stripe' },
-                    { label: 'Platform fee: 0.5% per transaction', sub: '' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <Zap size={12} className="text-[#635BFF] shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs text-slate-300">{item.label}</p>
-                        {item.sub && <p className="text-xs text-slate-500">{item.sub}</p>}
-                      </div>
-                    </div>
-                  ))}
                 </div>
 
                 {stripeError && (
@@ -421,6 +380,47 @@ export default function PaymentsPage() {
           </div>
         )}
       </div>
+
+      {/* Stripe disclosure modal */}
+      {stripeDisclosureVisible && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-6"
+          onClick={() => setStripeDisclosureVisible(false)}
+        >
+          <div
+            className="bg-slate-800 rounded-2xl p-6 border border-slate-700/60 w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center mb-4">
+              <div className="rounded-[10px] p-2 mr-3" style={{ backgroundColor: '#635BFF20' }}>
+                <CreditCard size={20} className="text-[#635BFF]" />
+              </div>
+              <p className="text-white font-bold text-lg">Payment Processing</p>
+            </div>
+            <p className="text-slate-300 text-sm leading-6 mb-3">
+              All payments are securely processed by <span className="text-white font-semibold">Stripe</span>, a certified PCI-DSS Level 1 payment processor.
+            </p>
+            <p className="text-slate-300 text-sm leading-6 mb-3">
+              A processing fee (2.9% + $0.30) is added to your total so your team receives the full amount owed.
+            </p>
+            <p className="text-slate-300 text-sm leading-6 mb-3">
+              Align Sports does not collect, store, or have access to your card number, CVV, or any other payment credentials. All sensitive financial data is handled exclusively by Stripe.
+            </p>
+            <p className="text-slate-400 text-xs leading-5">
+              By completing a payment, you agree to Stripe&apos;s{' '}
+              <a href="https://stripe.com/legal/consumer" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">Terms of Service</a>
+              {' '}and{' '}
+              <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">Privacy Policy</a>.
+            </p>
+            <button
+              onClick={() => setStripeDisclosureVisible(false)}
+              className="mt-5 w-full bg-slate-700 hover:bg-slate-600 rounded-xl py-3 text-white font-semibold text-sm transition-all"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add period modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Payment Period" size="md">
