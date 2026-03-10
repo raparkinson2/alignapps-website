@@ -8,7 +8,7 @@ import { pushEventToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
 import type { Event } from '@/lib/types';
 
-interface AddEventModalProps {
+interface AddPracticeModalProps {
   isOpen: boolean;
   onClose: () => void;
   existingEvent?: Event | null;
@@ -28,7 +28,6 @@ function timeStrToForm(timeStr: string): { timeValue: string; timePeriod: 'AM' |
 }
 
 const emptyForm = {
-  title: '',
   date: '',
   timeValue: '7:00',
   timePeriod: 'PM' as 'AM' | 'PM',
@@ -37,7 +36,7 @@ const emptyForm = {
   notes: '',
 };
 
-export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEventModalProps) {
+export default function AddPracticeModal({ isOpen, onClose, existingEvent }: AddPracticeModalProps) {
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const addEvent = useTeamStore((s) => s.addEvent);
   const updateEvent = useTeamStore((s) => s.updateEvent);
@@ -50,7 +49,6 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
     if (existingEvent) {
       const { timeValue, timePeriod } = timeStrToForm(existingEvent.time);
       setForm({
-        title: existingEvent.title,
         date: existingEvent.date,
         timeValue,
         timePeriod,
@@ -68,7 +66,6 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleSave = async () => {
-    if (!form.title.trim()) { setError('Title is required'); return; }
     if (!form.date) { setError('Date is required'); return; }
     if (!activeTeamId) { setError('No active team'); return; }
 
@@ -78,8 +75,8 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
     try {
       const event: Event = {
         id: existingEvent?.id ?? generateId(),
-        title: form.title.trim(),
-        type: existingEvent?.type === 'meeting' || existingEvent?.type === 'social' ? existingEvent.type : 'other',
+        title: 'Practice',
+        type: 'practice',
         date: form.date,
         time: `${form.timeValue} ${form.timePeriod}`,
         location: form.location.trim(),
@@ -98,29 +95,18 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
       await pushEventToSupabase(event, activeTeamId);
       onClose();
     } catch {
-      setError('Failed to save event. Please try again.');
+      setError('Failed to save practice. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={existingEvent ? 'Edit Event' : 'Add Event'} size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={existingEvent ? 'Edit Practice' : 'Add Practice'} size="md">
       <div className="space-y-4">
         {error && (
           <p className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">{error}</p>
         )}
-
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Title *</label>
-          <input
-            type="text"
-            value={form.title}
-            onChange={(e) => set('title', e.target.value)}
-            placeholder="Event name"
-            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/40"
-          />
-        </div>
 
         {/* Date + Time */}
         <div className="grid grid-cols-2 gap-3">
@@ -130,7 +116,7 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
               type="date"
               value={form.date}
               onChange={(e) => set('date', e.target.value)}
-              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/40 [color-scheme:dark]"
+              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#f97316]/40 [color-scheme:dark]"
             />
           </div>
           <div>
@@ -141,7 +127,7 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
                 value={form.timeValue}
                 onChange={(e) => set('timeValue', e.target.value)}
                 placeholder="7:00"
-                className="flex-1 min-w-0 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/40 text-sm"
+                className="flex-1 min-w-0 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#f97316]/40 text-sm"
               />
               <div className="flex rounded-xl overflow-hidden border border-white/10">
                 {(['AM', 'PM'] as const).map((p) => (
@@ -152,7 +138,7 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
                     className={cn(
                       'px-2.5 py-2 text-xs font-semibold transition-all',
                       form.timePeriod === p
-                        ? 'bg-[#3b82f6] text-white'
+                        ? 'bg-[#f97316] text-white'
                         : 'text-slate-400 hover:text-slate-200'
                     )}
                   >
@@ -170,7 +156,7 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
           <LocationSearch
             value={form.location}
             onChange={(name, address) => setForm((prev) => ({ ...prev, location: name, address }))}
-            placeholder="Search for a place..."
+            placeholder="Search rink, arena, field..."
           />
         </div>
 
@@ -181,7 +167,7 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
             onChange={(e) => set('notes', e.target.value)}
             placeholder="Any notes for the team..."
             rows={3}
-            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/40 resize-none"
+            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#f97316]/40 resize-none"
           />
         </div>
 
@@ -192,9 +178,9 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-xl bg-[#3b82f6] text-white font-bold hover:bg-[#3b82f6]/90 transition-all text-sm disabled:opacity-60"
+            className="flex-1 py-2.5 rounded-xl bg-[#f97316] text-white font-bold hover:bg-[#f97316]/90 transition-all text-sm disabled:opacity-60"
           >
-            {saving ? 'Saving...' : existingEvent ? 'Save Changes' : 'Add Event'}
+            {saving ? 'Saving...' : existingEvent ? 'Save Changes' : 'Add Practice'}
           </button>
         </div>
       </div>

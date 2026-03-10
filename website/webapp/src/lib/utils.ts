@@ -72,10 +72,10 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
 };
 
 export const EVENT_TYPE_COLORS: Record<string, string> = {
-  practice: '#67e8f9',
+  practice: '#f97316',
   meeting: '#a78bfa',
   social: '#22c55e',
-  other: '#94a3b8',
+  other: '#3b82f6',
 };
 
 export function getDueDateColor(dueDate: string | undefined): string {

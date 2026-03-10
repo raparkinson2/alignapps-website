@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import Modal from '@/components/ui/Modal';
+import LocationSearch from '@/components/ui/LocationSearch';
 import { cn, generateId } from '@/lib/utils';
 import { pushGameToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
-import type { Game, TeamSettings } from '@/lib/types';
+import type { Game } from '@/lib/types';
 
 interface AddGameModalProps {
   isOpen: boolean;
@@ -16,13 +17,32 @@ interface AddGameModalProps {
 const emptyForm = {
   opponent: '',
   date: '',
-  time: '',
+  timeValue: '7:00',
+  timePeriod: 'PM' as 'AM' | 'PM',
   location: '',
   address: '',
   jerseyColor: '',
   notes: '',
   showBeerDuty: false,
 };
+
+function formToTimeStr(value: string, period: 'AM' | 'PM'): string {
+  return `${value} ${period}`;
+}
+
+function timeStrToForm(timeStr: string): { timeValue: string; timePeriod: 'AM' | 'PM' } {
+  if (!timeStr) return { timeValue: '7:00', timePeriod: 'PM' };
+  const match = timeStr.trim().match(/^(\d{1,2}:\d{2})\s*(AM|PM)$/i);
+  if (match) return { timeValue: match[1], timePeriod: match[2].toUpperCase() as 'AM' | 'PM' };
+  // Parse 24h format
+  const [h, m] = timeStr.split(':').map(Number);
+  if (!isNaN(h) && !isNaN(m)) {
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return { timeValue: `${hour}:${String(m).padStart(2, '0')}`, timePeriod: period };
+  }
+  return { timeValue: '7:00', timePeriod: 'PM' };
+}
 
 export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameModalProps) {
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
@@ -32,10 +52,12 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
 
   const [form, setForm] = useState(() => {
     if (existingGame) {
+      const { timeValue, timePeriod } = timeStrToForm(existingGame.time);
       return {
         opponent: existingGame.opponent,
         date: existingGame.date,
-        time: existingGame.time,
+        timeValue,
+        timePeriod,
         location: existingGame.location,
         address: existingGame.address ?? '',
         jerseyColor: existingGame.jerseyColor ?? '',
@@ -49,13 +71,14 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync form when existingGame changes
   React.useEffect(() => {
     if (existingGame) {
+      const { timeValue, timePeriod } = timeStrToForm(existingGame.time);
       setForm({
         opponent: existingGame.opponent,
         date: existingGame.date,
-        time: existingGame.time,
+        timeValue,
+        timePeriod,
         location: existingGame.location,
         address: existingGame.address ?? '',
         jerseyColor: existingGame.jerseyColor ?? '',
@@ -68,9 +91,8 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
     setError(null);
   }, [existingGame, isOpen]);
 
-  const handleChange = (field: keyof typeof form, value: string | boolean) => {
+  const set = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) =>
     setForm((prev) => ({ ...prev, [field]: value }));
-  };
 
   const handleSave = async () => {
     if (!form.opponent.trim()) { setError('Opponent is required'); return; }
@@ -85,7 +107,7 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
         id: existingGame?.id ?? generateId(),
         opponent: form.opponent.trim(),
         date: form.date,
-        time: form.time,
+        time: formToTimeStr(form.timeValue, form.timePeriod),
         location: form.location.trim(),
         address: form.address.trim(),
         jerseyColor: form.jerseyColor,
@@ -108,7 +130,7 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
       }
       await pushGameToSupabase(game, activeTeamId);
       onClose();
-    } catch (err) {
+    } catch {
       setError('Failed to save game. Please try again.');
     } finally {
       setSaving(false);
@@ -116,12 +138,7 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={existingGame ? 'Edit Game' : 'Add Game'}
-      size="md"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={existingGame ? 'Edit Game' : 'Add Game'} size="md">
       <div className="space-y-4">
         {error && (
           <p className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">{error}</p>
@@ -132,55 +149,65 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
           <input
             type="text"
             value={form.opponent}
-            onChange={(e) => handleChange('opponent', e.target.value)}
+            onChange={(e) => set('opponent', e.target.value)}
             placeholder="Team name"
-            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 focus:border-[#67e8f9]/40"
+            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40"
           />
         </div>
 
+        {/* Date + Time */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Date *</label>
             <input
               type="date"
               value={form.date}
-              onChange={(e) => handleChange('date', e.target.value)}
-              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 focus:border-[#67e8f9]/40 [color-scheme:dark]"
+              onChange={(e) => set('date', e.target.value)}
+              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 [color-scheme:dark]"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Time</label>
-            <input
-              type="time"
-              value={form.time}
-              onChange={(e) => handleChange('time', e.target.value)}
-              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 focus:border-[#67e8f9]/40 [color-scheme:dark]"
-            />
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={form.timeValue}
+                onChange={(e) => set('timeValue', e.target.value)}
+                placeholder="7:00"
+                className="flex-1 min-w-0 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm"
+              />
+              <div className="flex rounded-xl overflow-hidden border border-white/10">
+                {(['AM', 'PM'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => set('timePeriod', p)}
+                    className={cn(
+                      'px-2.5 py-2 text-xs font-semibold transition-all',
+                      form.timePeriod === p
+                        ? 'bg-[#67e8f9] text-[#080c14]'
+                        : 'text-slate-400 hover:text-slate-200'
+                    )}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Location search */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">Location</label>
-          <input
-            type="text"
+          <LocationSearch
             value={form.location}
-            onChange={(e) => handleChange('location', e.target.value)}
-            placeholder="Rink / arena / field name"
-            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 focus:border-[#67e8f9]/40"
+            onChange={(name, address) => setForm((prev) => ({ ...prev, location: name, address }))}
+            placeholder="Search rink, arena, field..."
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Address <span className="text-slate-500">(optional)</span></label>
-          <input
-            type="text"
-            value={form.address}
-            onChange={(e) => handleChange('address', e.target.value)}
-            placeholder="123 Main St, City, State"
-            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 focus:border-[#67e8f9]/40"
-          />
-        </div>
-
+        {/* Jersey Color */}
         {teamSettings.jerseyColors && teamSettings.jerseyColors.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Jersey Color</label>
@@ -189,7 +216,7 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
                 <button
                   key={jc.name}
                   type="button"
-                  onClick={() => handleChange('jerseyColor', jc.name)}
+                  onClick={() => set('jerseyColor', jc.name)}
                   className={cn(
                     'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm transition-all',
                     form.jerseyColor === jc.name
@@ -205,37 +232,35 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
           </div>
         )}
 
+        {/* Refreshment duty */}
         {teamSettings.showRefreshmentDuty && (
-          <div className="flex items-center gap-3">
+          <label className="flex items-center gap-3 cursor-pointer">
             <input
-              id="beerDuty"
               type="checkbox"
               checked={form.showBeerDuty}
-              onChange={(e) => handleChange('showBeerDuty', e.target.checked)}
+              onChange={(e) => set('showBeerDuty', e.target.checked)}
               className="w-4 h-4 rounded border-white/20 bg-white/5 accent-[#67e8f9]"
             />
-            <label htmlFor="beerDuty" className="text-sm text-slate-300">
-              Show refreshment duty for this game
-            </label>
-          </div>
+            <span className="text-sm text-slate-300 flex items-center gap-1.5">
+              {teamSettings.refreshmentDutyIs21Plus ? '🍺' : '🥤'}
+              Show {teamSettings.refreshmentDutyIs21Plus ? 'beer' : 'refreshment'} duty for this game
+            </span>
+          </label>
         )}
 
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">Notes <span className="text-slate-500">(optional)</span></label>
           <textarea
             value={form.notes}
-            onChange={(e) => handleChange('notes', e.target.value)}
+            onChange={(e) => set('notes', e.target.value)}
             placeholder="Any notes for the team..."
             rows={3}
-            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 focus:border-[#67e8f9]/40 resize-none"
+            className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 resize-none"
           />
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 transition-all text-sm font-medium"
-          >
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 transition-all text-sm font-medium">
             Cancel
           </button>
           <button

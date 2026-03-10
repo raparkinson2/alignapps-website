@@ -23,7 +23,8 @@ const FEATURE_TOGGLES: FeatureToggle[] = [
   { key: 'showTeamStats', label: 'Stats' },
   { key: 'showTeamRecords', label: 'Records' },
   { key: 'showLineups', label: 'Lineups' },
-  { key: 'showRefreshmentDuty', label: 'Refreshment Duty' },
+  { key: 'showRefreshmentDuty', label: '🥤 Refreshment Duty' },
+  { key: 'refreshmentDutyIs21Plus', label: '🍺 21+ Beverages (show beer mug)', dependsOn: 'showRefreshmentDuty' },
   { key: 'allowPlayerSelfStats', label: 'Allow Players to Manage Own Stats', dependsOn: 'showTeamStats' },
 ];
 
