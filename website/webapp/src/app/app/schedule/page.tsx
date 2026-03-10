@@ -68,27 +68,30 @@ function CalendarView({
     weeks.push(week);
   }
 
+  const dateStr = (d: Date) => format(d, 'yyyy-MM-dd');
+  const normalizeDate = (s: string) => s.slice(0, 10); // handles both "yyyy-MM-dd" and ISO strings
+
   const getGamesForDate = (date: Date) =>
-    games.filter((g) => g.date === format(date, 'yyyy-MM-dd'));
+    games.filter((g) => normalizeDate(g.date) === dateStr(date));
   const getPracticesForDate = (date: Date) =>
-    events.filter((e) => e.date === format(date, 'yyyy-MM-dd') && e.type === 'practice');
+    events.filter((e) => normalizeDate(e.date) === dateStr(date) && e.type === 'practice');
   const getEventsForDate = (date: Date) =>
-    events.filter((e) => e.date === format(date, 'yyyy-MM-dd') && e.type !== 'practice');
+    events.filter((e) => normalizeDate(e.date) === dateStr(date) && e.type !== 'practice');
 
   // Month summary counts
-  const gamesThisMonth = games.filter((g) => g.date.startsWith(format(viewMonth, 'yyyy-MM'))).length;
-  const practicesThisMonth = events.filter((e) => e.date.startsWith(format(viewMonth, 'yyyy-MM')) && e.type === 'practice').length;
-  const eventsThisMonth = events.filter((e) => e.date.startsWith(format(viewMonth, 'yyyy-MM')) && e.type !== 'practice').length;
+  const monthPrefix = format(viewMonth, 'yyyy-MM');
+  const gamesThisMonth = games.filter((g) => normalizeDate(g.date).startsWith(monthPrefix)).length;
+  const practicesThisMonth = events.filter((e) => normalizeDate(e.date).startsWith(monthPrefix) && e.type === 'practice').length;
+  const eventsThisMonth = events.filter((e) => normalizeDate(e.date).startsWith(monthPrefix) && e.type !== 'practice').length;
   const totalThisMonth = gamesThisMonth + practicesThisMonth + eventsThisMonth;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Selected date items (for past dates, only show games)
-  const isSelectedDatePast = selectedDate ? selectedDate < today : false;
+  // Selected date items (show all items regardless of past/future)
   const selectedDateGames = selectedDate ? getGamesForDate(selectedDate) : [];
-  const selectedDatePractices = selectedDate && !isSelectedDatePast ? getPracticesForDate(selectedDate) : [];
-  const selectedDateEvents = selectedDate && !isSelectedDatePast ? getEventsForDate(selectedDate) : [];
+  const selectedDatePractices = selectedDate ? getPracticesForDate(selectedDate) : [];
+  const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
 
   const handleDateClick = (date: Date, hasItems: boolean) => {
     if (!hasItems) return;
@@ -137,8 +140,8 @@ function CalendarView({
           const inMonth = isSameMonth(d, viewMonth);
           const isPast = d < today;
           const hasGames = dayGames.length > 0;
-          const hasPractices = !isPast && dayPractices.length > 0;
-          const hasEvents = !isPast && dayEvents.length > 0;
+          const hasPractices = dayPractices.length > 0;
+          const hasEvents = dayEvents.length > 0;
           const hasItems = hasGames || hasPractices || hasEvents;
 
           return (
@@ -297,8 +300,8 @@ export default function SchedulePage() {
     return [...gameItems, ...eventItems].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
   }, [games, events]);
 
-  const upcomingItems = allItems.filter((x) => x.item.date >= today);
-  const pastItems = allItems.filter((x) => x.item.date < today).reverse().slice(0, 10);
+  const upcomingItems = allItems.filter((x) => x.item.date.slice(0, 10) >= today);
+  const pastItems = allItems.filter((x) => x.item.date.slice(0, 10) < today).reverse().slice(0, 10);
 
   const handleGameRsvp = async (gameId: string, response: 'in' | 'out') => {
     if (!currentPlayerId) return;
