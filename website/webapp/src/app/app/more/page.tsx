@@ -1004,11 +1004,10 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
   const [privOpen, setPrivOpen] = useState(false);
 
   const permSections = [
-    { color: 'text-purple-400', title: 'Admin Only', items: ['Access Admin Panel', 'Create & delete payment periods', 'Connect Stripe', 'Delete the team'] },
-    { color: 'text-blue-400', title: 'Admin + Coach', items: ['Edit player profiles', 'Manage player stats', 'Add/remove players from roster'] },
-    { color: 'text-[#67e8f9]', title: 'Admin + Captain + Coach', items: ['Add/edit games and events', 'Set lineups', 'Send invites', 'Create team links & polls', 'Email team'] },
-    { color: 'text-slate-300', title: 'All Players', items: ['View schedule', 'Check in/out of games', 'View roster', 'Participate in polls', 'View team links'] },
-    { color: 'text-amber-400', title: 'Parents (View Only)', items: ['View schedule', 'View roster', 'View payment status', 'No access to Admin Panel'] },
+    { color: 'text-purple-400', title: 'Admin Only', items: ['Access Admin Panel', 'Add/edit/delete games & events', 'Set lineups', 'Send invites', 'Create team links & polls', 'Add/remove players from roster', 'Edit player profiles', 'Create & delete payment periods', 'Connect Stripe', 'Add/remove championships', 'Delete the team'] },
+    { color: 'text-[#a78bfa]', title: 'Admin + Captain', items: ['Edit player stats'] },
+    { color: 'text-slate-300', title: 'All Players', items: ['RSVP to games & events', 'View schedule', 'View roster', 'Email team', 'Participate in polls', 'View team links', 'Upload & delete own photos', 'Send team chat messages'] },
+    { color: 'text-amber-400', title: 'Parents (View Only)', items: ['View schedule', 'View roster', 'View payment status', 'No access to Admin Panel', 'No access to Team Chat'] },
   ];
 
   return (
