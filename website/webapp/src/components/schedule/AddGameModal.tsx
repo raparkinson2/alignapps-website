@@ -59,7 +59,7 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
       const { timeValue, timePeriod } = timeStrToForm(existingGame.time);
       return {
         opponent: existingGame.opponent,
-        date: existingGame.date,
+        date: existingGame.date?.split('T')[0] ?? '',
         timeValue,
         timePeriod,
         location: existingGame.location,
@@ -81,7 +81,7 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
       const { timeValue, timePeriod } = timeStrToForm(existingGame.time);
       setForm({
         opponent: existingGame.opponent,
-        date: existingGame.date,
+        date: existingGame.date?.split('T')[0] ?? '',
         timeValue,
         timePeriod,
         location: existingGame.location,

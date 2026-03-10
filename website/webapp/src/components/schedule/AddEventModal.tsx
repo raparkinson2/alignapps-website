@@ -51,7 +51,7 @@ export default function AddEventModal({ isOpen, onClose, existingEvent }: AddEve
       const { timeValue, timePeriod } = timeStrToForm(existingEvent.time);
       setForm({
         title: existingEvent.title,
-        date: existingEvent.date,
+        date: existingEvent.date?.split('T')[0] ?? '',
         timeValue,
         timePeriod,
         location: existingEvent.location,
