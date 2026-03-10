@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { Player } from '@/lib/types';
 import { getPlayerInitials } from '@/lib/types';
@@ -33,11 +33,19 @@ const sizeClasses = {
   lg: 'w-12 h-12 text-base',
 };
 
+// Only treat avatar as a valid image if it looks like a URL
+function isValidImageUrl(avatar: string): boolean {
+  return avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('/');
+}
+
 export default function Avatar({ player, size = 'md' }: AvatarProps) {
   const colorClass = AVATAR_COLORS[hashPlayerId(player.id) % AVATAR_COLORS.length];
   const initials = getPlayerInitials(player);
+  const [imgError, setImgError] = useState(false);
 
-  if (player.avatar) {
+  const showImage = player.avatar && isValidImageUrl(player.avatar) && !imgError;
+
+  if (showImage) {
     return (
       <div className={cn('rounded-full overflow-hidden shrink-0', sizeClasses[size])}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -45,6 +53,7 @@ export default function Avatar({ player, size = 'md' }: AvatarProps) {
           src={player.avatar}
           alt={`${player.firstName} ${player.lastName}`}
           className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
         />
       </div>
     );
