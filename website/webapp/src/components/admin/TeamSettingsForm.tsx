@@ -6,21 +6,14 @@ import { cn } from '@/lib/utils';
 import { pushTeamSettingsToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
 import { SPORT_NAMES } from '@/lib/types';
-import type { TeamSettings, Sport, PaymentApp, PaymentMethod } from '@/lib/types';
+import type { TeamSettings, Sport } from '@/lib/types';
 
 const SPORTS: Sport[] = ['hockey', 'baseball', 'basketball', 'soccer', 'lacrosse', 'softball'];
-
-const PAYMENT_APPS: { value: PaymentApp; label: string }[] = [
-  { value: 'venmo', label: 'Venmo' },
-  { value: 'paypal', label: 'PayPal' },
-  { value: 'cashapp', label: 'Cash App' },
-  { value: 'zelle', label: 'Zelle' },
-  { value: 'applepay', label: 'Apple Cash' },
-];
 
 interface FeatureToggle {
   key: keyof TeamSettings;
   label: string;
+  dependsOn?: keyof TeamSettings;
 }
 
 const FEATURE_TOGGLES: FeatureToggle[] = [
@@ -31,7 +24,7 @@ const FEATURE_TOGGLES: FeatureToggle[] = [
   { key: 'showTeamRecords', label: 'Records' },
   { key: 'showLineups', label: 'Lineups' },
   { key: 'showRefreshmentDuty', label: 'Refreshment Duty' },
-  { key: 'allowPlayerSelfStats', label: 'Player Self-Stats' },
+  { key: 'allowPlayerSelfStats', label: 'Allow Players to Manage Own Stats', dependsOn: 'showTeamStats' },
 ];
 
 export default function TeamSettingsForm() {
@@ -50,10 +43,6 @@ export default function TeamSettingsForm() {
   // Jersey color add state
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#ffffff');
-
-  // Payment method add state
-  const [newPmApp, setNewPmApp] = useState<PaymentApp>('venmo');
-  const [newPmUsername, setNewPmUsername] = useState('');
 
   const updateLocal = (updates: Partial<TeamSettings>) => {
     setLocalSettings((prev) => ({ ...prev, ...updates }));
@@ -79,25 +68,6 @@ export default function TeamSettingsForm() {
     });
   };
 
-  const handleAddPaymentMethod = () => {
-    if (!newPmUsername.trim()) return;
-    const pm: PaymentMethod = {
-      app: newPmApp,
-      username: newPmUsername.trim(),
-      displayName: PAYMENT_APPS.find((a) => a.value === newPmApp)?.label ?? newPmApp,
-    };
-    updateLocal({
-      paymentMethods: [...(localSettings.paymentMethods ?? []), pm],
-    });
-    setNewPmUsername('');
-  };
-
-  const handleRemovePaymentMethod = (app: PaymentApp) => {
-    updateLocal({
-      paymentMethods: (localSettings.paymentMethods ?? []).filter((p) => p.app !== app),
-    });
-  };
-
   const handleSave = async () => {
     if (!activeTeamId) return;
     setSaving(true);
@@ -110,7 +80,7 @@ export default function TeamSettingsForm() {
   };
 
   return (
-    <div className="space-y-6 max-w-xl">
+    <div className="space-y-6 w-full">
       {/* Team name */}
       <div>
         <label className="block text-sm font-medium text-slate-300 mb-1.5">Team Name</label>
@@ -156,13 +126,23 @@ export default function TeamSettingsForm() {
         <div className="grid grid-cols-2 gap-2">
           {FEATURE_TOGGLES.map((toggle) => {
             const value = localSettings[toggle.key] as boolean | undefined;
+            const isDisabled = toggle.dependsOn ? !(localSettings[toggle.dependsOn] as boolean | undefined) : false;
             return (
-              <label key={toggle.key} className="flex items-center gap-2.5 cursor-pointer p-2 rounded-xl hover:bg-white/[0.03]">
+              <label
+                key={toggle.key}
+                className={cn(
+                  'flex items-center gap-2.5 cursor-pointer p-2 rounded-xl hover:bg-white/[0.03]',
+                  isDisabled && 'opacity-40 cursor-not-allowed'
+                )}
+              >
                 <input
                   type="checkbox"
-                  checked={value ?? false}
-                  onChange={(e) => updateLocal({ [toggle.key]: e.target.checked })}
-                  className="w-4 h-4 rounded border-white/20 bg-white/5 accent-[#67e8f9]"
+                  checked={!isDisabled && (value ?? false)}
+                  disabled={isDisabled}
+                  onChange={(e) => {
+                    if (!isDisabled) updateLocal({ [toggle.key]: e.target.checked });
+                  }}
+                  className="w-4 h-4 rounded border-white/20 bg-white/5 accent-[#67e8f9] disabled:cursor-not-allowed"
                 />
                 <span className="text-sm text-slate-300">{toggle.label}</span>
               </label>
@@ -205,48 +185,6 @@ export default function TeamSettingsForm() {
           />
           <button
             onClick={handleAddJerseyColor}
-            className="px-3 py-2 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] hover:bg-[#67e8f9]/20 transition-all"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-      </div>
-
-      {/* Payment methods */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">Payment Methods</label>
-        <div className="space-y-2 mb-3">
-          {(localSettings.paymentMethods ?? []).map((pm) => (
-            <div key={pm.app} className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2">
-              <span className="text-sm text-slate-300 flex-1">{pm.displayName}: {pm.username}</span>
-              <button
-                onClick={() => handleRemovePaymentMethod(pm.app)}
-                className="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition-all"
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <select
-            value={newPmApp}
-            onChange={(e) => setNewPmApp(e.target.value as PaymentApp)}
-            className="bg-[#0d1526] border border-white/10 rounded-xl px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40"
-          >
-            {PAYMENT_APPS.map((a) => (
-              <option key={a.value} value={a.value}>{a.label}</option>
-            ))}
-          </select>
-          <input
-            type="text"
-            value={newPmUsername}
-            onChange={(e) => setNewPmUsername(e.target.value)}
-            placeholder="Username / handle"
-            className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm"
-          />
-          <button
-            onClick={handleAddPaymentMethod}
             className="px-3 py-2 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] hover:bg-[#67e8f9]/20 transition-all"
           >
             <Plus size={16} />

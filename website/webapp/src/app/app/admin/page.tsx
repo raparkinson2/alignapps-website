@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Shield, Pencil, Trash2, Plus, AlertTriangle } from 'lucide-react';
+import { Shield, Pencil, Trash2, Plus, AlertTriangle, Trophy } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { pushTeamSettingsToSupabase, deletePlayerFromSupabase } from '@/lib/realtime-sync';
@@ -100,7 +100,7 @@ export default function AdminPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <div className="w-9 h-9 rounded-xl bg-[#a78bfa]/10 flex items-center justify-center">
-          <Shield size={18} className="text-[#a78bfa]" />
+          <Trophy size={18} className="text-[#a78bfa]" />
         </div>
         <h1 className="text-xl font-bold text-slate-100">Admin</h1>
       </div>
