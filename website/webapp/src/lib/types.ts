@@ -355,7 +355,7 @@ export interface ChatMessage {
 
 export interface AppNotification {
   id: string;
-  type: 'game_invite' | 'game_reminder' | 'payment_reminder' | 'chat_message' | 'event_invite' | 'practice_invite' | 'poll';
+  type: 'game_invite' | 'game_reminder' | 'event_reminder' | 'payment_reminder' | 'chat_message' | 'event_invite' | 'practice_invite' | 'poll';
   title: string;
   message: string;
   gameId?: string;

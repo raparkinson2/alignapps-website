@@ -229,6 +229,7 @@ function CalendarView({
                 <EventCard
                   key={event.id}
                   event={event}
+                  players={players}
                   currentPlayerId={currentPlayerId}
                   isAdmin={isAdmin}
                   onEdit={onEditEvent}
@@ -239,6 +240,7 @@ function CalendarView({
                 <EventCard
                   key={event.id}
                   event={event}
+                  players={players}
                   currentPlayerId={currentPlayerId}
                   isAdmin={isAdmin}
                   onEdit={onEditEvent}
@@ -437,6 +439,7 @@ export default function SchedulePage() {
                     <EventCard
                       key={x.item.id}
                       event={x.item}
+                      players={players}
                       currentPlayerId={currentPlayerId}
                       isAdmin={isAdmin}
                       onEdit={handleEditEvent}
@@ -479,6 +482,7 @@ export default function SchedulePage() {
                       <EventCard
                         key={x.item.id}
                         event={x.item}
+                        players={players}
                         currentPlayerId={currentPlayerId}
                         isAdmin={isAdmin}
                         onEdit={handleEditEvent}
