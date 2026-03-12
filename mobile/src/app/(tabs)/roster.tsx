@@ -219,9 +219,10 @@ interface PlayerCardProps {
   showStats?: boolean;
   isCurrentUser?: boolean;
   canEditOwnStats?: boolean;
+  associatedPlayerName?: string;
 }
 
-function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = false, canEditOwnStats = false }: PlayerCardProps) {
+function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = false, canEditOwnStats = false, associatedPlayerName }: PlayerCardProps) {
   const sport = useTeamStore((s) => s.teamSettings.sport);
   const playerPositions = getPlayerPositions(player);
   const primaryPosition = getPrimaryPosition(player);
@@ -345,6 +346,10 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
             {/* Show hint for self-stats editing */}
             {isCurrentUser && canEditOwnStats && showStats && (
               <Text className="text-cyan-400/70 text-[10px] mt-0.5">Tap to edit your stats</Text>
+            )}
+            {/* Associated player for parents */}
+            {associatedPlayerName && (
+              <Text className="text-pink-400/80 text-[10px] mt-0.5">Child: {associatedPlayerName}</Text>
             )}
           </View>
 
@@ -946,6 +951,14 @@ export default function RosterScreen() {
                         showStats={showTeamStats}
                         isCurrentUser={player.id === currentPlayerId}
                         canEditOwnStats={allowPlayerSelfStats && !canEditPlayers()}
+                        associatedPlayerName={
+                          player.associatedPlayerId
+                            ? (() => {
+                                const linked = players.find((p) => p.id === player.associatedPlayerId);
+                                return linked ? getPlayerName(linked) : undefined;
+                              })()
+                            : undefined
+                        }
                       />
                     </View>
                   ))}
@@ -1329,8 +1342,11 @@ export default function RosterScreen() {
                             )}>C</Text>
                           </View>
                           <Text
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.7}
                             className={cn(
-                              'font-semibold text-sm',
+                              'font-semibold text-xs',
                               playerRoles.includes('captain') ? 'text-white' : 'text-slate-400'
                             )}
                           >
@@ -1354,8 +1370,11 @@ export default function RosterScreen() {
                         >
                           <Shield size={16} color={playerRoles.includes('admin') ? 'white' : '#a78bfa'} />
                           <Text
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.7}
                             className={cn(
-                              'font-semibold text-sm mt-1',
+                              'font-semibold text-xs mt-1',
                               playerRoles.includes('admin') ? 'text-white' : 'text-slate-400'
                             )}
                           >
@@ -1381,8 +1400,11 @@ export default function RosterScreen() {
                           >
                             <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#67e8f9'} />
                             <Text
+                              numberOfLines={1}
+                              adjustsFontSizeToFit
+                              minimumFontScale={0.7}
                               className={cn(
-                                'font-semibold text-sm mt-1',
+                                'font-semibold text-xs mt-1',
                                 memberRole === 'coach' ? 'text-white' : 'text-slate-400'
                               )}
                             >
@@ -1408,8 +1430,11 @@ export default function RosterScreen() {
                           >
                             <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
                             <Text
+                              numberOfLines={1}
+                              adjustsFontSizeToFit
+                              minimumFontScale={0.7}
                               className={cn(
-                                'font-semibold text-sm mt-1',
+                                'font-semibold text-xs mt-1',
                                 memberRole === 'parent' ? 'text-white' : 'text-slate-400'
                               )}
                             >
