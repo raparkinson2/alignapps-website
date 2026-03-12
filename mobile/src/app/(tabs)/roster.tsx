@@ -559,11 +559,23 @@ export default function RosterScreen() {
       return;
     }
 
+    // Require phone and email for all players (needed for login and invitations)
+    const rawPhoneCheck = unformatPhone(phone);
+    const rawEmailCheck = email.trim();
+    if (!rawPhoneCheck) {
+      Alert.alert('Phone Required', 'Please enter a phone number so the player can log in.');
+      return;
+    }
+    if (!rawEmailCheck) {
+      Alert.alert('Email Required', 'Please enter an email address so the player can log in.');
+      return;
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     // Store raw phone digits and email before any state changes
-    const rawPhone = unformatPhone(phone);
-    const rawEmail = email.trim();
+    const rawPhone = rawPhoneCheck;
+    const rawEmail = rawEmailCheck;
 
     // Build roles array based on memberRole
     const roles: PlayerRole[] = playerRoles.filter(r => r !== 'coach' && r !== 'parent');
@@ -979,7 +991,7 @@ export default function RosterScreen() {
                 <View className="mb-3">
                   <View className="flex-row items-center mb-1">
                     <Phone size={14} color="#a78bfa" />
-                    <Text className="text-slate-400 text-sm ml-2">Phone (Admin Only)</Text>
+                    <Text className="text-slate-400 text-sm ml-2">Phone<Text className="text-red-400">*</Text></Text>
                   </View>
                   <TextInput
                     value={phone}
@@ -997,7 +1009,7 @@ export default function RosterScreen() {
                 <View className="mb-3">
                   <View className="flex-row items-center mb-1">
                     <Mail size={14} color="#a78bfa" />
-                    <Text className="text-slate-400 text-sm ml-2">Email (Admin Only)</Text>
+                    <Text className="text-slate-400 text-sm ml-2">Email<Text className="text-red-400">*</Text></Text>
                   </View>
                   <TextInput
                     value={email}
