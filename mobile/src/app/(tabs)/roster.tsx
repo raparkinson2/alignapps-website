@@ -227,6 +227,11 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
   const playerPositions = getPlayerPositions(player);
   const primaryPosition = getPrimaryPosition(player);
 
+  // Coaches and parents never show stats
+  const isCoachOrParent = player.position === 'Coach' || player.position === 'Parent' ||
+    player.roles?.includes('coach') || player.roles?.includes('parent');
+  const effectiveShowStats = showStats && !isCoachOrParent;
+
   // Format position display - show all positions joined by "/"
   const positionDisplay = playerPositions.length > 1
     ? playerPositions.join('/')
@@ -344,7 +349,7 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
               )}
             </View>
             {/* Show hint for self-stats editing */}
-            {isCurrentUser && canEditOwnStats && showStats && (
+            {isCurrentUser && canEditOwnStats && effectiveShowStats && (
               <Text className="text-cyan-400/70 text-[10px] mt-0.5">Tap to edit your stats</Text>
             )}
             {/* Associated player for parents */}
@@ -368,7 +373,7 @@ function PlayerCard({ player, index, onPress, showStats = true, isCurrentUser = 
         </View>
 
         {/* Player Stats */}
-        {showStats && (
+        {effectiveShowStats && (
           <View className="mt-2 pt-2 border-t border-slate-700/40">
             {/* Label for skater/player stats when showing both */}
             {showBothGoalieStats && (

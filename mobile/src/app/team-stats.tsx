@@ -738,8 +738,10 @@ export default function TeamStatsScreen() {
     return getStatFields(sport, positionForStats);
   })() : [];
 
-  // Sort players by points (goals + assists for hockey/soccer, points for basketball, hits for baseball)
-  const sortedPlayers = [...players].sort((a, b) => {
+  // Sort players by points — exclude coaches and parents (no stats)
+  const sortedPlayers = [...players].filter(
+    (p) => p.position !== 'Coach' && p.position !== 'Parent' && !p.roles?.includes('coach') && !p.roles?.includes('parent')
+  ).sort((a, b) => {
     const aStats = a.stats;
     const bStats = b.stats;
 
