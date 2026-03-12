@@ -2,6 +2,20 @@
 
 A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, Lacrosse, Soccer, and Softball.
 
+## Roster Member Roles
+
+The app supports four member types:
+- **Player** (active) — requires jersey number, position, phone, and email
+- **Reserve** — same requirements as Player but listed as reserve status
+- **Coach** — no jersey number, position, phone, or email required; excluded from game check-in and lineups
+- **Parent/Guardian** — no jersey number, position, phone, or email required; excluded from game check-in and lineups; can have an "Associated Player" (child) set
+
+Coaches and Parents/Guardians are conditionally shown in separate roster sections only when:
+1. The role is enabled in the Admin panel → Roster Roles settings
+2. At least one member with that role has been added
+
+The `associatedPlayerId` field on a Player (parent) links them to their child's player record.
+
 ## Stripe Payments
 
 Stripe is integrated for in-app payments. Players can pay their outstanding dues directly in the Payments tab.

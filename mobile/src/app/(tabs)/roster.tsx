@@ -19,6 +19,7 @@ import {
   UserMinus,
   Heart,
   Calendar,
+  ChevronDown,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -458,6 +459,8 @@ export default function RosterScreen() {
   const [suspensionDuration, setSuspensionDuration] = useState<StatusDuration | undefined>(undefined);
   const [statusEndDate, setStatusEndDate] = useState<string>(''); // YYYY-MM-DD format
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [associatedPlayerId, setAssociatedPlayerId] = useState<string>('');
+  const [showAssociatedPlayerPicker, setShowAssociatedPlayerPicker] = useState(false);
 
   // Invite modal state
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
@@ -478,6 +481,7 @@ export default function RosterScreen() {
     setInjuryDuration(undefined);
     setSuspensionDuration(undefined);
     setStatusEndDate('');
+    setAssociatedPlayerId('');
     setEditingPlayer(null);
   };
 
@@ -511,6 +515,7 @@ export default function RosterScreen() {
     setInjuryDuration(player.injuryDuration);
     setSuspensionDuration(player.suspensionDuration);
     setStatusEndDate(player.statusEndDate || '');
+    setAssociatedPlayerId(player.associatedPlayerId || '');
     // Determine member role from player data
     if (player.roles?.includes('coach') || player.position === 'Coach') {
       setMemberRole('coach');
@@ -559,16 +564,18 @@ export default function RosterScreen() {
       return;
     }
 
-    // Require phone and email for all players (needed for login and invitations)
+    // Require phone and email for players (not coaches or parents)
     const rawPhoneCheck = unformatPhone(phone);
     const rawEmailCheck = email.trim();
-    if (!rawPhoneCheck) {
-      Alert.alert('Phone Required', 'Please enter a phone number so the player can log in.');
-      return;
-    }
-    if (!rawEmailCheck) {
-      Alert.alert('Email Required', 'Please enter an email address so the player can log in.');
-      return;
+    if (!isCoachRole && !isParentRole) {
+      if (!rawPhoneCheck) {
+        Alert.alert('Phone Required', 'Please enter a phone number so the player can log in.');
+        return;
+      }
+      if (!rawEmailCheck) {
+        Alert.alert('Email Required', 'Please enter an email address so the player can log in.');
+        return;
+      }
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -598,6 +605,7 @@ export default function RosterScreen() {
         positions: isCoachRole ? ['Coach'] : (isParentRole ? ['Parent'] : [...selectedPositions]),
         phone: rawPhone || undefined,
         email: rawEmail || undefined,
+        associatedPlayerId: isParentRole ? (associatedPlayerId || undefined) : undefined,
       };
 
       // Only admins can change roles and status
@@ -635,6 +643,7 @@ export default function RosterScreen() {
         isInjured: isAdmin() ? isInjured : false,
         isSuspended: isAdmin() ? isSuspended : false,
         statusEndDate: isAdmin() && (isInjured || isSuspended) ? (statusEndDate || undefined) : undefined,
+        associatedPlayerId: isParentRole ? (associatedPlayerId || undefined) : undefined,
       };
       addPlayer(newPlayer);
 
@@ -863,8 +872,13 @@ export default function RosterScreen() {
     // Coaches and parents always shown at the bottom
     const coaches = players.filter((p) => p.position === 'Coach' || p.roles?.includes('coach'));
     const parents = players.filter((p) => p.position === 'Parent' || p.roles?.includes('parent'));
-    if (coaches.length > 0) groups.push({ title: 'Coaches', players: coaches });
-    if (parents.length > 0) groups.push({ title: 'Parents', players: parents });
+
+    const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+    const coachRoleEnabled = enabledRoles.includes('coach');
+    const parentRoleEnabled = enabledRoles.includes('parent');
+
+    if (coachRoleEnabled && coaches.length > 0) groups.push({ title: 'Coaches', players: coaches });
+    if (parentRoleEnabled && parents.length > 0) groups.push({ title: 'Parents/Guardians', players: parents });
 
     return groups;
   };
@@ -994,7 +1008,8 @@ export default function RosterScreen() {
                 </View>
               </View>
 
-              {/* Jersey Number Row */}
+              {/* Jersey Number Row - hidden for coaches and parents */}
+              {memberRole !== 'coach' && memberRole !== 'parent' && (
               <View className="mb-3">
                 <Text className="text-slate-400 text-sm mb-1">Jersey Number<Text className="text-red-400">*</Text></Text>
                 <TextInput
@@ -1008,13 +1023,14 @@ export default function RosterScreen() {
                   style={{ width: 100 }}
                 />
               </View>
+              )}
 
               {/* Phone Input - Admin Only */}
               {isAdmin() && (
                 <View className="mb-3">
                   <View className="flex-row items-center mb-1">
                     <Phone size={14} color="#a78bfa" />
-                    <Text className="text-slate-400 text-sm ml-2">Phone<Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-400 text-sm ml-2">Phone{memberRole !== 'coach' && memberRole !== 'parent' && <Text className="text-red-400">*</Text>}</Text>
                   </View>
                   <TextInput
                     value={phone}
@@ -1032,7 +1048,7 @@ export default function RosterScreen() {
                 <View className="mb-3">
                   <View className="flex-row items-center mb-1">
                     <Mail size={14} color="#a78bfa" />
-                    <Text className="text-slate-400 text-sm ml-2">Email<Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-400 text-sm ml-2">Email{memberRole !== 'coach' && memberRole !== 'parent' && <Text className="text-red-400">*</Text>}</Text>
                   </View>
                   <TextInput
                     value={email}
@@ -1397,7 +1413,7 @@ export default function RosterScreen() {
                                 memberRole === 'parent' ? 'text-white' : 'text-slate-400'
                               )}
                             >
-                              Parent
+                              Parent/Guardian
                             </Text>
                           </Pressable>
                         )}
@@ -1406,9 +1422,72 @@ export default function RosterScreen() {
                   })()}
                   <Text className="text-slate-500 text-xs mt-2">
                     {memberRole === 'coach' || memberRole === 'parent'
-                      ? `${memberRole === 'coach' ? 'Coaches' : 'Parents'} don't need jersey numbers or positions`
+                      ? `${memberRole === 'coach' ? 'Coaches' : 'Parents/Guardians'} don't need jersey numbers or positions`
                       : 'Tap to toggle roles. Members can have multiple roles.'}
                   </Text>
+                </View>
+              )}
+
+              {/* Associated Player dropdown - for parents only */}
+              {memberRole === 'parent' && isAdmin() && (
+                <View className="mb-3">
+                  <Text className="text-slate-400 text-sm mb-1">Associated Player</Text>
+                  <Text className="text-slate-500 text-xs mb-2">Child must be added first</Text>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setShowAssociatedPlayerPicker(!showAssociatedPlayerPicker);
+                    }}
+                    className="bg-slate-800 rounded-xl px-4 py-3 border border-slate-700 flex-row items-center justify-between"
+                  >
+                    <Text className={associatedPlayerId ? 'text-white' : 'text-slate-500'}>
+                      {associatedPlayerId
+                        ? (() => {
+                            const p = players.find((pl) => pl.id === associatedPlayerId && pl.position !== 'Coach' && pl.position !== 'Parent' && !pl.roles?.includes('coach') && !pl.roles?.includes('parent'));
+                            return p ? getPlayerName(p) : 'Unknown Player';
+                          })()
+                        : 'Select associated player (optional)'}
+                    </Text>
+                    <ChevronDown size={16} color="#64748b" />
+                  </Pressable>
+                  {showAssociatedPlayerPicker && (
+                    <View className="mt-1 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                      <Pressable
+                        onPress={() => {
+                          setAssociatedPlayerId('');
+                          setShowAssociatedPlayerPicker(false);
+                        }}
+                        className="px-4 py-3 border-b border-slate-700/50"
+                      >
+                        <Text className="text-slate-400 text-sm">None</Text>
+                      </Pressable>
+                      {players
+                        .filter((p) =>
+                          p.position !== 'Coach' &&
+                          p.position !== 'Parent' &&
+                          !p.roles?.includes('coach') &&
+                          !p.roles?.includes('parent') &&
+                          p.id !== editingPlayer?.id
+                        )
+                        .map((p) => (
+                          <Pressable
+                            key={p.id}
+                            onPress={() => {
+                              setAssociatedPlayerId(p.id);
+                              setShowAssociatedPlayerPicker(false);
+                            }}
+                            className={cn(
+                              'px-4 py-3 border-b border-slate-700/30',
+                              associatedPlayerId === p.id && 'bg-pink-500/20'
+                            )}
+                          >
+                            <Text className={cn('text-sm', associatedPlayerId === p.id ? 'text-pink-400 font-semibold' : 'text-white')}>
+                              {getPlayerName(p)} {p.number ? `#${p.number}` : ''}
+                            </Text>
+                          </Pressable>
+                        ))}
+                    </View>
+                  )}
                 </View>
               )}
 

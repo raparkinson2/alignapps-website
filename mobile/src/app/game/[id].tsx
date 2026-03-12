@@ -703,8 +703,14 @@ function GameDetailScreenInner() {
   const pendingCount = (game.invitedPlayers?.length ?? 0) - checkedInCount - checkedOutCount;
   // Deduplicate players array before filtering to prevent double-renders from race conditions
   const uniquePlayers = players.filter((p, idx, arr) => arr.findIndex(x => x.id === p.id) === idx);
-  const checkedInPlayers = uniquePlayers.filter((p) => game.checkedInPlayers?.includes(p.id));
-  const invitedPlayers = uniquePlayers.filter((p) => game.invitedPlayers?.includes(p.id));
+  // Helper to check if a player is a coach or parent (should be excluded from check-in and lineups)
+  const isCoachOrParent = (p: Player) =>
+    p.position === 'Coach' || p.position === 'Parent' ||
+    p.roles?.includes('coach') || p.roles?.includes('parent');
+  // Only non-coach/parent players participate in check-in
+  const eligiblePlayers = uniquePlayers.filter((p) => !isCoachOrParent(p));
+  const checkedInPlayers = eligiblePlayers.filter((p) => game.checkedInPlayers?.includes(p.id));
+  const invitedPlayers = eligiblePlayers.filter((p) => game.invitedPlayers?.includes(p.id));
 
   // Sort invited players: checked in first, then pending, then checked out
   const sortedInvitedPlayers = [...invitedPlayers].sort((a, b) => {
@@ -715,15 +721,17 @@ function GameDetailScreenInner() {
   });
 
   // If the current player isn't invited yet, show their row at the top so they can self-check-in
+  // Only show self-check-in if the current player is not a coach or parent
   const currentPlayerInList = sortedInvitedPlayers.some((p) => p.id === currentPlayerId);
-  const currentPlayerObj = !currentPlayerInList && currentPlayerId ? players.find((p) => p.id === currentPlayerId) : null;
+  const currentPlayerObjRaw = !currentPlayerInList && currentPlayerId ? players.find((p) => p.id === currentPlayerId) : null;
+  const currentPlayerObj = currentPlayerObjRaw && !isCoachOrParent(currentPlayerObjRaw) ? currentPlayerObjRaw : null;
   const playersToDisplay = currentPlayerObj ? [currentPlayerObj, ...sortedInvitedPlayers] : sortedInvitedPlayers;
 
-  const uninvitedPlayers = uniquePlayers.filter((p) => !game.invitedPlayers?.includes(p.id));
+  const uninvitedPlayers = eligiblePlayers.filter((p) => !game.invitedPlayers?.includes(p.id));
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
   const uninvitedReserve = uninvitedPlayers.filter((p) => p.status === 'reserve');
-  const activePlayers = uniquePlayers.filter((p) => p.status === 'active');
-  const reservePlayers = uniquePlayers.filter((p) => p.status === 'reserve');
+  const activePlayers = eligiblePlayers.filter((p) => p.status === 'active');
+  const reservePlayers = eligiblePlayers.filter((p) => p.status === 'reserve');
   const allRosterPlayers = [...activePlayers, ...reservePlayers]; // For refreshment duty selection
   const beerDutyPlayer = game.beerDutyPlayerId ? uniquePlayers.find((p) => p.id === game.beerDutyPlayerId) : null;
 

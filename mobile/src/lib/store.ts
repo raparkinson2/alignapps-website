@@ -336,6 +336,7 @@ export interface Player {
   goalieStats?: HockeyGoalieStats | SoccerGoalieStats; // Separate stats for goalie (hockey/soccer only)
   gameLogs?: GameLogEntry[]; // Individual game stat logs
   unavailableDates?: string[]; // ISO date strings (YYYY-MM-DD) when player is unavailable
+  associatedPlayerId?: string; // For parents: the player (child) they are associated with
 }
 
 // Helper to get full name from player

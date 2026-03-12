@@ -566,11 +566,11 @@ export default function AdminScreen() {
       Alert.alert('Missing Info', 'Please enter a jersey number.');
       return;
     }
-    if (!rawPhone) {
+    if (!isCoachRole && !isParentRole && !rawPhone) {
       Alert.alert('Missing Info', 'Please enter a phone number.');
       return;
     }
-    if (!newPlayerEmail.trim()) {
+    if (!isCoachRole && !isParentRole && !newPlayerEmail.trim()) {
       Alert.alert('Missing Info', 'Please enter an email address.');
       return;
     }
@@ -2319,7 +2319,7 @@ export default function AdminScreen() {
                                 editPlayerIsParent ? 'text-white' : 'text-slate-400'
                               )}
                             >
-                              Parent
+                              Parent/Guardian
                             </Text>
                           </Pressable>
                         )}
@@ -2328,7 +2328,7 @@ export default function AdminScreen() {
                   })()}
                   <Text className="text-slate-500 text-xs mt-2">
                     {editPlayerIsCoach || editPlayerIsParent
-                      ? `${editPlayerIsCoach ? 'Coaches' : 'Parents'} don't need jersey numbers or positions`
+                      ? `${editPlayerIsCoach ? 'Coaches' : 'Parents/Guardians'} don't need jersey numbers or positions`
                       : 'Tap to toggle roles. Members can have multiple roles.'}
                   </Text>
                 </View>
@@ -2566,7 +2566,7 @@ export default function AdminScreen() {
                 { id: 'player' as const, label: 'Player', description: 'Active team member', icon: <User size={20} color="#22c55e" />, bgColor: 'bg-green-500', iconBg: 'bg-green-500/20' },
                 { id: 'reserve' as const, label: 'Reserve', description: 'Backup/substitute player', icon: <UserMinus size={20} color="#94a3b8" />, bgColor: 'bg-slate-600', iconBg: 'bg-slate-600/20' },
                 { id: 'coach' as const, label: 'Coach', description: 'Team coach (no jersey number needed)', icon: <UserCog size={20} color="#67e8f9" />, bgColor: 'bg-cyan-500', iconBg: 'bg-cyan-500/20' },
-                { id: 'parent' as const, label: 'Parent', description: 'Parent/guardian of a player', icon: <ParentChildIcon size={20} color="#ec4899" />, bgColor: 'bg-pink-500', iconBg: 'bg-pink-500/20' },
+                { id: 'parent' as const, label: 'Parent/Guardian', description: 'Parent/guardian of a player', icon: <ParentChildIcon size={20} color="#ec4899" />, bgColor: 'bg-pink-500', iconBg: 'bg-pink-500/20' },
               ].map((role) => {
                 const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
                 const isEnabled = enabledRoles.includes(role.id);
@@ -2756,7 +2756,7 @@ export default function AdminScreen() {
               <View className="mb-3">
                 <View className="flex-row items-center mb-1">
                   <Phone size={14} color="#a78bfa" />
-                  <Text className="text-slate-400 text-sm ml-2">Phone<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-400 text-sm ml-2">Phone{newPlayerMemberRole !== 'coach' && newPlayerMemberRole !== 'parent' && <Text className="text-red-400">*</Text>}</Text>
                 </View>
                 <TextInput
                   value={newPlayerPhone}
@@ -2772,7 +2772,7 @@ export default function AdminScreen() {
               <View className="mb-3">
                 <View className="flex-row items-center mb-1">
                   <Mail size={14} color="#a78bfa" />
-                  <Text className="text-slate-400 text-sm ml-2">Email<Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-400 text-sm ml-2">Email{newPlayerMemberRole !== 'coach' && newPlayerMemberRole !== 'parent' && <Text className="text-red-400">*</Text>}</Text>
                 </View>
                 <TextInput
                   value={newPlayerEmail}
@@ -3065,7 +3065,7 @@ export default function AdminScreen() {
                               newPlayerMemberRole === 'parent' ? 'text-white' : 'text-slate-400'
                             )}
                           >
-                            Parent
+                            Parent/Guardian
                           </Text>
                         </Pressable>
                       )}
@@ -3074,7 +3074,7 @@ export default function AdminScreen() {
                 })()}
                 <Text className="text-slate-500 text-xs mt-2">
                   {newPlayerMemberRole === 'coach' || newPlayerMemberRole === 'parent'
-                    ? `${newPlayerMemberRole === 'coach' ? 'Coaches' : 'Parents'} don't need jersey numbers or positions`
+                    ? `${newPlayerMemberRole === 'coach' ? 'Coaches' : 'Parents/Guardians'} don't need jersey numbers or positions`
                     : 'Tap to toggle roles. Members can have multiple roles.'}
                 </Text>
               </View>
