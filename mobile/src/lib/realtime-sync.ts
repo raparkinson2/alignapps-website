@@ -147,6 +147,11 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       .eq('id', teamId)
       .maybeSingle();
 
+    // ── PRIORITY PHASE: load only what the Events tab needs ──────────────────
+    // Fire players, games, and events simultaneously — these are enough to
+    // render the first tab. We flush the store after this batch so the UI
+    // becomes interactive immediately, then background-load the rest.
+
     if (teamError || !teamData) {
       // Team doesn't exist in Supabase yet — this happens for locally-created teams
       // that were never pushed. Auto-upload from local store so sync can proceed.
@@ -179,12 +184,99 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     const teamSettings = mapTeamSettings(teamData);
     const teamName = teamData.name;
 
-    // Fire all independent queries simultaneously
-    const currentPlayerId = useTeamStore.getState().currentPlayerId;
+    // ── PHASE 1: Priority data — players, games, events (needed for first tab) ─
+    // Fire these three plus their response tables simultaneously, then flush the
+    // store so the Events tab renders right away.
     const [
       { data: playersData },
       { data: gamesData },
       { data: eventsData },
+    ] = await Promise.all([
+      supabase.from('players').select('*').eq('team_id', teamId),
+      supabase.from('games').select('*').eq('team_id', teamId).order('date', { ascending: true }),
+      supabase.from('events').select('*').eq('team_id', teamId).order('date', { ascending: true }),
+    ]);
+
+    // Deduplicate players
+    const rawPlayers = (playersData || []).map(mapPlayer);
+    const playerMap = new Map<string, Player>();
+    for (const p of rawPlayers) playerMap.set(p.id, p);
+    const players = Array.from(playerMap.values());
+
+    // Fetch game + event responses in parallel
+    const gameIds = (gamesData || []).map((g: any) => g.id);
+    const eventIds = (eventsData || []).map((e: any) => e.id);
+    const [{ data: grData }, { data: erData }] = await Promise.all([
+      gameIds.length > 0
+        ? supabase.from('game_responses').select('*').in('game_id', gameIds)
+        : Promise.resolve({ data: [] }),
+      eventIds.length > 0
+        ? supabase.from('event_responses').select('*').in('event_id', eventIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    // Build game responses map
+    const gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string> }> = {};
+    for (const r of grData || []) {
+      if (!gameResponsesMap[r.game_id]) gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {} };
+      const map = gameResponsesMap[r.game_id];
+      if (r.response === 'in') { map.in.push(r.player_id); map.invited.push(r.player_id); }
+      else if (r.response === 'out') { map.out.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
+      else if (r.response === 'invited') { map.invited.push(r.player_id); }
+    }
+    const games: Game[] = (gamesData || []).map((g: any) => {
+      const resp = gameResponsesMap[g.id] || { in: [], out: [], invited: [], notes: {} };
+      return { ...mapGame(g), checkedInPlayers: resp.in, checkedOutPlayers: resp.out, invitedPlayers: resp.invited, checkoutNotes: resp.notes };
+    });
+
+    // Build event responses map
+    const eventResponsesMap: Record<string, { confirmed: string[]; declined: string[]; invited: string[]; notes: Record<string, string> }> = {};
+    for (const r of erData || []) {
+      if (!eventResponsesMap[r.event_id]) eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {} };
+      const map = eventResponsesMap[r.event_id];
+      if (r.response === 'confirmed') { map.confirmed.push(r.player_id); map.invited.push(r.player_id); }
+      else if (r.response === 'declined') { map.declined.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
+      else if (r.response === 'invited') { map.invited.push(r.player_id); }
+    }
+    const events: Event[] = (eventsData || []).map((e: any) => {
+      const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {} };
+      return { ...mapEvent(e), confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes };
+    });
+
+    // Flush priority data to store — Events tab is now fully renderable
+    const currentState1 = useTeamStore.getState();
+    const isActiveTeam = teamId === currentState1.activeTeamId;
+    const localPlayers = isActiveTeam
+      ? currentState1.players
+      : (currentState1.teams.find(t => t.id === teamId)?.players || []);
+    const finalPlayers = players.length > 0 ? players : localPlayers;
+
+    if (isActiveTeam) {
+      useTeamStore.setState({ teamName, teamSettings, players: finalPlayers, games, events });
+    }
+
+    // Resolve currentPlayerId if missing (needs players to be loaded first)
+    const storeAfterPhase1 = useTeamStore.getState();
+    if (storeAfterPhase1.isLoggedIn && (!storeAfterPhase1.currentPlayerId || !players.some(p => p.id === storeAfterPhase1.currentPlayerId))) {
+      const { userEmail, userPhone } = storeAfterPhase1;
+      const matchingPlayer = players.find(p =>
+        (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
+        (userPhone && p.phone?.replace(/\D/g, '') === userPhone.replace(/\D/g, ''))
+      );
+      if (matchingPlayer) {
+        console.log('SYNC: Resolved currentPlayerId from loaded team data:', matchingPlayer.id);
+        useTeamStore.setState({ currentPlayerId: matchingPlayer.id });
+      }
+    }
+
+    // Clear the syncing flag so the UI stops showing the loading state
+    useTeamStore.getState().setIsSyncing(false);
+    console.log(`SYNC: Phase 1 done — ${players.length} players, ${games.length} games, ${events.length} events`);
+
+    // ── PHASE 2: Background data — chat, payments, photos, notifications, etc. ─
+    // These are fetched after the UI is already interactive. No loading spinner.
+    const currentPlayerId = useTeamStore.getState().currentPlayerId;
+    const [
       { data: chatData },
       { data: periodsData },
       { data: photosData },
@@ -192,9 +284,6 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       { data: pollsData },
       { data: linksData },
     ] = await Promise.all([
-      supabase.from('players').select('*').eq('team_id', teamId),
-      supabase.from('games').select('*').eq('team_id', teamId).order('date', { ascending: true }),
-      supabase.from('events').select('*').eq('team_id', teamId).order('date', { ascending: true }),
       supabase.from('chat_messages').select('*').eq('team_id', teamId).order('created_at', { ascending: true }).limit(200),
       supabase.from('payment_periods').select('*').eq('team_id', teamId).order('sort_order', { ascending: true }),
       supabase.from('photos').select('*').eq('team_id', teamId).order('uploaded_at', { ascending: false }),
@@ -205,72 +294,15 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       supabase.from('team_links').select('*').eq('team_id', teamId).order('created_at', { ascending: true }),
     ]);
 
-    // Deduplicate players by id in case of DB anomalies or race conditions
-    const rawPlayers = (playersData || []).map(mapPlayer);
-    const playerMap = new Map<string, Player>();
-    for (const p of rawPlayers) playerMap.set(p.id, p);
-    const players = Array.from(playerMap.values());
-
-    // Fire response queries in parallel now that we have game/event/payment IDs
-    const gameIds = (gamesData || []).map((g: any) => g.id);
-    const eventIds = (eventsData || []).map((e: any) => e.id);
+    // Fetch player_payments + payment_entries (depend on periodsData)
     const periodIds = (periodsData || []).map((p: any) => p.id);
-
-    const [
-      { data: grData },
-      { data: erData },
-      { data: ppData },
-    ] = await Promise.all([
-      gameIds.length > 0
-        ? supabase.from('game_responses').select('*').in('game_id', gameIds)
-        : Promise.resolve({ data: [] }),
-      eventIds.length > 0
-        ? supabase.from('event_responses').select('*').in('event_id', eventIds)
-        : Promise.resolve({ data: [] }),
-      periodIds.length > 0
-        ? supabase.from('player_payments').select('*').in('payment_period_id', periodIds)
-        : Promise.resolve({ data: [] }),
-    ]);
-
-    // Fetch payment entries (depends on player_payments)
+    const { data: ppData } = periodIds.length > 0
+      ? await supabase.from('player_payments').select('*').in('payment_period_id', periodIds)
+      : { data: [] };
     const ppIds = (ppData || []).map((p: any) => p.id);
     const { data: entriesData } = ppIds.length > 0
       ? await supabase.from('payment_entries').select('*').in('player_payment_id', ppIds)
       : { data: [] };
-
-    // Build game responses map
-    let gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string> }> = {};
-    for (const r of grData || []) {
-      if (!gameResponsesMap[r.game_id]) {
-        gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {} };
-      }
-      const map = gameResponsesMap[r.game_id];
-      if (r.response === 'in') { map.in.push(r.player_id); map.invited.push(r.player_id); }
-      else if (r.response === 'out') { map.out.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
-      else if (r.response === 'invited') { map.invited.push(r.player_id); }
-    }
-
-    const games: Game[] = (gamesData || []).map((g: any) => {
-      const resp = gameResponsesMap[g.id] || { in: [], out: [], invited: [], notes: {} };
-      return { ...mapGame(g), checkedInPlayers: resp.in, checkedOutPlayers: resp.out, invitedPlayers: resp.invited, checkoutNotes: resp.notes };
-    });
-
-    // Build event responses map
-    let eventResponsesMap: Record<string, { confirmed: string[]; declined: string[]; invited: string[]; notes: Record<string, string> }> = {};
-    for (const r of erData || []) {
-      if (!eventResponsesMap[r.event_id]) {
-        eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {} };
-      }
-      const map = eventResponsesMap[r.event_id];
-      if (r.response === 'confirmed') { map.confirmed.push(r.player_id); map.invited.push(r.player_id); }
-      else if (r.response === 'declined') { map.declined.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
-      else if (r.response === 'invited') { map.invited.push(r.player_id); }
-    }
-
-    const events: Event[] = (eventsData || []).map((e: any) => {
-      const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {} };
-      return { ...mapEvent(e), confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes };
-    });
 
     const chatMessages: ChatMessage[] = (chatData || []).map((m: any) => ({
       id: m.id,
@@ -286,9 +318,8 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       createdAt: m.created_at,
     }));
 
-    // Build payment maps
-    let playerPaymentsMap: Record<string, any[]> = {};
-    let entriesMap: Record<string, any[]> = {};
+    const playerPaymentsMap: Record<string, any[]> = {};
+    const entriesMap: Record<string, any[]> = {};
     for (const pp of ppData || []) {
       if (!playerPaymentsMap[pp.payment_period_id]) playerPaymentsMap[pp.payment_period_id] = [];
       playerPaymentsMap[pp.payment_period_id].push(pp);
@@ -367,17 +398,8 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       createdAt: l.created_at,
     }));
 
-    // Apply to the teams[] array so multi-team checks work.
-    // Only update the active store slots (teamName, players, etc.) when loading the active team —
-    // loading a background team should NOT overwrite what the user is currently seeing.
-    const currentState = useTeamStore.getState();
-    const isActiveTeam = teamId === currentState.activeTeamId;
-
-    const localPlayers = isActiveTeam
-      ? currentState.players
-      : (currentState.teams.find(t => t.id === teamId)?.players || []);
-    const finalPlayers = players.length > 0 ? players : localPlayers;
-
+    // Flush phase 2 data and update the teams[] array with the full picture
+    const currentState2 = useTeamStore.getState();
     const teamEntry = {
       id: teamId,
       teamName,
@@ -386,8 +408,8 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       games,
       events,
       chatMessages,
-      chatLastReadAt: currentState.teams.find(t => t.id === teamId)?.chatLastReadAt
-        ?? (isActiveTeam ? currentState.chatLastReadAt : {})
+      chatLastReadAt: currentState2.teams.find(t => t.id === teamId)?.chatLastReadAt
+        ?? (isActiveTeam ? currentState2.chatLastReadAt : {})
         ?? {},
       paymentPeriods,
       photos,
@@ -396,48 +418,18 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       teamLinks,
     };
 
-    const existsInArray = currentState.teams.some(t => t.id === teamId);
+    const existsInArray = currentState2.teams.some(t => t.id === teamId);
     const updatedTeams = existsInArray
-      ? currentState.teams.map(t => t.id === teamId ? { ...t, ...teamEntry } : t)
-      : [...currentState.teams, teamEntry];
+      ? currentState2.teams.map(t => t.id === teamId ? { ...t, ...teamEntry } : t)
+      : [...currentState2.teams, teamEntry];
 
     if (isActiveTeam) {
-      // Full update — this is the team the user is viewing
-      useTeamStore.setState({
-        teamName,
-        teamSettings,
-        players: finalPlayers,
-        games,
-        events,
-        chatMessages,
-        paymentPeriods,
-        photos,
-        notifications,
-        polls,
-        teamLinks,
-        teams: updatedTeams,
-      });
+      useTeamStore.setState({ chatMessages, paymentPeriods, photos, notifications, polls, teamLinks, teams: updatedTeams });
     } else {
-      // Background team — only update the teams[] array, don't touch active slots
       useTeamStore.setState({ teams: updatedTeams });
     }
 
-    // After loading, resolve currentPlayerId if it's missing or stale
-    const storeState = useTeamStore.getState();
-    if (storeState.isLoggedIn && (!storeState.currentPlayerId || !players.some(p => p.id === storeState.currentPlayerId))) {
-      const { userEmail, userPhone } = storeState;
-      const matchingPlayer = players.find(p =>
-        (userEmail && p.email?.toLowerCase() === userEmail.toLowerCase()) ||
-        (userPhone && p.phone?.replace(/\D/g, '') === userPhone.replace(/\D/g, ''))
-      );
-      if (matchingPlayer) {
-        console.log('SYNC: Resolved currentPlayerId from loaded team data:', matchingPlayer.id);
-        useTeamStore.setState({ currentPlayerId: matchingPlayer.id });
-      }
-    }
-
-    console.log(`SYNC: Loaded - ${players.length} players, ${games.length} games, ${events.length} events, ${chatMessages.length} msgs`);
-    useTeamStore.getState().setIsSyncing(false);
+    console.log(`SYNC: Phase 2 done — chat ${chatMessages.length}, periods ${paymentPeriods.length}, photos ${photos.length}`);
     return true;
   } catch (err) {
     console.error('SYNC: loadTeamFromSupabase error:', err);
