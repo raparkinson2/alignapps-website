@@ -500,9 +500,10 @@ interface PlayerRowProps {
   index: number;
   canToggle: boolean; // Whether the current user can toggle this player's check-in
   isSelf: boolean; // Whether this is the current user's row
+  isAssociatedChild?: boolean; // Whether current user is a parent of this player
 }
 
-function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: PlayerRowProps) {
+function PlayerRow({ player, status, onToggle, index, canToggle, isSelf, isAssociatedChild }: PlayerRowProps) {
   const sport = useTeamStore((s) => s.teamSettings.sport);
   const positionName = SPORT_POSITION_NAMES[sport][player.position] || player.position;
 
@@ -537,6 +538,11 @@ function PlayerRow({ player, status, onToggle, index, canToggle, isSelf }: Playe
           {isSelf && (
             <View className="absolute -top-1 -right-1 bg-cyan-500 rounded-full px-1.5 py-0.5">
               <Text className="text-white text-[8px] font-bold">YOU</Text>
+            </View>
+          )}
+          {isAssociatedChild && !isSelf && (
+            <View className="absolute -top-1 -right-1 bg-amber-500 rounded-full px-1.5 py-0.5">
+              <Text className="text-white text-[8px] font-bold">CHILD</Text>
             </View>
           )}
         </View>
@@ -605,6 +611,10 @@ function GameDetailScreenInner() {
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const isCoach = currentPlayer?.roles?.includes('coach') ?? false;
   const canManageStats = canManageTeam() || isCoach;
+
+  // Parent/guardian: detect if current user is a parent with an associated player (child)
+  const isParent = currentPlayer?.roles?.includes('parent') ?? false;
+  const associatedChildId = isParent ? (currentPlayer?.associatedPlayerId ?? null) : null;
 
 
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
@@ -742,7 +752,18 @@ function GameDetailScreenInner() {
   const currentPlayerInList = sortedInvitedPlayers.some((p) => p.id === currentPlayerId);
   const currentPlayerObjRaw = !currentPlayerInList && currentPlayerId ? players.find((p) => p.id === currentPlayerId) : null;
   const currentPlayerObj = currentPlayerObjRaw && !isCoachOrParent(currentPlayerObjRaw) ? currentPlayerObjRaw : null;
-  const playersToDisplay = currentPlayerObj ? [currentPlayerObj, ...sortedInvitedPlayers] : sortedInvitedPlayers;
+
+  // If current user is a parent, also ensure their associated child appears at the top if not already invited
+  const associatedChildInList = associatedChildId ? sortedInvitedPlayers.some((p) => p.id === associatedChildId) : false;
+  const associatedChildObj = (isParent && associatedChildId && !associatedChildInList)
+    ? players.find((p) => p.id === associatedChildId) ?? null
+    : null;
+
+  const playersToDisplay = [
+    ...(currentPlayerObj ? [currentPlayerObj] : []),
+    ...(associatedChildObj ? [associatedChildObj] : []),
+    ...sortedInvitedPlayers,
+  ];
 
   const uninvitedPlayers = eligiblePlayers.filter((p) => !game.invitedPlayers?.includes(p.id));
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
@@ -3234,7 +3255,9 @@ function GameDetailScreenInner() {
               <Text className="text-slate-400 text-xs text-center">
                 {canManageTeam()
                   ? <>Tap to cycle: <Text className="text-green-400 font-medium">IN</Text> → <Text className="text-red-400 font-medium">OUT</Text> → <Text className="text-slate-500 font-medium">No Response</Text></>
-                  : <>Tap your row to update your RSVP</>
+                  : isParent && associatedChildId
+                    ? <>Tap your child's row to update their RSVP</>
+                    : <>Tap your row to update your RSVP</>
                 }
               </Text>
             </View>
@@ -3242,8 +3265,11 @@ function GameDetailScreenInner() {
             <View className="bg-slate-800/50 rounded-2xl p-3 border border-slate-700/50">
               {playersToDisplay.map((player, index) => {
                 const isSelf = player.id === currentPlayerId;
-                // Admins and captains can toggle anyone, regular players can only toggle themselves
-                const canToggle = canManageTeam() || isSelf;
+                // Parents can toggle their associated child's check-in
+                const isAssociatedChild = !!associatedChildId && player.id === associatedChildId;
+                // Admins and captains can toggle anyone, regular players can only toggle themselves,
+                // parents can toggle their associated child
+                const canToggle = canManageTeam() || isSelf || isAssociatedChild;
 
                 return (
                   <PlayerRow
@@ -3254,6 +3280,7 @@ function GameDetailScreenInner() {
                     index={index}
                     canToggle={canToggle}
                     isSelf={isSelf}
+                    isAssociatedChild={isAssociatedChild}
                   />
                 );
               })}
