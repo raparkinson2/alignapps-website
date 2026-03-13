@@ -11,8 +11,8 @@ import type {
   Game, Player, Sport,
   HockeyLineup, HockeyForwardLine, HockeyDefenseLine,
   BasketballLineup,
-  BaseballLineup,
-  SoccerLineup,
+  BaseballLineup, BattingOrderLineup,
+  SoccerLineup, SoccerDiamondLineup,
   LacrosseLineup,
 } from '@/lib/types';
 
@@ -452,6 +452,125 @@ function LacrosseLineupEditor({ lineup, players, isAdmin, onChange }: {
   );
 }
 
+// ── Batting Order Editor ───────────────────────────────────────────────────────
+
+function BattingOrderEditor({ lineup, players, isAdmin, onChange }: {
+  lineup: BattingOrderLineup | undefined;
+  players: Player[];
+  isAdmin: boolean;
+  onChange: (l: BattingOrderLineup) => void;
+}) {
+  const numHitters = lineup?.numHitters ?? 9;
+  const battingOrder: (string | undefined)[] = Array.from({ length: numHitters }, (_, i) =>
+    lineup?.battingOrder?.[i]?.playerId
+  );
+
+  const setSlot = (index: number, playerId: string | undefined) => {
+    const newOrder = battingOrder.map((id, i) => i === index ? playerId : id);
+    onChange({
+      numHitters,
+      battingOrder: newOrder.map((id) => id ? { playerId: id, position: '' } : undefined),
+    });
+  };
+
+  const assignedIds = new Set(battingOrder.filter(Boolean) as string[]);
+
+  return (
+    <div className="mt-4">
+      <div className="text-slate-300 font-semibold text-sm mb-2">Batting Order</div>
+      <div className="space-y-1.5">
+        {Array.from({ length: numHitters }, (_, i) => {
+          const slotPlayerId = battingOrder[i];
+          const slotPlayer = slotPlayerId ? players.find((p) => p.id === slotPlayerId) : undefined;
+          return (
+            <div key={i} className="flex items-center gap-2">
+              <span className="text-slate-500 text-xs w-5 text-right">{i + 1}.</span>
+              {isAdmin ? (
+                <select
+                  value={slotPlayerId ?? ''}
+                  onChange={(e) => setSlot(i, e.target.value || undefined)}
+                  className="flex-1 bg-slate-700/60 border border-slate-600/40 rounded-lg px-2 py-1.5 text-sm text-white"
+                >
+                  <option value="">— Empty —</option>
+                  {players.map((p) => (
+                    <option key={p.id} value={p.id} disabled={assignedIds.has(p.id) && p.id !== slotPlayerId}>
+                      #{p.number} {p.firstName} {p.lastName}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="flex-1 text-sm text-white px-2 py-1.5 bg-slate-700/40 rounded-lg">
+                  {slotPlayer ? `#${slotPlayer.number} ${slotPlayer.firstName} ${slotPlayer.lastName}` : <span className="text-slate-500">Empty</span>}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Soccer Diamond Editor ──────────────────────────────────────────────────────
+
+const SOCCER_DIAMOND_POSITIONS: { key: keyof SoccerDiamondLineup; label: string }[] = [
+  { key: 'gk', label: 'GK' },
+  { key: 'lb', label: 'LB' }, { key: 'cb1', label: 'CB' }, { key: 'cb2', label: 'CB' }, { key: 'rb', label: 'RB' },
+  { key: 'cdm', label: 'CDM' },
+  { key: 'lm', label: 'LM' }, { key: 'rm', label: 'RM' },
+  { key: 'cam', label: 'CAM' },
+  { key: 'st1', label: 'ST' }, { key: 'st2', label: 'ST' },
+];
+
+function SoccerDiamondEditor({ lineup, players, isAdmin, onChange }: {
+  lineup: SoccerDiamondLineup | undefined;
+  players: Player[];
+  isAdmin: boolean;
+  onChange: (l: SoccerDiamondLineup) => void;
+}) {
+  const current: SoccerDiamondLineup = lineup ?? {};
+  const assignedIds = new Set(Object.values(current).filter(Boolean) as string[]);
+
+  const setSlot = (key: keyof SoccerDiamondLineup, playerId: string | undefined) => {
+    onChange({ ...current, [key]: playerId || undefined });
+  };
+
+  return (
+    <div className="mt-4">
+      <div className="text-slate-300 font-semibold text-sm mb-2">Diamond Formation (4-1-2-1-2)</div>
+      <div className="space-y-1.5">
+        {SOCCER_DIAMOND_POSITIONS.map(({ key, label }) => {
+          const slotPlayerId = current[key];
+          const slotPlayer = slotPlayerId ? players.find((p) => p.id === slotPlayerId) : undefined;
+          return (
+            <div key={key} className="flex items-center gap-2">
+              <span className="text-slate-500 text-xs w-10 text-right">{label}</span>
+              {isAdmin ? (
+                <select
+                  value={slotPlayerId ?? ''}
+                  onChange={(e) => setSlot(key, e.target.value || undefined)}
+                  className="flex-1 bg-slate-700/60 border border-slate-600/40 rounded-lg px-2 py-1.5 text-sm text-white"
+                >
+                  <option value="">— Empty —</option>
+                  {players.map((p) => (
+                    <option key={p.id} value={p.id} disabled={assignedIds.has(p.id) && p.id !== slotPlayerId}>
+                      #{p.number} {p.firstName} {p.lastName}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="flex-1 text-sm text-white px-2 py-1.5 bg-slate-700/40 rounded-lg">
+                  {slotPlayer ? `#${slotPlayer.number} ${slotPlayer.firstName} ${slotPlayer.lastName}` : <span className="text-slate-500">Empty</span>}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Defaults ───────────────────────────────────────────────────────────────────
 
 type LineupType = 'hockey' | 'basketball' | 'baseball' | 'softball' | 'soccer' | 'lacrosse';
@@ -519,7 +638,11 @@ export default function LineupModal({ isOpen, onClose, game, players, sport, isA
     onClose();
   };
 
-  const activePlayers = players.filter((p) => p.status === 'active');
+  const activePlayers = players.filter((p) =>
+    p.status === 'active' &&
+    p.position !== 'Coach' && p.position !== 'Parent' &&
+    !p.roles?.includes('coach') && !p.roles?.includes('parent')
+  );
   const title = `${game.opponent} — ${getModalTitle(sport)}`;
 
   return (
@@ -539,9 +662,25 @@ export default function LineupModal({ isOpen, onClose, game, players, sport, isA
               isSoftball={lineupType === 'softball'}
               onChange={(l) => setLocalGame((g) => ({ ...g, baseballLineup: l }))} />
           )}
+          {(lineupType === 'baseball' || lineupType === 'softball') && (
+            <BattingOrderEditor
+              lineup={localGame.battingOrderLineup}
+              players={activePlayers}
+              isAdmin={isAdmin}
+              onChange={(l) => setLocalGame((g) => ({ ...g, battingOrderLineup: l }))}
+            />
+          )}
           {lineupType === 'soccer' && localGame.soccerLineup && (
             <SoccerLineupEditor lineup={localGame.soccerLineup} players={activePlayers} isAdmin={isAdmin}
               onChange={(l) => setLocalGame((g) => ({ ...g, soccerLineup: l }))} />
+          )}
+          {lineupType === 'soccer' && (
+            <SoccerDiamondEditor
+              lineup={localGame.soccerDiamondLineup}
+              players={activePlayers}
+              isAdmin={isAdmin}
+              onChange={(l) => setLocalGame((g) => ({ ...g, soccerDiamondLineup: l }))}
+            />
           )}
           {lineupType === 'lacrosse' && localGame.lacrosseLineup && (
             <LacrosseLineupEditor lineup={localGame.lacrosseLineup} players={activePlayers} isAdmin={isAdmin}

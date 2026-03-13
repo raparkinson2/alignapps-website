@@ -164,7 +164,11 @@ interface TableSection {
 }
 
 function getTableSections(sport: Sport, players: Player[]): TableSection[] {
-  const active = players.filter((p) => p.status === 'active');
+  const active = players.filter((p) =>
+    p.status === 'active' &&
+    p.position !== 'Coach' && p.position !== 'Parent' &&
+    !p.roles?.includes('coach') && !p.roles?.includes('parent')
+  );
 
   const isGoalie = (p: Player) => {
     const positions = p.positions && p.positions.length > 0 ? p.positions : [p.position];
