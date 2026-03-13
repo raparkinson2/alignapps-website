@@ -184,17 +184,25 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     const teamSettings = mapTeamSettings(teamData);
     const teamName = teamData.name;
 
-    // ── PHASE 1: Priority data — players, games, events (needed for first tab) ─
-    // Fire these three plus their response tables simultaneously, then flush the
-    // store so the Events tab renders right away.
+    // ── PHASE 1: Priority data — Events, Roster, Chat, Admin ─────────────────
+    // players + games + events + chat + notifications all fire together, then
+    // their dependent response tables fire in a second parallel batch.
+    // Store is flushed after this so all four priority tabs render immediately.
+    const currentPlayerId = useTeamStore.getState().currentPlayerId;
     const [
       { data: playersData },
       { data: gamesData },
       { data: eventsData },
+      { data: chatData },
+      { data: notifData },
     ] = await Promise.all([
       supabase.from('players').select('*').eq('team_id', teamId),
       supabase.from('games').select('*').eq('team_id', teamId).order('date', { ascending: true }),
       supabase.from('events').select('*').eq('team_id', teamId).order('date', { ascending: true }),
+      supabase.from('chat_messages').select('*').eq('team_id', teamId).order('created_at', { ascending: true }).limit(200),
+      currentPlayerId
+        ? supabase.from('notifications').select('*').eq('team_id', teamId).eq('to_player_id', currentPlayerId).eq('read', false).order('created_at', { ascending: false }).limit(50)
+        : Promise.resolve({ data: [] }),
     ]);
 
     // Deduplicate players
@@ -273,23 +281,16 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     useTeamStore.getState().setIsSyncing(false);
     console.log(`SYNC: Phase 1 done — ${players.length} players, ${games.length} games, ${events.length} events`);
 
-    // ── PHASE 2: Background data — chat, payments, photos, notifications, etc. ─
+    // ── PHASE 2: Background data — photos, payments, polls, links ────────────
     // These are fetched after the UI is already interactive. No loading spinner.
-    const currentPlayerId = useTeamStore.getState().currentPlayerId;
     const [
-      { data: chatData },
       { data: periodsData },
       { data: photosData },
-      { data: notifData },
       { data: pollsData },
       { data: linksData },
     ] = await Promise.all([
-      supabase.from('chat_messages').select('*').eq('team_id', teamId).order('created_at', { ascending: true }).limit(200),
       supabase.from('payment_periods').select('*').eq('team_id', teamId).order('sort_order', { ascending: true }),
       supabase.from('photos').select('*').eq('team_id', teamId).order('uploaded_at', { ascending: false }),
-      currentPlayerId
-        ? supabase.from('notifications').select('*').eq('team_id', teamId).eq('to_player_id', currentPlayerId).eq('read', false).order('created_at', { ascending: false }).limit(50)
-        : Promise.resolve({ data: [] }),
       supabase.from('polls').select('*').eq('team_id', teamId).order('created_at', { ascending: false }),
       supabase.from('team_links').select('*').eq('team_id', teamId).order('created_at', { ascending: true }),
     ]);
@@ -303,20 +304,6 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     const { data: entriesData } = ppIds.length > 0
       ? await supabase.from('payment_entries').select('*').in('player_payment_id', ppIds)
       : { data: [] };
-
-    const chatMessages: ChatMessage[] = (chatData || []).map((m: any) => ({
-      id: m.id,
-      senderId: m.sender_id,
-      senderName: m.sender_name || undefined,
-      message: m.message || '',
-      imageUrl: m.image_url || undefined,
-      gifUrl: m.gif_url || undefined,
-      gifWidth: m.gif_width || undefined,
-      gifHeight: m.gif_height || undefined,
-      mentionedPlayerIds: m.mentioned_player_ids || [],
-      mentionType: m.mention_type || undefined,
-      createdAt: m.created_at,
-    }));
 
     const playerPaymentsMap: Record<string, any[]> = {};
     const entriesMap: Record<string, any[]> = {};
@@ -363,19 +350,6 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       uploadedAt: p.uploaded_at,
     }));
 
-    const notifications: AppNotification[] = (notifData || []).map((n: any) => ({
-      id: n.id,
-      type: n.type,
-      title: n.title,
-      message: n.message,
-      gameId: n.game_id || undefined,
-      eventId: n.event_id || undefined,
-      fromPlayerId: n.from_player_id || undefined,
-      toPlayerId: n.to_player_id,
-      createdAt: n.created_at,
-      read: n.read || false,
-    }));
-
     const polls: Poll[] = (pollsData || []).map((p: any) => ({
       id: p.id,
       question: p.question,
@@ -399,7 +373,10 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     }));
 
     // Flush phase 2 data and update the teams[] array with the full picture
+    // chatMessages and notifications were already flushed in Phase 1 — read them back from store
     const currentState2 = useTeamStore.getState();
+    const phase1ChatMessages = isActiveTeam ? currentState2.chatMessages : (currentState2.teams.find(t => t.id === teamId)?.chatMessages ?? []);
+    const phase1Notifications = isActiveTeam ? currentState2.notifications : (currentState2.teams.find(t => t.id === teamId)?.notifications ?? []);
     const teamEntry = {
       id: teamId,
       teamName,
@@ -407,13 +384,13 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       players: finalPlayers,
       games,
       events,
-      chatMessages,
+      chatMessages: phase1ChatMessages,
       chatLastReadAt: currentState2.teams.find(t => t.id === teamId)?.chatLastReadAt
         ?? (isActiveTeam ? currentState2.chatLastReadAt : {})
         ?? {},
       paymentPeriods,
       photos,
-      notifications,
+      notifications: phase1Notifications,
       polls,
       teamLinks,
     };
@@ -424,12 +401,12 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       : [...currentState2.teams, teamEntry];
 
     if (isActiveTeam) {
-      useTeamStore.setState({ chatMessages, paymentPeriods, photos, notifications, polls, teamLinks, teams: updatedTeams });
+      useTeamStore.setState({ paymentPeriods, photos, polls, teamLinks, teams: updatedTeams });
     } else {
       useTeamStore.setState({ teams: updatedTeams });
     }
 
-    console.log(`SYNC: Phase 2 done — chat ${chatMessages.length}, periods ${paymentPeriods.length}, photos ${photos.length}`);
+    console.log(`SYNC: Phase 2 done — periods ${paymentPeriods.length}, photos ${photos.length}, polls ${polls.length}`);
     return true;
   } catch (err) {
     console.error('SYNC: loadTeamFromSupabase error:', err);
