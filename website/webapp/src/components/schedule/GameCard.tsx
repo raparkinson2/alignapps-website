@@ -109,8 +109,13 @@ export default function GameCard({
   const dutyLabel = teamSettings.refreshmentDutyIs21Plus ? 'Beer Duty' : 'Refreshment Duty';
 
   // Cycle RSVP for any player row: none→in→out→none
+  const currentPlayer = players.find((p) => p.id === currentPlayerId);
+  const isParent = currentPlayer?.roles?.includes('parent') ?? false;
+  const associatedChildId = isParent ? (currentPlayer?.associatedPlayerId ?? null) : null;
+
   const handleToggleRsvp = (playerId: string) => {
-    const canToggle = isAdmin || playerId === currentPlayerId;
+    const isAssociatedChild = !!associatedChildId && playerId === associatedChildId;
+    const canToggle = isAdmin || playerId === currentPlayerId || isAssociatedChild;
     if (!canToggle) return;
 
     const isIn = game.checkedInPlayers?.includes(playerId);

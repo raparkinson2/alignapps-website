@@ -63,6 +63,7 @@ function mapPlayer(p: any): Player {
     pitcherStats: p.pitcher_stats || {},
     gameLogs: p.game_logs || [],
     password: p.password || undefined,
+    associatedPlayerId: p.associated_player_id || undefined,
   };
 }
 
@@ -134,53 +135,67 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     const teamSettings = mapTeamSettings(teamData);
     const teamName = teamData.name;
 
-    // Players
-    const { data: playersData } = await supabase.from('players').select('*').eq('team_id', teamId);
+    // ── PHASE 1: Priority data — players, games, events, chat, notifications ──
+    const currentPlayerId = useTeamStore.getState().currentPlayerId;
+    const [
+      { data: playersData },
+      { data: gamesData },
+      { data: eventsData },
+      { data: chatData },
+      { data: notifData },
+    ] = await Promise.all([
+      supabase.from('players').select('*').eq('team_id', teamId),
+      supabase.from('games').select('*').eq('team_id', teamId).order('date', { ascending: true }),
+      supabase.from('events').select('*').eq('team_id', teamId).order('date', { ascending: true }),
+      supabase.from('chat_messages').select('*').eq('team_id', teamId).order('created_at', { ascending: true }).limit(200),
+      currentPlayerId
+        ? supabase.from('notifications').select('*').eq('team_id', teamId).eq('to_player_id', currentPlayerId).eq('read', false).order('created_at', { ascending: false }).limit(50)
+        : Promise.resolve({ data: [] }),
+    ]);
+
     const rawPlayers = (playersData || []).map(mapPlayer);
     const playerMap = new Map<string, Player>();
     for (const p of rawPlayers) playerMap.set(p.id, p);
     const players = Array.from(playerMap.values());
 
-    // Games + responses
-    const { data: gamesData } = await supabase.from('games').select('*').eq('team_id', teamId).order('date', { ascending: true });
+    // Fetch game + event responses in parallel now that we have the IDs
     const gameIds = (gamesData || []).map((g: any) => g.id);
-    let gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string> }> = {};
-    if (gameIds.length > 0) {
-      const { data: grData } = await supabase.from('game_responses').select('*').in('game_id', gameIds);
-      for (const r of grData || []) {
-        if (!gameResponsesMap[r.game_id]) gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {} };
-        const map = gameResponsesMap[r.game_id];
-        if (r.response === 'in') { map.in.push(r.player_id); map.invited.push(r.player_id); }
-        else if (r.response === 'out') { map.out.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
-        else if (r.response === 'invited') { map.invited.push(r.player_id); }
-      }
+    const eventIds = (eventsData || []).map((e: any) => e.id);
+    const [{ data: grData }, { data: erData }] = await Promise.all([
+      gameIds.length > 0
+        ? supabase.from('game_responses').select('*').in('game_id', gameIds)
+        : Promise.resolve({ data: [] }),
+      eventIds.length > 0
+        ? supabase.from('event_responses').select('*').in('event_id', eventIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string> }> = {};
+    for (const r of grData || []) {
+      if (!gameResponsesMap[r.game_id]) gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {} };
+      const map = gameResponsesMap[r.game_id];
+      if (r.response === 'in') { map.in.push(r.player_id); map.invited.push(r.player_id); }
+      else if (r.response === 'out') { map.out.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
+      else if (r.response === 'invited') { map.invited.push(r.player_id); }
     }
     const games: Game[] = (gamesData || []).map((g: any) => {
       const resp = gameResponsesMap[g.id] || { in: [], out: [], invited: [], notes: {} };
       return { ...mapGame(g), checkedInPlayers: resp.in, checkedOutPlayers: resp.out, invitedPlayers: resp.invited, checkoutNotes: resp.notes };
     });
 
-    // Events + responses
-    const { data: eventsData } = await supabase.from('events').select('*').eq('team_id', teamId).order('date', { ascending: true });
-    const eventIds = (eventsData || []).map((e: any) => e.id);
-    let eventResponsesMap: Record<string, { confirmed: string[]; declined: string[]; invited: string[]; notes: Record<string, string> }> = {};
-    if (eventIds.length > 0) {
-      const { data: erData } = await supabase.from('event_responses').select('*').in('event_id', eventIds);
-      for (const r of erData || []) {
-        if (!eventResponsesMap[r.event_id]) eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {} };
-        const map = eventResponsesMap[r.event_id];
-        if (r.response === 'confirmed') { map.confirmed.push(r.player_id); map.invited.push(r.player_id); }
-        else if (r.response === 'declined') { map.declined.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
-        else if (r.response === 'invited') { map.invited.push(r.player_id); }
-      }
+    const eventResponsesMap: Record<string, { confirmed: string[]; declined: string[]; invited: string[]; notes: Record<string, string> }> = {};
+    for (const r of erData || []) {
+      if (!eventResponsesMap[r.event_id]) eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {} };
+      const map = eventResponsesMap[r.event_id];
+      if (r.response === 'confirmed') { map.confirmed.push(r.player_id); map.invited.push(r.player_id); }
+      else if (r.response === 'declined') { map.declined.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
+      else if (r.response === 'invited') { map.invited.push(r.player_id); }
     }
     const events: Event[] = (eventsData || []).map((e: any) => {
       const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {} };
       return { ...mapEvent(e), confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes };
     });
 
-    // Chat (last 200)
-    const { data: chatData } = await supabase.from('chat_messages').select('*').eq('team_id', teamId).order('created_at', { ascending: true }).limit(200);
     const chatMessages: ChatMessage[] = (chatData || []).map((m: any) => ({
       id: m.id, senderId: m.sender_id, senderName: m.sender_name || undefined,
       message: m.message || '', imageUrl: m.image_url || undefined, gifUrl: m.gif_url || undefined,
@@ -189,26 +204,59 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       createdAt: m.created_at,
     }));
 
-    // Payments
-    const { data: periodsData } = await supabase.from('payment_periods').select('*').eq('team_id', teamId).order('sort_order', { ascending: true });
-    const periodIds = (periodsData || []).map((p: any) => p.id);
-    let playerPaymentsMap: Record<string, any[]> = {};
-    let entriesMap: Record<string, any[]> = {};
-    if (periodIds.length > 0) {
-      const { data: ppData } = await supabase.from('player_payments').select('*').in('payment_period_id', periodIds);
-      const ppIds = (ppData || []).map((p: any) => p.id);
-      for (const pp of ppData || []) {
-        if (!playerPaymentsMap[pp.payment_period_id]) playerPaymentsMap[pp.payment_period_id] = [];
-        playerPaymentsMap[pp.payment_period_id].push(pp);
-      }
-      if (ppIds.length > 0) {
-        const { data: entriesData } = await supabase.from('payment_entries').select('*').in('player_payment_id', ppIds);
-        for (const entry of entriesData || []) {
-          if (!entriesMap[entry.player_payment_id]) entriesMap[entry.player_payment_id] = [];
-          entriesMap[entry.player_payment_id].push(entry);
-        }
-      }
+    const notifications: AppNotification[] = (notifData || []).map((n: any) => ({
+      id: n.id, type: n.type, title: n.title, message: n.message,
+      gameId: n.game_id || undefined, eventId: n.event_id || undefined,
+      fromPlayerId: n.from_player_id || undefined, toPlayerId: n.to_player_id,
+      createdAt: n.created_at, read: n.read || false,
+    }));
+
+    // Flush phase 1 — all priority tabs now renderable
+    useTeamStore.setState({ teamName, teamSettings, players, games, events, chatMessages, notifications });
+
+    // Resolve currentPlayerId if stale
+    const storeAfterPhase1 = useTeamStore.getState();
+    if (storeAfterPhase1.isLoggedIn && (!storeAfterPhase1.currentPlayerId || !players.some((p) => p.id === storeAfterPhase1.currentPlayerId))) {
+      const { userEmail } = storeAfterPhase1;
+      const matchingPlayer = players.find((p) => userEmail && p.email?.toLowerCase() === userEmail.toLowerCase());
+      if (matchingPlayer) useTeamStore.setState({ currentPlayerId: matchingPlayer.id });
     }
+
+    console.log(`SYNC: Phase 1 done — ${players.length} players, ${games.length} games, ${events.length} events`);
+
+    // ── PHASE 2: Background data — photos, payments, polls, links ────────────
+    const [
+      { data: periodsData },
+      { data: photosData },
+      { data: pollsData },
+      { data: linksData },
+    ] = await Promise.all([
+      supabase.from('payment_periods').select('*').eq('team_id', teamId).order('sort_order', { ascending: true }),
+      supabase.from('photos').select('*').eq('team_id', teamId).order('uploaded_at', { ascending: false }),
+      supabase.from('polls').select('*').eq('team_id', teamId).order('created_at', { ascending: false }),
+      supabase.from('team_links').select('*').eq('team_id', teamId).order('created_at', { ascending: true }),
+    ]);
+
+    const periodIds = (periodsData || []).map((p: any) => p.id);
+    const { data: ppData } = periodIds.length > 0
+      ? await supabase.from('player_payments').select('*').in('payment_period_id', periodIds)
+      : { data: [] };
+    const ppIds = (ppData || []).map((p: any) => p.id);
+    const { data: entriesData } = ppIds.length > 0
+      ? await supabase.from('payment_entries').select('*').in('player_payment_id', ppIds)
+      : { data: [] };
+
+    const playerPaymentsMap: Record<string, any[]> = {};
+    const entriesMap: Record<string, any[]> = {};
+    for (const pp of ppData || []) {
+      if (!playerPaymentsMap[pp.payment_period_id]) playerPaymentsMap[pp.payment_period_id] = [];
+      playerPaymentsMap[pp.payment_period_id].push(pp);
+    }
+    for (const entry of entriesData || []) {
+      if (!entriesMap[entry.player_payment_id]) entriesMap[entry.player_payment_id] = [];
+      entriesMap[entry.player_payment_id].push(entry);
+    }
+
     const paymentPeriods: PaymentPeriod[] = (periodsData || []).map((pp: any) => ({
       id: pp.id, title: pp.title, amount: parseFloat(pp.amount) || 0, type: pp.type || 'misc',
       dueDate: pp.due_date || undefined, createdAt: pp.created_at,
@@ -220,29 +268,10 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       }),
     }));
 
-    // Photos
-    const { data: photosData } = await supabase.from('photos').select('*').eq('team_id', teamId).order('uploaded_at', { ascending: false });
     const photos: Photo[] = (photosData || []).map((p: any) => ({
       id: p.id, gameId: p.game_id || '', uri: p.uri, uploadedBy: p.uploaded_by || '', uploadedAt: p.uploaded_at,
     }));
 
-    // Notifications
-    const currentPlayerId = useTeamStore.getState().currentPlayerId;
-    let notifications: AppNotification[] = [];
-    if (currentPlayerId) {
-      const { data: notifData } = await supabase.from('notifications').select('*')
-        .eq('team_id', teamId).eq('to_player_id', currentPlayerId).eq('read', false)
-        .order('created_at', { ascending: false }).limit(50);
-      notifications = (notifData || []).map((n: any) => ({
-        id: n.id, type: n.type, title: n.title, message: n.message,
-        gameId: n.game_id || undefined, eventId: n.event_id || undefined,
-        fromPlayerId: n.from_player_id || undefined, toPlayerId: n.to_player_id,
-        createdAt: n.created_at, read: n.read || false,
-      }));
-    }
-
-    // Polls
-    const { data: pollsData } = await supabase.from('polls').select('*').eq('team_id', teamId).order('created_at', { ascending: false });
     const polls: Poll[] = (pollsData || []).map((p: any) => ({
       id: p.id, question: p.question, options: p.options || [], createdBy: p.created_by,
       createdAt: p.created_at, expiresAt: p.expires_at || undefined, isActive: p.is_active ?? true,
@@ -250,13 +279,11 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       groupId: p.group_id || undefined, groupName: p.group_name || undefined, isRequired: p.is_required || false,
     }));
 
-    // Team links
-    const { data: linksData } = await supabase.from('team_links').select('*').eq('team_id', teamId).order('created_at', { ascending: true });
     const teamLinks: TeamLink[] = (linksData || []).map((l: any) => ({
       id: l.id, title: l.title, url: l.url, createdBy: l.created_by || '', createdAt: l.created_at,
     }));
 
-    // Update store
+    // Update store and teams[] with full picture
     const currentState = useTeamStore.getState();
     const teamEntry = {
       id: teamId, teamName, teamSettings, players, games, events, chatMessages,
@@ -268,22 +295,9 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       ? currentState.teams.map((t) => t.id === teamId ? { ...t, ...teamEntry } : t)
       : [...currentState.teams, teamEntry];
 
-    useTeamStore.setState({
-      teamName, teamSettings, players, games, events, chatMessages,
-      paymentPeriods, photos, notifications, polls, teamLinks, teams: updatedTeams,
-    });
+    useTeamStore.setState({ paymentPeriods, photos, polls, teamLinks, teams: updatedTeams });
 
-    // Resolve currentPlayerId if stale
-    const storeState = useTeamStore.getState();
-    if (storeState.isLoggedIn && (!storeState.currentPlayerId || !players.some((p) => p.id === storeState.currentPlayerId))) {
-      const { userEmail } = storeState;
-      const matchingPlayer = players.find((p) => userEmail && p.email?.toLowerCase() === userEmail.toLowerCase());
-      if (matchingPlayer) {
-        useTeamStore.setState({ currentPlayerId: matchingPlayer.id });
-      }
-    }
-
-    console.log(`SYNC: Loaded — ${players.length} players, ${games.length} games, ${events.length} events, ${chatMessages.length} msgs`);
+    console.log(`SYNC: Phase 2 done — periods ${paymentPeriods.length}, photos ${photos.length}, polls ${polls.length}`);
     return true;
   } catch (err) {
     console.error('SYNC: loadTeamFromSupabase error:', err);

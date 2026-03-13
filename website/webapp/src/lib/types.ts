@@ -193,6 +193,7 @@ export interface Player {
   goalieStats?: HockeyGoalieStats | SoccerGoalieStats | LacrosseGoalieStats;
   gameLogs?: GameLogEntry[];
   unavailableDates?: string[];
+  associatedPlayerId?: string;
 }
 
 export const getPlayerName = (player: Player): string => `${player.firstName} ${player.lastName}`.trim();
