@@ -856,6 +856,7 @@ export default function PaymentsScreen() {
   // Stripe checkout state
   const [stripeCheckoutUrl, setStripeCheckoutUrl] = useState<string | null>(null);
   const [isStripeLoading, setIsStripeLoading] = useState(false);
+  const [stripePaymentContext, setStripePaymentContext] = useState<{ periodId: string; playerId: string; amount: number } | null>(null);
 
   // Responsive layout for iPad
   const { isTablet, columns, containerPadding } = useResponsive();
@@ -1080,6 +1081,7 @@ export default function PaymentsScreen() {
       }
 
       setStripeCheckoutUrl(data.url);
+      setStripePaymentContext({ periodId: period.id, playerId, amount: balance });
     } catch (err: any) {
       Alert.alert('Payment Error', err?.message ?? 'Could not start Stripe checkout. Please try again.');
     } finally {
@@ -2736,13 +2738,31 @@ export default function PaymentsScreen() {
                   if (url.startsWith('alignsports://payment-success') || url.includes('payment-success')) {
                     setStripeCheckoutUrl(null);
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    Alert.alert(
-                      'Payment Submitted',
-                      'Your payment is being processed. Your payment status will update shortly.',
-                      [{ text: 'Done' }]
-                    );
+                    // Record the payment locally and sync to Supabase
+                    if (stripePaymentContext) {
+                      const { periodId, playerId, amount } = stripePaymentContext;
+                      const entry: PaymentEntry = {
+                        id: Date.now().toString(),
+                        amount,
+                        date: new Date().toISOString(),
+                        note: 'Paid via Stripe',
+                        createdAt: new Date().toISOString(),
+                      };
+                      addPaymentEntry(periodId, playerId, entry);
+                      if (activeTeamId) {
+                        setTimeout(() => {
+                          const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === periodId);
+                          if (updated) {
+                            pushPaymentPeriodToSupabase(updated, activeTeamId).catch(console.error);
+                          }
+                        }, 50);
+                      }
+                      setStripePaymentContext(null);
+                    }
+                    Alert.alert('Payment Recorded', 'Your payment has been recorded successfully.', [{ text: 'Done' }]);
                   } else if (url.startsWith('alignsports://payment-cancel') || url.includes('payment-cancel')) {
                     setStripeCheckoutUrl(null);
+                    setStripePaymentContext(null);
                   }
                 }}
                 startInLoadingState
