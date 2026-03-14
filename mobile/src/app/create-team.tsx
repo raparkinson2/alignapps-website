@@ -883,8 +883,8 @@ export default function CreateTeamScreen() {
                 </View>
 
                 <View className="mb-3">
-                  <Text className="text-slate-400 text-xs mb-1.5">Name <Text className="text-red-400">*</Text></Text>
-                  <View className="flex-row items-center bg-slate-800/60 rounded-lg border border-slate-700/40 px-3">
+                  <Text className="text-slate-300 text-sm mb-2">Name <Text className="text-red-400">*</Text></Text>
+                  <View className="flex-row items-center bg-slate-800/60 rounded-xl border border-slate-700/40 px-3">
                     <User size={16} color="#64748b" />
                     <TextInput
                       value={name}
@@ -892,15 +892,15 @@ export default function CreateTeamScreen() {
                       placeholder="Full name"
                       placeholderTextColor="#64748b"
                       autoCapitalize="words"
-                      className="flex-1 py-3 px-2.5 text-white text-sm"
+                      className="flex-1 py-4 px-2.5 text-white text-sm"
                     />
                   </View>
                 </View>
 
                 <View className="mb-3">
-                  <Text className="text-slate-400 text-xs mb-1.5">Email Address <Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-300 text-sm mb-2">Email Address <Text className="text-red-400">*</Text></Text>
                   <View className={cn(
-                    "flex-row items-center bg-slate-800/60 rounded-lg border px-3",
+                    "flex-row items-center bg-slate-800/60 rounded-xl border px-3",
                     emailError ? "border-red-500/70" : "border-slate-700/40"
                   )}>
                     <Mail size={16} color={emailError ? "#ef4444" : "#64748b"} />
@@ -916,7 +916,7 @@ export default function CreateTeamScreen() {
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
-                      className="flex-1 py-3 px-2.5 text-white text-sm"
+                      className="flex-1 py-4 px-2.5 text-white text-sm"
                     />
                     {isValidatingEmail && (
                       <Text className="text-cyan-400 text-xs">Checking...</Text>
@@ -928,9 +928,9 @@ export default function CreateTeamScreen() {
                 </View>
 
                 <View className="mb-3">
-                  <Text className="text-slate-400 text-xs mb-1.5">Phone Number <Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-300 text-sm mb-2">Phone Number <Text className="text-red-400">*</Text></Text>
                   <View className={cn(
-                    "flex-row items-center bg-slate-800/60 rounded-lg border px-3",
+                    "flex-row items-center bg-slate-800/60 rounded-xl border px-3",
                     phoneError ? "border-red-500/70" : "border-slate-700/40"
                   )}>
                     <Phone size={16} color={phoneError ? "#ef4444" : "#64748b"} />
@@ -944,7 +944,7 @@ export default function CreateTeamScreen() {
                       placeholder="(555) 123-4567"
                       placeholderTextColor="#64748b"
                       keyboardType="phone-pad"
-                      className="flex-1 py-3 px-2.5 text-white text-sm"
+                      className="flex-1 py-4 px-2.5 text-white text-sm"
                     />
                     {isValidatingPhone && (
                       <Text className="text-cyan-400 text-xs">Checking...</Text>
@@ -958,8 +958,8 @@ export default function CreateTeamScreen() {
                 {/* Jersey Number - Only shown for players/reserves */}
                 {(memberRole === 'player' || memberRole === 'reserve') && (
                   <View className="mb-3">
-                    <Text className="text-slate-400 text-xs mb-1.5">Jersey Number <Text className="text-red-400">*</Text></Text>
-                    <View className="flex-row items-center bg-slate-800/60 rounded-lg border border-slate-700/40 px-3">
+                    <Text className="text-slate-300 text-sm mb-2">Jersey Number <Text className="text-red-400">*</Text></Text>
+                    <View className="flex-row items-center bg-slate-800/60 rounded-xl border border-slate-700/40 px-3">
                       <Hash size={16} color="#64748b" />
                       <TextInput
                         value={jerseyNumber}
@@ -968,7 +968,7 @@ export default function CreateTeamScreen() {
                         placeholderTextColor="#64748b"
                         keyboardType="number-pad"
                         maxLength={3}
-                        className="flex-1 py-3 px-2.5 text-white text-sm"
+                        className="flex-1 py-4 px-2.5 text-white text-sm"
                       />
                     </View>
                   </View>
