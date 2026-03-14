@@ -815,8 +815,8 @@ export default function CreateTeamScreen() {
                   <Text className="text-slate-300 text-sm mb-2">
                     Sport {(memberRole === 'player' || memberRole === 'reserve') && <Text className="text-red-400">*</Text>}
                   </Text>
-                  <View className="flex-row flex-wrap">
-                    {(Object.keys(SPORT_NAMES) as Sport[]).map((s) => (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((s) => (
                       <Pressable
                         key={s}
                         onPress={() => {
@@ -826,7 +826,7 @@ export default function CreateTeamScreen() {
                           setPosition(SPORT_POSITIONS[s][0]);
                         }}
                         className={cn(
-                          'py-1.5 px-3 rounded-lg mr-2 mb-2 border',
+                          'py-2 px-4 rounded-xl border',
                           sport === s
                             ? 'bg-cyan-500/20 border-cyan-400'
                             : 'bg-slate-800/50 border-slate-700/40'
@@ -842,7 +842,7 @@ export default function CreateTeamScreen() {
                         </Text>
                       </Pressable>
                     ))}
-                  </View>
+                  </ScrollView>
                 </View>
 
                 <View className="mb-3">
