@@ -209,13 +209,13 @@ function PlayerPaymentRow({ player, status, paidAmount, totalAmount, periodType,
   const getStatusText = () => {
     if (isDuesType) {
       // Dues: show balance remaining (emphasis on remaining)
-      if (status === 'paid') return `Paid $${paidAmount ?? totalAmount}`;
-      if (status === 'partial') return `$${balance} remaining · $${paidAmount ?? 0} paid`;
-      return `$${totalAmount} remaining`;
+      if (status === 'paid') return `Paid $${(paidAmount ?? totalAmount).toFixed(2)}`;
+      if (status === 'partial') return `$${balance.toFixed(2)} remaining · $${(paidAmount ?? 0).toFixed(2)} paid`;
+      return `$${totalAmount.toFixed(2)} remaining`;
     } else {
       // Non-dues: show paid vs total
-      if (status === 'paid') return `$${paidAmount ?? totalAmount} paid`;
-      if (status === 'partial') return `$${paidAmount ?? 0} paid · $${balance} remaining`;
+      if (status === 'paid') return `$${(paidAmount ?? totalAmount).toFixed(2)} paid`;
+      if (status === 'partial') return `$${(paidAmount ?? 0).toFixed(2)} paid · $${balance.toFixed(2)} remaining`;
       return 'No payment yet';
     }
   };
@@ -745,14 +745,14 @@ function StripePayButton({ myPaymentStatus, isStripeLoading, onPay, isSetupCompl
                     <View className="flex-1">
                       <Text className="text-white font-semibold text-base">{period.title}</Text>
                       <Text className="text-slate-400 text-sm mt-0.5">
-                        {payment?.status === 'partial' ? `$${payment.amount ?? 0} paid · $${balance} remaining` : `$${balance} due`}
+                        {payment?.status === 'partial' ? `$${(payment.amount ?? 0).toFixed(2)} paid · $${balance.toFixed(2)} remaining` : `$${balance.toFixed(2)} due`}
                       </Text>
                     </View>
                     <LinearGradient
                       colors={['#635BFF', '#7C3AED']}
                       style={{ borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}
                     >
-                      <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Pay ${balance}</Text>
+                      <Text style={{ color: 'white', fontWeight: '700', fontSize: 13 }}>Pay ${balance.toFixed(2)}</Text>
                     </LinearGradient>
                   </Pressable>
                 );
@@ -1940,7 +1940,7 @@ export default function PaymentsScreen() {
                                 ? 'text-red-400'
                                 : 'text-amber-400/90'
                           )}>
-                            ${Math.max(0, balance)}
+                            ${Math.max(0, balance).toFixed(2)}
                           </Text>
                         </View>
                       </View>
