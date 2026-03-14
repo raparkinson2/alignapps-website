@@ -1415,14 +1415,6 @@ export default function MoreScreen() {
             index={4}
           />
 
-          <MenuItem
-            icon={<MessageSquare size={20} color="#67e8f9" />}
-            title="Text Team"
-            subtitle="Send a group text to all players"
-            onPress={handleTextTeam}
-            index={5}
-          />
-
           {/* Support Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
             Support
