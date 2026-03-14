@@ -1381,19 +1381,15 @@ export default function AdminScreen() {
               </View>
             </View>
 
-            {/* Email Team Button */}
+            {/* Email Team Button - commented out, keeping code for future use
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                // Get players with emails
                 const playersWithEmail = players.filter(p => p.email && p.email.trim());
-
                 if (playersWithEmail.length === 0) {
                   Alert.alert('No Emails', 'No players have email addresses. Add emails to your roster to use this feature.');
                   return;
                 }
-
-                // Pre-select all players with emails
                 setSelectedRecipients(playersWithEmail.map(p => p.id));
                 setEmailSubject('');
                 setEmailBody('');
@@ -1414,15 +1410,14 @@ export default function AdminScreen() {
                 <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
+            */}
 
-            {/* Text Team Button */}
+            {/* Text Team Button - commented out, keeping code for future use
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                // Exclude current user - you're sending TO the team
                 const otherPlayers = players.filter(p => p.id !== currentPlayerId);
                 const playersWithPhone = otherPlayers.filter(p => p.phone && p.phone.trim());
-
                 if (playersWithPhone.length === 0) {
                   const totalOthers = otherPlayers.length;
                   Alert.alert(
@@ -1433,12 +1428,8 @@ export default function AdminScreen() {
                   );
                   return;
                 }
-
-                // Get all phone numbers
                 const phoneNumbers = playersWithPhone.map(p => p.phone!);
                 const phoneList = phoneNumbers.join(', ');
-
-                // Show confirmation with phone numbers and instructions
                 Alert.alert(
                   'Text Team',
                   `Tap "Copy & Open Messages" then paste into the "To:" field.\n\n${playersWithPhone.length} team member${playersWithPhone.length !== 1 ? 's' : ''}:\n${phoneList}`,
@@ -1472,6 +1463,7 @@ export default function AdminScreen() {
                 <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
+            */}
 
             {/* Send Test Push Notification Button */}
             <Pressable
