@@ -977,8 +977,8 @@ export default function CreateTeamScreen() {
                 {/* Position - Only shown for players/reserves after sport is selected */}
                 {(memberRole === 'player' || memberRole === 'reserve') && sport && (
                   <View className="mb-3">
-                    <Text className="text-slate-400 text-xs mb-1.5">Position <Text className="text-red-400">*</Text></Text>
-                    <View className="flex-row flex-wrap">
+                    <Text className="text-slate-300 text-sm mb-2">Position <Text className="text-red-400">*</Text></Text>
+                    <View className="flex-row gap-1.5">
                       {SPORT_POSITIONS[sport].map((pos) => (
                         <Pressable
                           key={pos}
@@ -987,9 +987,9 @@ export default function CreateTeamScreen() {
                             setPosition(pos);
                           }}
                           className={cn(
-                            'py-1.5 px-3 rounded-lg mr-2 mb-2 border',
+                            'flex-1 items-center py-2 rounded-xl border',
                             position === pos
-                              ? 'bg-cyan-500/20 border-cyan-400/60'
+                              ? 'bg-cyan-500/20 border-cyan-400'
                               : 'bg-slate-800/50 border-slate-700/40'
                           )}
                         >
