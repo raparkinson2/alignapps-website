@@ -1116,6 +1116,7 @@ export async function pushPaymentPeriodToSupabase(period: PaymentPeriod, teamId:
     }, { onConflict: 'id' });
     if (error) { console.error('SYNC: pushPaymentPeriodToSupabase error:', error.message); return; }
 
+    // Upsert all current player payments
     for (const pp of period.playerPayments || []) {
       const ppId = `pp-${period.id}-${pp.playerId}`;
       const { data: existing } = await supabase.from('player_payments').select('id').eq('payment_period_id', period.id).eq('player_id', pp.playerId).single();
@@ -1140,6 +1141,17 @@ export async function pushPaymentPeriodToSupabase(period: PaymentPeriod, teamId:
           note: entry.note || null,
         }, { onConflict: 'id' });
       }
+    }
+
+    // Delete any player_payments rows in Supabase that are no longer in the local list
+    const currentPlayerIds = (period.playerPayments || []).map((pp) => pp.playerId);
+    const { data: remoteRows } = await supabase
+      .from('player_payments')
+      .select('id, player_id')
+      .eq('payment_period_id', period.id);
+    const rowsToDelete = (remoteRows || []).filter((row: any) => !currentPlayerIds.includes(row.player_id));
+    for (const row of rowsToDelete) {
+      await supabase.from('player_payments').delete().eq('id', row.id);
     }
   } catch (err) {
     console.error('SYNC: pushPaymentPeriodToSupabase error:', err);
