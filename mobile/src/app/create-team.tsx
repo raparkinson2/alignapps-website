@@ -815,7 +815,7 @@ export default function CreateTeamScreen() {
                   <Text className="text-slate-300 text-sm mb-2">
                     Sport {(memberRole === 'player' || memberRole === 'reserve') && <Text className="text-red-400">*</Text>}
                   </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  <View className="flex-row gap-1.5">
                     {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((s) => (
                       <Pressable
                         key={s}
@@ -826,7 +826,7 @@ export default function CreateTeamScreen() {
                           setPosition(SPORT_POSITIONS[s][0]);
                         }}
                         className={cn(
-                          'py-2 px-4 rounded-xl border',
+                          'flex-1 items-center py-2 rounded-xl border',
                           sport === s
                             ? 'bg-cyan-500/20 border-cyan-400'
                             : 'bg-slate-800/50 border-slate-700/40'
@@ -837,12 +837,15 @@ export default function CreateTeamScreen() {
                             'text-sm font-medium',
                             sport === s ? 'text-cyan-300' : 'text-slate-400'
                           )}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
                         >
                           {SPORT_NAMES[s]}
                         </Text>
                       </Pressable>
                     ))}
-                  </ScrollView>
+                  </View>
                 </View>
 
                 <View className="mb-3">
@@ -921,13 +924,13 @@ export default function CreateTeamScreen() {
                 {/* Role Selector - Single horizontal row */}
                 <View className="mb-3">
                   <Text className="text-slate-300 text-sm mb-2">Your Role</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  <View className="flex-row gap-1.5">
                     {([
-                      { role: 'player', label: 'Player', active: 'bg-cyan-500/20 border-cyan-400', text: 'text-cyan-300' },
-                      { role: 'reserve', label: 'Reserve', active: 'bg-cyan-500/20 border-cyan-400', text: 'text-cyan-300' },
-                      { role: 'coach', label: 'Coach', active: 'bg-cyan-500/20 border-cyan-400', text: 'text-cyan-300' },
-                      { role: 'parent', label: 'Parent', active: 'bg-cyan-500/20 border-cyan-400', text: 'text-cyan-300' },
-                    ] as { role: 'player' | 'reserve' | 'coach' | 'parent'; label: string; active: string; text: string }[]).map(({ role, label, active, text }) => (
+                      { role: 'player', label: 'Player' },
+                      { role: 'reserve', label: 'Reserve' },
+                      { role: 'coach', label: 'Coach' },
+                      { role: 'parent', label: 'Parent' },
+                    ] as { role: 'player' | 'reserve' | 'coach' | 'parent'; label: string }[]).map(({ role, label }) => (
                       <Pressable
                         key={role}
                         onPress={() => {
@@ -935,21 +938,21 @@ export default function CreateTeamScreen() {
                           setMemberRole(role);
                         }}
                         className={cn(
-                          'py-2 px-4 rounded-xl border',
-                          memberRole === role ? active : 'bg-slate-800/50 border-slate-700/40'
+                          'flex-1 items-center py-2 rounded-xl border',
+                          memberRole === role ? 'bg-cyan-500/20 border-cyan-400' : 'bg-slate-800/50 border-slate-700/40'
                         )}
                       >
                         <Text
                           className={cn(
                             'text-sm font-medium',
-                            memberRole === role ? text : 'text-slate-400'
+                            memberRole === role ? 'text-cyan-300' : 'text-slate-400'
                           )}
                         >
                           {label}
                         </Text>
                       </Pressable>
                     ))}
-                  </ScrollView>
+                  </View>
                 </View>
 
                 {/* Jersey Number - Only shown for players/reserves */}
