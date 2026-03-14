@@ -413,10 +413,10 @@ export default function CreateNewTeamScreen() {
                 )}
 
                 {/* Sport Selection */}
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Sport <Text className="text-red-400">*</Text></Text>
-                  <View className="flex-row flex-wrap justify-between">
-                    {(Object.keys(SPORT_NAMES) as Sport[]).map((s) => (
+                <View className="mb-4">
+                  <Text className="text-slate-300 text-sm mb-2">Sport <Text className="text-red-400">*</Text></Text>
+                  <View className="flex-row gap-1.5">
+                    {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((s) => (
                       <Pressable
                         key={s}
                         onPress={() => {
@@ -425,25 +425,20 @@ export default function CreateNewTeamScreen() {
                           setPosition(SPORT_POSITIONS[s][0]);
                         }}
                         className={cn(
-                          'w-[31%] items-center py-3 rounded-xl mb-2 border',
+                          'flex-1 items-center py-2 rounded-xl border',
                           sport === s
-                            ? 'bg-cyan-500/25 border-cyan-400'
-                            : 'bg-slate-800/80 border-slate-700/50'
+                            ? 'bg-cyan-500/20 border-cyan-400'
+                            : 'bg-slate-800/50 border-slate-700/40'
                         )}
-                        style={sport === s ? {
-                          shadowColor: '#22d3ee',
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.3,
-                          shadowRadius: 4,
-                          elevation: 3,
-                        } : undefined}
                       >
-                        <SportIcon sport={s} color={sport === s ? '#67e8f9' : '#475569'} size={22} />
                         <Text
                           className={cn(
-                            'text-xs font-semibold mt-1.5',
-                            sport === s ? 'text-cyan-300' : 'text-slate-500'
+                            'text-sm font-medium',
+                            sport === s ? 'text-cyan-300' : 'text-slate-400'
                           )}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
                         >
                           {SPORT_NAMES[s]}
                         </Text>
@@ -452,8 +447,42 @@ export default function CreateNewTeamScreen() {
                   </View>
                 </View>
 
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Team Name <Text className="text-red-400">*</Text></Text>
+                {/* Role */}
+                <View className="mb-4">
+                  <Text className="text-slate-300 text-sm mb-2">Your Role on this team</Text>
+                  <View className="flex-row gap-1.5">
+                    {([
+                      { role: 'player', label: 'Player' },
+                      { role: 'reserve', label: 'Reserve' },
+                      { role: 'coach', label: 'Coach' },
+                      { role: 'parent', label: 'Parent' },
+                    ] as { role: 'player' | 'reserve' | 'coach' | 'parent'; label: string }[]).map(({ role, label }) => (
+                      <Pressable
+                        key={role}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setMemberRole(role);
+                        }}
+                        className={cn(
+                          'flex-1 items-center py-2 rounded-xl border',
+                          memberRole === role ? 'bg-cyan-500/20 border-cyan-400' : 'bg-slate-800/50 border-slate-700/40'
+                        )}
+                      >
+                        <Text
+                          className={cn(
+                            'text-sm font-medium',
+                            memberRole === role ? 'text-cyan-300' : 'text-slate-400'
+                          )}
+                        >
+                          {label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
+                <View className="mb-4">
+                  <Text className="text-slate-300 text-sm mb-2">Team Name <Text className="text-red-400">*</Text></Text>
                   <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
                     <Users size={20} color="#64748b" />
                     <TextInput
@@ -462,14 +491,14 @@ export default function CreateNewTeamScreen() {
                       placeholder="Enter team name"
                       placeholderTextColor="#64748b"
                       autoCapitalize="words"
-                      className="flex-1 py-4 px-3 text-white text-base"
+                      className="flex-1 py-4 px-3 text-white text-sm"
                     />
                   </View>
                 </View>
 
                 {/* Team Logo */}
-                <View className="mb-5">
-                  <Text className="text-slate-400 text-sm mb-2">Team Logo <Text className="text-red-400">*</Text></Text>
+                <View className="mb-4">
+                  <Text className="text-slate-300 text-sm mb-2">Team Logo <Text className="text-red-400">*</Text></Text>
                   <Pressable
                     onPress={handlePickTeamLogo}
                     className="items-center"
@@ -500,101 +529,10 @@ export default function CreateNewTeamScreen() {
                   )}
                 </View>
 
-                {/* Role - Single horizontal row */}
-                <View className="mb-4">
-                  <Text className="text-slate-400 text-sm mb-2">Your Role on this team</Text>
-                  <View className="flex-row">
-                    {/* Player */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setMemberRole('player');
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
-                        memberRole === 'player' ? 'bg-green-500 border-green-400' : 'bg-slate-800/80 border-slate-700/50'
-                      )}
-                    >
-                      <User size={16} color={memberRole === 'player' ? 'white' : '#22c55e'} />
-                      <Text
-                        className={cn(
-                          'font-semibold text-xs mt-1',
-                          memberRole === 'player' ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Player
-                      </Text>
-                    </Pressable>
-                    {/* Reserve */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setMemberRole('reserve');
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
-                        memberRole === 'reserve' ? 'bg-slate-600 border-slate-500' : 'bg-slate-800/80 border-slate-700/50'
-                      )}
-                    >
-                      <UserMinus size={16} color={memberRole === 'reserve' ? 'white' : '#94a3b8'} />
-                      <Text
-                        className={cn(
-                          'font-semibold text-xs mt-1',
-                          memberRole === 'reserve' ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Reserve
-                      </Text>
-                    </Pressable>
-                    {/* Coach */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setMemberRole('coach');
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-1 rounded-xl mr-1.5 items-center justify-center border',
-                        memberRole === 'coach' ? 'bg-cyan-500 border-cyan-400' : 'bg-slate-800/80 border-slate-700/50'
-                      )}
-                    >
-                      <UserCog size={16} color={memberRole === 'coach' ? 'white' : '#67e8f9'} />
-                      <Text
-                        className={cn(
-                          'font-semibold text-xs mt-1',
-                          memberRole === 'coach' ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Coach
-                      </Text>
-                    </Pressable>
-                    {/* Parent */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setMemberRole('parent');
-                      }}
-                      className={cn(
-                        'flex-1 py-3 px-1 rounded-xl items-center justify-center border',
-                        memberRole === 'parent' ? 'bg-pink-500 border-pink-400' : 'bg-slate-800/80 border-slate-700/50'
-                      )}
-                    >
-                      <ParentChildIcon size={16} color={memberRole === 'parent' ? 'white' : '#ec4899'} />
-                      <Text
-                        className={cn(
-                          'font-semibold text-xs mt-1',
-                          memberRole === 'parent' ? 'text-white' : 'text-slate-400'
-                        )}
-                      >
-                        Parent
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-
                 {/* Jersey Number - Only shown for players/reserves */}
                 {!isCoach && !isParent && (
                   <View className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Jersey Number <Text className="text-red-400">*</Text></Text>
+                    <Text className="text-slate-300 text-sm mb-2">Jersey Number <Text className="text-red-400">*</Text></Text>
                     <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
                       <Hash size={20} color="#64748b" />
                       <TextInput
@@ -604,7 +542,7 @@ export default function CreateNewTeamScreen() {
                         placeholderTextColor="#64748b"
                         keyboardType="number-pad"
                         maxLength={3}
-                        className="flex-1 py-4 px-3 text-white text-base"
+                        className="flex-1 py-4 px-3 text-white text-sm"
                       />
                     </View>
                   </View>
@@ -613,8 +551,8 @@ export default function CreateNewTeamScreen() {
                 {/* Position - Only shown for players/reserves after sport is selected */}
                 {!isCoach && !isParent && sport && (
                   <View className="mb-4">
-                    <Text className="text-slate-400 text-sm mb-2">Position <Text className="text-red-400">*</Text></Text>
-                    <View className="flex-row flex-wrap">
+                    <Text className="text-slate-300 text-sm mb-2">Position <Text className="text-red-400">*</Text></Text>
+                    <View className="flex-row gap-1.5">
                       {SPORT_POSITIONS[sport].map((pos) => (
                         <Pressable
                           key={pos}
@@ -623,15 +561,15 @@ export default function CreateNewTeamScreen() {
                             setPosition(pos);
                           }}
                           className={cn(
-                            'py-2 px-3 rounded-lg mr-2 mb-2 border',
+                            'flex-1 items-center py-2 rounded-xl border',
                             position === pos
-                              ? 'bg-cyan-500/25 border-cyan-400'
-                              : 'bg-slate-800/60 border-slate-700/50'
+                              ? 'bg-cyan-500/20 border-cyan-400'
+                              : 'bg-slate-800/50 border-slate-700/40'
                           )}
                         >
                           <Text
                             className={cn(
-                              'text-sm font-semibold',
+                              'text-sm font-medium',
                               position === pos ? 'text-cyan-300' : 'text-slate-400'
                             )}
                           >
