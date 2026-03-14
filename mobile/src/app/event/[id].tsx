@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable, Alert, Modal, TextInput, Platform } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { format, parseISO } from 'date-fns';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   MapPin,
   Clock,
@@ -147,6 +147,22 @@ export default function EventDetailScreen() {
   const [editInviteReleaseDate, setEditInviteReleaseDate] = useState(new Date());
   const [showEditInviteReleaseDatePicker, setShowEditInviteReleaseDatePicker] = useState(false);
 
+  // Helper: parents/guardians cannot be invited to or check in to any event
+  const isParent = (p: { roles?: string[]; position?: string }) =>
+    p.roles?.includes('parent') || p.position === 'Parent';
+
+  // Auto-purge parents from invitedPlayers if previously added
+  useEffect(() => {
+    if (!event?.invitedPlayers?.length) return;
+    const parentIds = new Set(players.filter(isParent).map((p) => p.id));
+    const hasParent = event.invitedPlayers.some((id) => parentIds.has(id));
+    if (hasParent) {
+      updateEventAndSync(event.id, {
+        invitedPlayers: event.invitedPlayers.filter((id) => !parentIds.has(id)),
+      });
+    }
+  }, [event?.id]);
+
   if (!event) {
     return (
       <View className="flex-1 bg-slate-900 items-center justify-center">
@@ -164,8 +180,8 @@ export default function EventDetailScreen() {
   // Get invited players
   const invitedPlayers = players.filter((p) => event.invitedPlayers?.includes(p.id));
 
-  // Get uninvited players for the invite modal
-  const uninvitedPlayers = players.filter((p) => !event.invitedPlayers?.includes(p.id));
+  // Get uninvited players for the invite modal — parents cannot be invited
+  const uninvitedPlayers = players.filter((p) => !event.invitedPlayers?.includes(p.id) && !isParent(p));
   const uninvitedActive = uninvitedPlayers.filter((p) => p.status === 'active');
   const uninvitedReserve = uninvitedPlayers.filter((p) => p.status === 'reserve');
 
