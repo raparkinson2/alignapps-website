@@ -300,7 +300,13 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     }));
 
     if (isActiveTeam) {
-      useTeamStore.setState({ teamName, teamSettings, players: finalPlayers, games, events, chatMessages, notifications });
+      // Preserve client-only fields that are never stored on the server
+      const existingSettings = useTeamStore.getState().teamSettings;
+      const mergedSettings = {
+        ...teamSettings,
+        upcomingGamesViewMode: existingSettings.upcomingGamesViewMode ?? teamSettings.upcomingGamesViewMode,
+      };
+      useTeamStore.setState({ teamName, teamSettings: mergedSettings, players: finalPlayers, games, events, chatMessages, notifications });
     }
 
     // Resolve currentPlayerId if missing (needs players to be loaded first)
@@ -473,7 +479,14 @@ export function startRealtimeSync(teamId: string): void {
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'teams', filter: `id=eq.${teamId}` }, (payload) => {
       console.log('SYNC: Team settings UPDATE');
       const newSettings = mapTeamSettings(payload.new);
-      useTeamStore.setState({ teamName: payload.new.name, teamSettings: newSettings });
+      const existingSettings = useTeamStore.getState().teamSettings;
+      useTeamStore.setState({
+        teamName: payload.new.name,
+        teamSettings: {
+          ...newSettings,
+          upcomingGamesViewMode: existingSettings.upcomingGamesViewMode ?? newSettings.upcomingGamesViewMode,
+        },
+      });
     })
 
     // ── PLAYERS ───────────────────────────────────────────────────────────────
