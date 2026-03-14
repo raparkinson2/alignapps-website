@@ -1159,9 +1159,12 @@ export default function PaymentsScreen() {
     );
   };
 
-  // Get players not in current period
+  // Get players not in current period, excluding coaches and parents/guardians
   const playersNotInPeriod = selectedPeriod
-    ? players.filter((p) => !selectedPeriod.playerPayments.some((pp) => pp.playerId === p.id))
+    ? players.filter((p) =>
+        !selectedPeriod.playerPayments.some((pp) => pp.playerId === p.id) &&
+        !p.roles.some((r) => r === 'coach' || r === 'parent')
+      )
     : [];
 
   // Check if current user can view this player's details (admin only for other players)
