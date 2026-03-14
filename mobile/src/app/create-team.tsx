@@ -848,8 +848,42 @@ export default function CreateTeamScreen() {
                   </View>
                 </View>
 
+                {/* Role Selector - Single horizontal row */}
+                <View className="mb-4">
+                  <Text className="text-slate-300 text-sm mb-2">Your Role</Text>
+                  <View className="flex-row gap-1.5">
+                    {([
+                      { role: 'player', label: 'Player' },
+                      { role: 'reserve', label: 'Reserve' },
+                      { role: 'coach', label: 'Coach' },
+                      { role: 'parent', label: 'Parent' },
+                    ] as { role: 'player' | 'reserve' | 'coach' | 'parent'; label: string }[]).map(({ role, label }) => (
+                      <Pressable
+                        key={role}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setMemberRole(role);
+                        }}
+                        className={cn(
+                          'flex-1 items-center py-2 rounded-xl border',
+                          memberRole === role ? 'bg-cyan-500/20 border-cyan-400' : 'bg-slate-800/50 border-slate-700/40'
+                        )}
+                      >
+                        <Text
+                          className={cn(
+                            'text-sm font-medium',
+                            memberRole === role ? 'text-cyan-300' : 'text-slate-400'
+                          )}
+                        >
+                          {label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
                 <View className="mb-3">
-                  <Text className="text-slate-400 text-xs mb-1.5">Your Name <Text className="text-red-400">*</Text></Text>
+                  <Text className="text-slate-400 text-xs mb-1.5">Name <Text className="text-red-400">*</Text></Text>
                   <View className="flex-row items-center bg-slate-800/60 rounded-lg border border-slate-700/40 px-3">
                     <User size={16} color="#64748b" />
                     <TextInput
@@ -919,40 +953,6 @@ export default function CreateTeamScreen() {
                   {phoneError ? (
                     <Text className="text-red-400 text-xs mt-1">{phoneError}</Text>
                   ) : null}
-                </View>
-
-                {/* Role Selector - Single horizontal row */}
-                <View className="mb-3">
-                  <Text className="text-slate-300 text-sm mb-2">Your Role</Text>
-                  <View className="flex-row gap-1.5">
-                    {([
-                      { role: 'player', label: 'Player' },
-                      { role: 'reserve', label: 'Reserve' },
-                      { role: 'coach', label: 'Coach' },
-                      { role: 'parent', label: 'Parent' },
-                    ] as { role: 'player' | 'reserve' | 'coach' | 'parent'; label: string }[]).map(({ role, label }) => (
-                      <Pressable
-                        key={role}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          setMemberRole(role);
-                        }}
-                        className={cn(
-                          'flex-1 items-center py-2 rounded-xl border',
-                          memberRole === role ? 'bg-cyan-500/20 border-cyan-400' : 'bg-slate-800/50 border-slate-700/40'
-                        )}
-                      >
-                        <Text
-                          className={cn(
-                            'text-sm font-medium',
-                            memberRole === role ? 'text-cyan-300' : 'text-slate-400'
-                          )}
-                        >
-                          {label}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
                 </View>
 
                 {/* Jersey Number - Only shown for players/reserves */}
