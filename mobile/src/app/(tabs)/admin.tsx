@@ -1465,7 +1465,7 @@ export default function AdminScreen() {
             </Pressable>
             */}
 
-            {/* Send Test Push Notification Button */}
+            {/* Send Test Push Notification Button - commented out, APNs confirmed working
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -1520,6 +1520,7 @@ export default function AdminScreen() {
                 <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
+            */}
           </Animated.View>
 
           {/* Team Features Section */}
