@@ -37,6 +37,7 @@ import {
   Minus,
   BarChart3,
   Save,
+  Eye,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -501,9 +502,11 @@ interface PlayerRowProps {
   canToggle: boolean; // Whether the current user can toggle this player's check-in
   isSelf: boolean; // Whether this is the current user's row
   isAssociatedChild?: boolean; // Whether current user is a parent of this player
+  hasViewed?: boolean;
+  showViewedBadge?: boolean;
 }
 
-function PlayerRow({ player, status, onToggle, index, canToggle, isSelf, isAssociatedChild }: PlayerRowProps) {
+function PlayerRow({ player, status, onToggle, index, canToggle, isSelf, isAssociatedChild, hasViewed, showViewedBadge }: PlayerRowProps) {
   const sport = useTeamStore((s) => s.teamSettings.sport);
   const positionName = SPORT_POSITION_NAMES[sport][player.position] || player.position;
 
@@ -550,6 +553,12 @@ function PlayerRow({ player, status, onToggle, index, canToggle, isSelf, isAssoc
         <View className="flex-1 ml-3">
           <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
           <Text className="text-slate-400 text-xs">#{player.number} · {positionName}</Text>
+          {showViewedBadge && hasViewed && status === 'none' && (
+            <View className="flex-row items-center mt-0.5">
+              <Eye size={10} color="#22d3ee" />
+              <Text className="text-cyan-400 text-[10px] ml-0.5">Viewed</Text>
+            </View>
+          )}
         </View>
 
         {status === 'in' ? (
@@ -602,6 +611,8 @@ function GameDetailScreenInner() {
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+  const markEventViewedLocally = useTeamStore((s) => s.markEventViewedLocally);
+  const localViewedEventIds = useTeamStore((s) => s.localViewedEventIds);
   const addGameLog = useTeamStore((s) => s.addGameLog);
   const updateGameLog = useTeamStore((s) => s.updateGameLog);
   const removeGameLog = useTeamStore((s) => s.removeGameLog);
@@ -709,6 +720,12 @@ function GameDetailScreenInner() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game?.id]);
+
+  // Track that this player has viewed the game
+  useEffect(() => {
+    if (!game || !currentPlayerId) return;
+    markEventViewedLocally(game.id);
+  }, [game?.id, currentPlayerId]);
 
   if (!game) {
     if (!gameNotFoundTimeout) {
@@ -3270,6 +3287,9 @@ function GameDetailScreenInner() {
                 // Admins and captains can toggle anyone, regular players can only toggle themselves,
                 // parents can toggle their associated child
                 const canToggle = canManageTeam() || isSelf || isAssociatedChild;
+                const hasViewed = player.id === currentPlayerId
+                  ? localViewedEventIds.includes(game.id)
+                  : (game as any).viewedBy?.includes(player.id) ?? false;
 
                 return (
                   <PlayerRow
@@ -3281,6 +3301,8 @@ function GameDetailScreenInner() {
                     canToggle={canToggle}
                     isSelf={isSelf}
                     isAssociatedChild={isAssociatedChild}
+                    hasViewed={hasViewed}
+                    showViewedBadge={canManageTeam()}
                   />
                 );
               })}
