@@ -1753,21 +1753,21 @@ export default function AdminScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 setIsEraseDataMenuModalVisible(true);
               }}
-              className="bg-red-900/20 rounded-2xl p-4 mb-3 border border-red-700/40 active:bg-red-900/40"
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
             >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="bg-red-700/30 p-2 rounded-full">
-                    <AlertTriangle size={20} color="#dc2626" />
+                  <View className="bg-cyan-500/20 p-2 rounded-full">
+                    <AlertTriangle size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-red-400 font-semibold">Danger Zone</Text>
+                    <Text className="text-white font-semibold">Danger Zone</Text>
                     <Text className="text-slate-400 text-sm">
                       Erase or delete team data
                     </Text>
                   </View>
                 </View>
-                <ChevronRight size={20} color="#dc2626" />
+                <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
           </Animated.View>
