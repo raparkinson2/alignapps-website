@@ -49,7 +49,7 @@ export default function AddPracticeModal({ isOpen, onClose, existingEvent }: Add
     if (existingEvent) {
       const { timeValue, timePeriod } = timeStrToForm(existingEvent.time);
       setForm({
-        date: existingEvent.date,
+        date: existingEvent.date?.split('T')[0] ?? '',
         timeValue,
         timePeriod,
         location: existingEvent.location,
