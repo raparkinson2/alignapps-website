@@ -234,7 +234,9 @@ export default function AdminScreen() {
   // Helper to sync a player to Supabase after any local update
   const syncPlayerToCloud = (playerId: string) => {
     if (!activeTeamId) return;
-    const p = useTeamStore.getState().players.find((pl) => pl.id === playerId);
+    const state = useTeamStore.getState();
+    const p = state.players.find((pl) => pl.id === playerId)
+      ?? state.teams.find(t => t.id === activeTeamId)?.players.find((pl) => pl.id === playerId);
     if (p) pushPlayerToSupabase(p, activeTeamId).catch(console.error);
   };
 
@@ -482,6 +484,7 @@ export default function AdminScreen() {
       });
       setEditPlayerPositions([]);
     }
+    syncPlayerToCloud(selectedPlayer.id);
   };
 
   const handleToggleEditParent = () => {
@@ -532,6 +535,7 @@ export default function AdminScreen() {
       });
       setEditPlayerPositions([]);
     }
+    syncPlayerToCloud(selectedPlayer.id);
   };
 
   // New Player Functions

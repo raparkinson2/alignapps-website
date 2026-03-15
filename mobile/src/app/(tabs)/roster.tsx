@@ -526,10 +526,10 @@ export default function RosterScreen() {
     setSuspensionDuration(player.suspensionDuration);
     setStatusEndDate(player.statusEndDate || '');
     setAssociatedPlayerId(player.associatedPlayerId || '');
-    // Determine member role from player data
+    // Determine member role from player data (check both roles array and position field for consistency)
     if (player.roles?.includes('coach') || player.position === 'Coach') {
       setMemberRole('coach');
-    } else if (player.roles?.includes('parent')) {
+    } else if (player.roles?.includes('parent') || player.position === 'Parent') {
       setMemberRole('parent');
     } else if (player.status === 'reserve') {
       setMemberRole('reserve');
@@ -635,7 +635,12 @@ export default function RosterScreen() {
       updatePlayer(editingPlayer.id, updates);
       // Sync to Supabase so changes appear on all devices
       if (activeTeamId) {
-        const updated = { ...useTeamStore.getState().players.find(p => p.id === editingPlayer.id), ...updates };
+        const storeState = useTeamStore.getState();
+        // Find the player in state.players or fallback to the active team's players array
+        const basePlayer = storeState.players.find(p => p.id === editingPlayer.id)
+          ?? storeState.teams.find(t => t.id === activeTeamId)?.players.find(p => p.id === editingPlayer.id)
+          ?? editingPlayer;
+        const updated = { ...basePlayer, ...updates };
         pushPlayerToSupabase(updated as Player, activeTeamId).catch(console.error);
       }
       setIsModalVisible(false);
