@@ -237,17 +237,18 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     ]);
 
     // Build game responses map
-    const gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string> }> = {};
+    const gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string>; viewed: string[] }> = {};
     for (const r of grData || []) {
-      if (!gameResponsesMap[r.game_id]) gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {} };
+      if (!gameResponsesMap[r.game_id]) gameResponsesMap[r.game_id] = { in: [], out: [], invited: [], notes: {}, viewed: [] };
       const map = gameResponsesMap[r.game_id];
       if (r.response === 'in') { map.in.push(r.player_id); map.invited.push(r.player_id); }
       else if (r.response === 'out') { map.out.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
       else if (r.response === 'invited') { map.invited.push(r.player_id); }
+      else if (r.response === 'viewed') { map.viewed.push(r.player_id); map.invited.push(r.player_id); }
     }
     const games: Game[] = (gamesData || []).map((g: any) => {
-      const resp = gameResponsesMap[g.id] || { in: [], out: [], invited: [], notes: {} };
-      return { ...mapGame(g), checkedInPlayers: resp.in, checkedOutPlayers: resp.out, invitedPlayers: resp.invited, checkoutNotes: resp.notes };
+      const resp = gameResponsesMap[g.id] || { in: [], out: [], invited: [], notes: {}, viewed: [] };
+      return { ...mapGame(g), checkedInPlayers: resp.in, checkedOutPlayers: resp.out, invitedPlayers: resp.invited, checkoutNotes: resp.notes, viewedBy: resp.viewed };
     });
 
     // Build event responses map
@@ -554,6 +555,7 @@ export function startRealtimeSync(teamId: string): void {
         let checkedIn = [...(game.checkedInPlayers || [])];
         let checkedOut = [...(game.checkedOutPlayers || [])];
         let invited = [...(game.invitedPlayers || [])];
+        let viewed = [...(game.viewedBy || [])];
         const notes = { ...(game.checkoutNotes || {}) };
 
         checkedIn = checkedIn.filter((id) => id !== playerId);
@@ -564,8 +566,9 @@ export function startRealtimeSync(teamId: string): void {
         if (response === 'in') { checkedIn.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); }
         else if (response === 'out') { checkedOut.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); if (note) notes[playerId] = note; }
         else if (response === 'invited') { if (!invited.includes(playerId)) invited.push(playerId); }
+        else if (response === 'viewed') { if (!viewed.includes(playerId)) viewed.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); }
 
-        return { ...game, checkedInPlayers: checkedIn, checkedOutPlayers: checkedOut, invitedPlayers: invited, checkoutNotes: notes };
+        return { ...game, checkedInPlayers: checkedIn, checkedOutPlayers: checkedOut, invitedPlayers: invited, checkoutNotes: notes, viewedBy: viewed };
       });
       useTeamStore.setState({ games });
     })
@@ -584,20 +587,24 @@ export function startRealtimeSync(teamId: string): void {
         let checkedIn = [...(game.checkedInPlayers || [])];
         let checkedOut = [...(game.checkedOutPlayers || [])];
         let invited = [...(game.invitedPlayers || [])];
+        let viewed = [...(game.viewedBy || [])];
         const notes = { ...(game.checkoutNotes || {}) };
 
-        checkedIn = checkedIn.filter((id) => id !== row.player_id);
-        checkedOut = checkedOut.filter((id) => id !== row.player_id);
+        if (row.response !== 'viewed') {
+          checkedIn = checkedIn.filter((id) => id !== row.player_id);
+          checkedOut = checkedOut.filter((id) => id !== row.player_id);
+          delete notes[row.player_id];
+        }
         invited = invited.filter((id) => id !== row.player_id);
-        delete notes[row.player_id];
 
         if (payload.eventType !== 'DELETE') {
           if (row.response === 'in') { checkedIn.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); }
           else if (row.response === 'out') { checkedOut.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); if (row.note) notes[row.player_id] = row.note; }
           else if (row.response === 'invited') { if (!invited.includes(row.player_id)) invited.push(row.player_id); }
+          else if (row.response === 'viewed') { if (!viewed.includes(row.player_id)) viewed.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); }
         }
 
-        return { ...game, checkedInPlayers: checkedIn, checkedOutPlayers: checkedOut, invitedPlayers: invited, checkoutNotes: notes };
+        return { ...game, checkedInPlayers: checkedIn, checkedOutPlayers: checkedOut, invitedPlayers: invited, checkoutNotes: notes, viewedBy: viewed };
       });
       useTeamStore.setState({ games });
     })
@@ -1108,6 +1115,25 @@ export async function pushEventViewedToSupabase(eventId: string, playerId: strin
     }
   } catch (err) {
     console.error('SYNC: pushEventViewedToSupabase error:', err);
+  }
+}
+
+export async function pushGameViewedToSupabase(gameId: string, playerId: string): Promise<void> {
+  try {
+    // Only insert 'viewed' if no response row exists yet — don't overwrite a real RSVP
+    const { data } = await supabase
+      .from('game_responses')
+      .select('response')
+      .eq('game_id', gameId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+    if (!data) {
+      await supabase.from('game_responses').insert(
+        { game_id: gameId, player_id: playerId, response: 'viewed' }
+      );
+    }
+  } catch (err) {
+    console.error('SYNC: pushGameViewedToSupabase error:', err);
   }
 }
 

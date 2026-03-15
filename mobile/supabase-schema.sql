@@ -110,7 +110,7 @@ CREATE TABLE game_responses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   game_id UUID REFERENCES games(id) ON DELETE CASCADE,
   player_id UUID REFERENCES players(id) ON DELETE CASCADE,
-  response TEXT CHECK (response IN ('in', 'out', 'invited')),
+  response TEXT CHECK (response IN ('in', 'out', 'invited', 'viewed')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(game_id, player_id)
 );
@@ -139,7 +139,7 @@ CREATE TABLE event_responses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   event_id UUID REFERENCES events(id) ON DELETE CASCADE,
   player_id UUID REFERENCES players(id) ON DELETE CASCADE,
-  response TEXT CHECK (response IN ('confirmed', 'declined', 'invited')),
+  response TEXT CHECK (response IN ('confirmed', 'declined', 'invited', 'viewed')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(event_id, player_id)
 );

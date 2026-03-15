@@ -142,7 +142,7 @@ CREATE TABLE game_responses (
   id TEXT PRIMARY KEY DEFAULT concat('gr-', extract(epoch from now())::text, '-', substr(md5(random()::text), 1, 8)),
   game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
   player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-  response TEXT NOT NULL CHECK (response IN ('in', 'out', 'invited')),
+  response TEXT NOT NULL CHECK (response IN ('in', 'out', 'invited', 'viewed')),
   note TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(game_id, player_id)
@@ -175,7 +175,7 @@ CREATE TABLE event_responses (
   id TEXT PRIMARY KEY DEFAULT concat('er-', extract(epoch from now())::text, '-', substr(md5(random()::text), 1, 8)),
   event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-  response TEXT NOT NULL CHECK (response IN ('confirmed', 'declined', 'invited')),
+  response TEXT NOT NULL CHECK (response IN ('confirmed', 'declined', 'invited', 'viewed')),
   note TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(event_id, player_id)

@@ -531,6 +531,7 @@ export interface Game {
   inviteReleaseOption?: InviteReleaseOption; // 'now' | 'scheduled' | 'none'
   inviteReleaseDate?: string; // ISO string - when to release invites (only if scheduled)
   invitesSent?: boolean; // Whether invites have been sent
+  viewedBy?: string[]; // playerIds who have opened the game detail
   // Final score and result
   finalScoreUs?: number; // Our team's final score
   finalScoreThem?: number; // Opponent's final score
