@@ -1629,90 +1629,91 @@ export default function AdminScreen() {
               Performance
             </Text>
 
-            {/* Team Stats Toggle */}
-            <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View className="bg-cyan-500/20 p-2 rounded-full">
-                    <BarChart3 size={20} color="#67e8f9" />
-                  </View>
-                  <View className="ml-3 flex-1">
-                    <Text className="text-white font-semibold">Team Stats</Text>
-                    <Text className="text-slate-400 text-sm">
-                      Track player and team statistics
-                    </Text>
-                  </View>
+            {/* Team Stats Section */}
+            <View className="bg-slate-800/80 rounded-2xl mb-3 border border-slate-700/50 overflow-hidden">
+              {/* Header row - no toggle */}
+              <View className="flex-row items-center p-4">
+                <View className="bg-cyan-500/20 p-2 rounded-full">
+                  <BarChart3 size={20} color="#67e8f9" />
                 </View>
-                <View className="flex-row items-center gap-2">
-                  <ChevronRight size={16} color="#64748b" />
-                  <Switch
-                    value={teamSettings.showTeamStats !== false}
-                    onValueChange={(value) => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setTeamSettingsAndSync({ showTeamStats: value });
-                    }}
-                    trackColor={{ false: '#334155', true: '#22c55e' }}
-                    thumbColor="#ffffff"
-                  />
+                <View className="ml-3 flex-1">
+                  <Text className="text-white font-semibold">Team Stats</Text>
+                  <Text className="text-slate-400 text-sm">
+                    Track player and team statistics
+                  </Text>
                 </View>
               </View>
+
+              {/* Divider */}
+              <View className="h-px bg-slate-700/50 mx-4" />
+
+              {/* Use Team Stats toggle */}
+              <View className="flex-row items-center justify-between px-4 py-3">
+                <Text className="text-slate-300 font-medium">Use Team Stats</Text>
+                <Switch
+                  value={teamSettings.showTeamStats !== false}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTeamSettingsAndSync({ showTeamStats: value });
+                  }}
+                  trackColor={{ false: '#334155', true: '#22c55e' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
+
+              {/* Sub-options - only show when Use Team Stats is ON */}
+              {teamSettings.showTeamStats !== false && (
+                <>
+                  <View className="h-px bg-slate-700/30 mx-4" />
+
+                  {/* Allow Players */}
+                  <View className="flex-row items-center justify-between px-4 py-3 pl-8">
+                    <View className="flex-row items-center flex-1">
+                      <View className="bg-emerald-500/10 p-1.5 rounded-full mr-3">
+                        <Edit3 size={16} color="#059669" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-slate-300 font-medium text-sm">Allow Players to Manage Own Stats</Text>
+                        <Text className="text-slate-500 text-xs">Players can update their game stats</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={teamSettings.allowPlayerSelfStats === true}
+                      onValueChange={(value) => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setTeamSettingsAndSync({ allowPlayerSelfStats: value });
+                      }}
+                      trackColor={{ false: '#334155', true: '#22c55e' }}
+                      thumbColor="#ffffff"
+                    />
+                  </View>
+
+                  <View className="h-px bg-slate-700/30 mx-4" />
+
+                  {/* Team Records */}
+                  <View className="flex-row items-center justify-between px-4 py-3 pl-8">
+                    <View className="flex-row items-center flex-1">
+                      <View className="bg-amber-500/10 p-1.5 rounded-full mr-3">
+                        <Trophy size={16} color="#f59e0b" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-slate-300 font-medium text-sm">Team Records</Text>
+                        <Text className="text-slate-500 text-xs">Show all-time team records and leaders</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={teamSettings.showTeamRecords === true}
+                      onValueChange={(value) => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setTeamSettingsAndSync({ showTeamRecords: value });
+                      }}
+                      trackColor={{ false: '#334155', true: '#22c55e' }}
+                      thumbColor="#ffffff"
+                    />
+                  </View>
+                </>
+              )}
             </View>
-
-            {/* Allow Player Self Stats Toggle - only show when team stats is enabled */}
-            {teamSettings.showTeamStats !== false && (
-              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/30 ml-4">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="bg-emerald-500/10 p-2 rounded-full">
-                      <Edit3 size={18} color="#059669" />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text className="text-slate-200 font-medium">Allow Player to Manage Own Stats</Text>
-                      <Text className="text-slate-400 text-sm">
-                        Players can update their game stats
-                      </Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={teamSettings.allowPlayerSelfStats === true}
-                    onValueChange={(value) => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setTeamSettingsAndSync({ allowPlayerSelfStats: value });
-                    }}
-                    trackColor={{ false: '#334155', true: '#22c55e' }}
-                    thumbColor="#ffffff"
-                  />
-                </View>
-              </View>
-            )}
-
-            {/* Team Records Toggle - only show when team stats is enabled */}
-            {teamSettings.showTeamStats !== false && (
-              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/30 ml-4">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="bg-amber-500/10 p-2 rounded-full">
-                      <Trophy size={18} color="#f59e0b" />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text className="text-slate-200 font-medium">Team Records</Text>
-                      <Text className="text-slate-400 text-sm">
-                        Show all-time team records and leaders
-                      </Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={teamSettings.showTeamRecords === true}
-                    onValueChange={(value) => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setTeamSettingsAndSync({ showTeamRecords: value });
-                    }}
-                    trackColor={{ false: '#334155', true: '#22c55e' }}
-                    thumbColor="#ffffff"
-                  />
-                </View>
-              </View>
-            )}
 
             {/* Team Stats Link - only show when enabled */}
             {teamSettings.showTeamStats !== false && (
