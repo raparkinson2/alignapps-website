@@ -1741,10 +1741,10 @@ export default function AdminScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Danger Zone Section */}
+          {/* Data Management Section */}
           <Animated.View entering={FadeInDown.delay(300).springify()}>
             <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4 mt-2">
-              Danger Zone
+              Data Management
             </Text>
 
             {/* Erase Data Nav Item */}
@@ -1761,7 +1761,7 @@ export default function AdminScreen() {
                     <AlertTriangle size={20} color="#dc2626" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-red-400 font-semibold">Erase Data</Text>
+                    <Text className="text-red-400 font-semibold">Danger Zone</Text>
                     <Text className="text-slate-400 text-sm">
                       Erase or delete team data
                     </Text>
@@ -3264,7 +3264,7 @@ export default function AdminScreen() {
         </View>
       </Modal>
 
-      {/* Erase Data Menu Modal */}
+      {/* Danger Zone Menu Modal */}
       <Modal
         visible={isEraseDataMenuModalVisible}
         animationType="slide"
@@ -3277,7 +3277,7 @@ export default function AdminScreen() {
               <Pressable onPress={() => setIsEraseDataMenuModalVisible(false)}>
                 <X size={24} color="#64748b" />
               </Pressable>
-              <Text className="text-white text-lg font-semibold">Erase Data</Text>
+              <Text className="text-white text-lg font-semibold">Danger Zone</Text>
               <View style={{ width: 24 }} />
             </View>
 
