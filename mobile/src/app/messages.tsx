@@ -1,13 +1,13 @@
 import {
   View, Text, Pressable, TextInput, ScrollView, Modal,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
-  Animated as RNAnimated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, Send, Plus, X, Check, CheckCheck, Users, Inbox, Mail, Trash2 } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, Send, Plus, X, Check, CheckCheck, Inbox, Mail, Trash2 } from 'lucide-react-native';
+import Animated, { FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTeamStore, DirectMessage, getPlayerName } from '@/lib/store';
@@ -33,50 +33,55 @@ function SwipeableMessageRow({
   onDelete: () => void;
   index: number;
 }) {
-  const translateX = useRef(new RNAnimated.Value(0)).current;
-  const isOpen = useRef(false);
-  const { PanResponder } = require('react-native');
+  const translateX = useSharedValue(0);
+  const DELETE_THRESHOLD = -80;
 
-  const close = () => {
-    isOpen.current = false;
-    RNAnimated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
-  };
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_: any, gs: any) =>
-        Math.abs(gs.dx) > 8 && Math.abs(gs.dy) < 20,
-      onPanResponderMove: (_: any, gs: any) => {
-        if (gs.dx < 0) translateX.setValue(gs.dx);
-        else if (isOpen.current) translateX.setValue(-80 + gs.dx);
-      },
-      onPanResponderRelease: (_: any, gs: any) => {
-        if (gs.dx < -60) {
-          isOpen.current = true;
-          RNAnimated.spring(translateX, { toValue: -80, useNativeDriver: true }).start();
-        } else {
-          close();
-        }
-      },
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      if (event.translationX < 0) {
+        translateX.value = Math.max(event.translationX, -100);
+      } else {
+        translateX.value = withSpring(0);
+      }
     })
-  ).current;
+    .onEnd((event) => {
+      if (event.translationX < DELETE_THRESHOLD) {
+        translateX.value = withSpring(-80);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const deleteOpacityStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, Math.abs(translateX.value) / 40),
+  }));
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 40).springify()} className="mb-3">
       <View style={{ overflow: 'hidden', borderRadius: 16 }}>
-        {/* Delete background */}
-        <Pressable
-          onPress={() => { close(); onDelete(); }}
-          style={{
-            position: 'absolute', right: 0, top: 0, bottom: 0, width: 80,
-            backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center',
-          }}
+        {/* Delete button behind */}
+        <Animated.View
+          style={[deleteOpacityStyle, { position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center' }]}
         >
-          <Trash2 size={20} color="white" />
-        </Pressable>
-        <RNAnimated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
-          {children}
-        </RNAnimated.View>
+          <Pressable
+            onPress={() => { translateX.value = withSpring(0); onDelete(); }}
+            style={{ flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Trash2 size={22} color="white" />
+            <Text style={{ color: 'white', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Delete</Text>
+          </Pressable>
+        </Animated.View>
+        {/* Swipeable row */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={animatedStyle}>
+            {children}
+          </Animated.View>
+        </GestureDetector>
       </View>
     </Animated.View>
   );

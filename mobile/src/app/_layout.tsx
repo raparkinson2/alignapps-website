@@ -55,6 +55,7 @@ function AuthNavigator() {
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
   const didFetchAllTeams = useRef(false);
   const pushTokenRegistered = useRef<string | null>(null); // tracks which playerId has registered
+  const pendingNotificationData = useRef<Record<string, any> | null>(null); // notification tap data waiting for isReady
 
   // On startup, ensure all teams the user belongs to are loaded from Supabase.
   // This fixes cases where the race condition caused only 1 team to be persisted locally.
@@ -312,19 +313,29 @@ function AuthNavigator() {
     // Register immediately
     registerToken();
 
+    // Helper to navigate based on notification data
+    const navigateFromNotification = (data: any) => {
+      if (data?.type === 'direct_message' && data?.messageId) {
+        router.push(`/messages?openMessageId=${data.messageId}`);
+      } else if (data?.type === 'poll' && data?.pollGroupId) {
+        router.push(`/polls?openPoll=${data.pollGroupId}`);
+      } else if (data?.eventId) {
+        router.push(`/event/${data.eventId}`);
+      } else if (data?.gameId) {
+        router.push(`/game/${data.gameId}`);
+      }
+    };
+
     // Check for notification that opened the app (when app was completely closed)
     Notifications.getLastNotificationResponseAsync().then((response) => {
       if (response) {
         console.log('App opened from notification:', response);
         const data = response.notification.request.content.data;
         if (isReady) {
-          if (data?.type === 'direct_message' && data?.messageId) {
-            router.push(`/messages?openMessageId=${data.messageId}`);
-          } else if (data?.eventId) {
-            router.push(`/event/${data.eventId}`);
-          } else if (data?.gameId) {
-            router.push(`/game/${data.gameId}`);
-          }
+          navigateFromNotification(data);
+        } else {
+          // Store for navigation once isReady becomes true
+          pendingNotificationData.current = data as Record<string, any>;
         }
       }
     });
@@ -367,25 +378,11 @@ function AuthNavigator() {
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       console.log('Notification tapped:', response);
       const data = response.notification.request.content.data;
-      // Small delay to ensure navigation is ready
       setTimeout(() => {
         if (isReady) {
-          // Navigate to event if it's an event/practice notification
-          if (data?.eventId) {
-            router.push(`/event/${data.eventId}`);
-          }
-          // Navigate to game if it's a game notification
-          else if (data?.gameId) {
-            router.push(`/game/${data.gameId}`);
-          }
-          // Navigate to polls if it's a poll notification
-          else if (data?.type === 'poll' && data?.pollGroupId) {
-            router.push(`/polls?openPoll=${data.pollGroupId}`);
-          }
-          // Navigate to messages if it's a direct message notification
-          else if (data?.type === 'direct_message' && data?.messageId) {
-            router.push(`/messages?openMessageId=${data.messageId}`);
-          }
+          navigateFromNotification(data);
+        } else {
+          pendingNotificationData.current = data as Record<string, any>;
         }
       }, 100);
     });
@@ -399,6 +396,24 @@ function AuthNavigator() {
       }
     };
   }, [isLoggedIn, currentPlayerId, playersLength]);
+
+  // Fire any pending notification navigation once router becomes ready
+  useEffect(() => {
+    if (!isReady || !pendingNotificationData.current) return;
+    const data = pendingNotificationData.current;
+    pendingNotificationData.current = null;
+    setTimeout(() => {
+      if (data?.type === 'direct_message' && data?.messageId) {
+        router.push(`/messages?openMessageId=${data.messageId}`);
+      } else if (data?.type === 'poll' && data?.pollGroupId) {
+        router.push(`/polls?openPoll=${data.pollGroupId}`);
+      } else if (data?.eventId) {
+        router.push(`/event/${data.eventId}`);
+      } else if (data?.gameId) {
+        router.push(`/game/${data.gameId}`);
+      }
+    }, 200);
+  }, [isReady]);
 
   useEffect(() => {
     // Wait for navigation and hydration before making auth decisions
