@@ -1643,15 +1643,18 @@ export default function AdminScreen() {
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={teamSettings.showTeamStats !== false}
-                  onValueChange={(value) => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettingsAndSync({ showTeamStats: value });
-                  }}
-                  trackColor={{ false: '#334155', true: '#22c55e' }}
-                  thumbColor="#ffffff"
-                />
+                <View className="flex-row items-center gap-2">
+                  <ChevronRight size={16} color="#64748b" />
+                  <Switch
+                    value={teamSettings.showTeamStats !== false}
+                    onValueChange={(value) => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTeamSettingsAndSync({ showTeamStats: value });
+                    }}
+                    trackColor={{ false: '#334155', true: '#22c55e' }}
+                    thumbColor="#ffffff"
+                  />
+                </View>
               </View>
             </View>
 
