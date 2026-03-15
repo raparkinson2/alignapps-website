@@ -352,6 +352,20 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+// ─── Direct Messages ──────────────────────────────────────────────────────────
+
+export interface DirectMessage {
+  id: string;
+  teamId: string;
+  senderId: string;
+  senderName: string;
+  recipientIds: string[];
+  subject: string;
+  body: string;
+  createdAt: string;
+  readBy: string[];
+}
+
 // ─── Notifications ────────────────────────────────────────────────────────────
 
 export interface AppNotification {

@@ -1,17 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Trophy, Plus, Trash2 } from 'lucide-react';
+import { Trophy, Plus, Trash2, ChevronRight } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { pushTeamSettingsToSupabase } from '@/lib/realtime-sync';
 import { formatRecord, generateId } from '@/lib/utils';
 import Modal from '@/components/ui/Modal';
 import { cn } from '@/lib/utils';
-import type { Player, Sport } from '@/lib/types';
+import type { Player } from '@/lib/types';
 import { getPlayerName } from '@/lib/types';
 import Avatar from '@/components/ui/Avatar';
-import type { HockeyStats, HockeyGoalieStats, BaseballStats, BasketballStats, SoccerStats, LacrosseStats } from '@/lib/types';
+import { useRouter } from 'next/navigation';
+import type { HockeyStats, BaseballStats, BasketballStats, SoccerStats, LacrosseStats, ArchivedPlayerStats } from '@/lib/types';
 
 // ─── All-time leaders helpers ──────────────────────────────────────────────
 
@@ -20,6 +21,8 @@ interface LeaderEntry {
   value: number;
   label: string;
 }
+
+// A combined stats map keyed by player name for aggregating across seasons
 
 function getLeaders(players: Player[], getValue: (p: Player) => number, label: string): LeaderEntry[] {
   return players
@@ -37,10 +40,10 @@ export default function RecordsPage() {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const players = useTeamStore((s) => s.players);
-  const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const addChampionship = useTeamStore((s) => s.addChampionship);
   const removeChampionship = useTeamStore((s) => s.removeChampionship);
   const { isAdmin } = usePermissions();
+  const router = useRouter();
 
   const [showAddChamp, setShowAddChamp] = useState(false);
   const [champYear, setChampYear] = useState(new Date().getFullYear().toString());
@@ -53,41 +56,159 @@ export default function RecordsPage() {
   const seasonHistory = teamSettings.seasonHistory ?? [];
   const sport = teamSettings.sport;
 
-  // Build leader categories based on sport
-  const leaderCategories: Array<{ title: string; entries: LeaderEntry[] }> = (() => {
-    switch (sport) {
-      case 'hockey':
-        return [
-          { title: 'Goals', entries: getLeaders(players, (p) => (p.stats as HockeyStats)?.goals ?? 0, 'G') },
-          { title: 'Assists', entries: getLeaders(players, (p) => (p.stats as HockeyStats)?.assists ?? 0, 'A') },
-          { title: 'Points', entries: getLeaders(players, (p) => ((p.stats as HockeyStats)?.goals ?? 0) + ((p.stats as HockeyStats)?.assists ?? 0), 'PTS') },
-        ];
-      case 'baseball':
-      case 'softball':
-        return [
-          { title: 'Home Runs', entries: getLeaders(players, (p) => (p.stats as BaseballStats)?.homeRuns ?? 0, 'HR') },
-          { title: 'RBI', entries: getLeaders(players, (p) => (p.stats as BaseballStats)?.rbi ?? 0, 'RBI') },
-          { title: 'Hits', entries: getLeaders(players, (p) => (p.stats as BaseballStats)?.hits ?? 0, 'H') },
-        ];
-      case 'basketball':
-        return [
-          { title: 'Points', entries: getLeaders(players, (p) => (p.stats as BasketballStats)?.points ?? 0, 'PTS') },
-          { title: 'Rebounds', entries: getLeaders(players, (p) => (p.stats as BasketballStats)?.rebounds ?? 0, 'REB') },
-          { title: 'Assists', entries: getLeaders(players, (p) => (p.stats as BasketballStats)?.assists ?? 0, 'AST') },
-        ];
-      case 'soccer':
-        return [
-          { title: 'Goals', entries: getLeaders(players, (p) => (p.stats as SoccerStats)?.goals ?? 0, 'G') },
-          { title: 'Assists', entries: getLeaders(players, (p) => (p.stats as SoccerStats)?.assists ?? 0, 'A') },
-        ];
-      case 'lacrosse':
-        return [
-          { title: 'Goals', entries: getLeaders(players, (p) => (p.stats as LacrosseStats)?.goals ?? 0, 'G') },
-          { title: 'Assists', entries: getLeaders(players, (p) => (p.stats as LacrosseStats)?.assists ?? 0, 'A') },
-          { title: 'Ground Balls', entries: getLeaders(players, (p) => (p.stats as LacrosseStats)?.groundBalls ?? 0, 'GB') },
-        ];
-      default:
-        return [];
+  // ── Build aggregated all-time stats across ALL seasons ─────────────────────
+  // We accumulate numeric stats into a map keyed by playerName.
+  // For current players we use their live stats; for archived we sum across seasons.
+
+  // Build combined map: playerName -> aggregate numeric stats
+  const combinedMap = new Map<string, { player: Player | null; stats: Record<string, number> }>();
+
+  // Add archived season stats
+  for (const season of seasonHistory) {
+    for (const entry of (season.playerStats ?? []) as ArchivedPlayerStats[]) {
+      const key = entry.playerName;
+      if (!combinedMap.has(key)) {
+        // Try to match to a current player by name
+        const matched = players.find(
+          (p) => `${p.firstName} ${p.lastName}`.toLowerCase() === key.toLowerCase()
+        ) ?? null;
+        combinedMap.set(key, { player: matched, stats: {} });
+      }
+      const existing = combinedMap.get(key)!;
+      const s = entry.stats as Record<string, unknown> | undefined;
+      if (s) {
+        for (const [statKey, statVal] of Object.entries(s)) {
+          if (typeof statVal === 'number') {
+            existing.stats[statKey] = (existing.stats[statKey] ?? 0) + statVal;
+          }
+        }
+      }
+    }
+  }
+
+  // Add current season stats for active players
+  for (const player of players.filter((p) => p.status === 'active')) {
+    const key = `${player.firstName} ${player.lastName}`;
+    if (!combinedMap.has(key)) {
+      combinedMap.set(key, { player, stats: {} });
+    }
+    const existing = combinedMap.get(key)!;
+    // Always link to current player object
+    existing.player = player;
+    const s = player.stats as Record<string, unknown> | undefined;
+    if (s) {
+      for (const [statKey, statVal] of Object.entries(s)) {
+        if (typeof statVal === 'number') {
+          existing.stats[statKey] = (existing.stats[statKey] ?? 0) + statVal;
+        }
+      }
+    }
+  }
+
+  // Helper to get top 3 from combined map for a given stat key
+  function getCombinedLeaders(statKey: string, label: string): Array<{ playerName: string; player: Player | null; value: number; label: string }> {
+    return Array.from(combinedMap.entries())
+      .map(([name, entry]) => ({
+        playerName: name,
+        player: entry.player,
+        value: entry.stats[statKey] ?? 0,
+        label,
+      }))
+      .filter((e) => e.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 3);
+  }
+
+  // Build leader categories: use combined stats if there are archived seasons, otherwise current only
+  const hasArchivedSeasons = seasonHistory.length > 0;
+
+  const leaderCategories: Array<{ title: string; entries: Array<{ playerName: string; player: Player | null; value: number; label: string }> }> = (() => {
+    if (hasArchivedSeasons) {
+      // Use aggregated all-time stats from combined map
+      switch (sport) {
+        case 'hockey':
+          return [
+            { title: 'Goals', entries: getCombinedLeaders('goals', 'G') },
+            { title: 'Assists', entries: getCombinedLeaders('assists', 'A') },
+            { title: 'Points', entries: (() => {
+              return Array.from(combinedMap.entries())
+                .map(([name, entry]) => ({
+                  playerName: name,
+                  player: entry.player,
+                  value: (entry.stats['goals'] ?? 0) + (entry.stats['assists'] ?? 0),
+                  label: 'PTS',
+                }))
+                .filter((e) => e.value > 0)
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 3);
+            })() },
+          ];
+        case 'baseball':
+        case 'softball':
+          return [
+            { title: 'Home Runs', entries: getCombinedLeaders('homeRuns', 'HR') },
+            { title: 'RBI', entries: getCombinedLeaders('rbi', 'RBI') },
+            { title: 'Hits', entries: getCombinedLeaders('hits', 'H') },
+          ];
+        case 'basketball':
+          return [
+            { title: 'Points', entries: getCombinedLeaders('points', 'PTS') },
+            { title: 'Rebounds', entries: getCombinedLeaders('rebounds', 'REB') },
+            { title: 'Assists', entries: getCombinedLeaders('assists', 'AST') },
+          ];
+        case 'soccer':
+          return [
+            { title: 'Goals', entries: getCombinedLeaders('goals', 'G') },
+            { title: 'Assists', entries: getCombinedLeaders('assists', 'A') },
+          ];
+        case 'lacrosse':
+          return [
+            { title: 'Goals', entries: getCombinedLeaders('goals', 'G') },
+            { title: 'Assists', entries: getCombinedLeaders('assists', 'A') },
+            { title: 'Ground Balls', entries: getCombinedLeaders('groundBalls', 'GB') },
+          ];
+        default:
+          return [];
+      }
+    } else {
+      // Current season only — use original approach with Player objects
+      const currentOnlyCategories: Array<{ title: string; entries: Array<{ playerName: string; player: Player | null; value: number; label: string }> }> = (() => {
+        switch (sport) {
+          case 'hockey':
+            return [
+              { title: 'Goals', entries: getLeaders(players, (p) => (p.stats as HockeyStats)?.goals ?? 0, 'G').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+              { title: 'Assists', entries: getLeaders(players, (p) => (p.stats as HockeyStats)?.assists ?? 0, 'A').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+              { title: 'Points', entries: getLeaders(players, (p) => ((p.stats as HockeyStats)?.goals ?? 0) + ((p.stats as HockeyStats)?.assists ?? 0), 'PTS').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+            ];
+          case 'baseball':
+          case 'softball':
+            return [
+              { title: 'Home Runs', entries: getLeaders(players, (p) => (p.stats as BaseballStats)?.homeRuns ?? 0, 'HR').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+              { title: 'RBI', entries: getLeaders(players, (p) => (p.stats as BaseballStats)?.rbi ?? 0, 'RBI').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+              { title: 'Hits', entries: getLeaders(players, (p) => (p.stats as BaseballStats)?.hits ?? 0, 'H').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+            ];
+          case 'basketball':
+            return [
+              { title: 'Points', entries: getLeaders(players, (p) => (p.stats as BasketballStats)?.points ?? 0, 'PTS').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+              { title: 'Rebounds', entries: getLeaders(players, (p) => (p.stats as BasketballStats)?.rebounds ?? 0, 'REB').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+              { title: 'Assists', entries: getLeaders(players, (p) => (p.stats as BasketballStats)?.assists ?? 0, 'AST').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+            ];
+          case 'soccer':
+            return [
+              { title: 'Goals', entries: getLeaders(players, (p) => (p.stats as SoccerStats)?.goals ?? 0, 'G').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+              { title: 'Assists', entries: getLeaders(players, (p) => (p.stats as SoccerStats)?.assists ?? 0, 'A').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+            ];
+          case 'lacrosse':
+            return [
+              { title: 'Goals', entries: getLeaders(players, (p) => (p.stats as LacrosseStats)?.goals ?? 0, 'G').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+              { title: 'Assists', entries: getLeaders(players, (p) => (p.stats as LacrosseStats)?.assists ?? 0, 'A').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+              { title: 'Ground Balls', entries: getLeaders(players, (p) => (p.stats as LacrosseStats)?.groundBalls ?? 0, 'GB').map(e => ({ ...e, playerName: getPlayerName(e.player), player: e.player })) },
+            ];
+          default:
+            return [];
+        }
+      })();
+      return currentOnlyCategories;
     }
   })();
 
@@ -177,10 +298,19 @@ export default function RecordsPage() {
         )}
       </section>
 
-      {/* Season history */}
+      {/* Season history summary */}
       {seasonHistory.length > 0 && (
         <section className="mb-6">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Season History</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Season History</h2>
+            <button
+              onClick={() => router.push('/app/season-history')}
+              className="flex items-center gap-1 text-xs text-[#67e8f9] hover:text-[#67e8f9]/80 transition-colors"
+            >
+              View Full Season History
+              <ChevronRight size={13} />
+            </button>
+          </div>
           <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -209,7 +339,9 @@ export default function RecordsPage() {
       {/* All-time leaders */}
       {leaderCategories.some((cat) => cat.entries.length > 0) && (
         <section>
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">All-Time Leaders</h2>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+            {hasArchivedSeasons ? 'All-Time Leaders' : 'Season Leaders'}
+          </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {leaderCategories.map((cat) => (
               cat.entries.length > 0 && (
@@ -217,14 +349,22 @@ export default function RecordsPage() {
                   <h3 className="text-sm font-semibold text-slate-300 mb-3">{cat.title}</h3>
                   <div className="space-y-2.5">
                     {cat.entries.map((entry, idx) => (
-                      <div key={entry.player.id} className="flex items-center gap-2">
+                      <div key={entry.playerName} className="flex items-center gap-2">
                         <span className={cn('text-xs font-bold w-6 shrink-0', MEDAL_COLORS[idx])}>
                           {MEDAL_LABELS[idx]}
                         </span>
-                        <Avatar player={entry.player} size="sm" />
+                        {entry.player ? (
+                          <Avatar player={entry.player} size="sm" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] text-slate-400">
+                              {entry.playerName.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-slate-200 truncate">
-                            {getPlayerName(entry.player)}
+                            {entry.player ? getPlayerName(entry.player) : entry.playerName}
                           </p>
                         </div>
                         <span className="text-sm font-bold text-slate-100 shrink-0">{entry.value}</span>

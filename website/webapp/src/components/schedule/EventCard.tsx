@@ -127,7 +127,7 @@ export default function EventCard({
       title: `Invited to ${typeLabel}`,
       message: `You've been invited to ${event.title}`,
       eventId: event.id,
-      playerId,
+      toPlayerId: playerId,
       read: false,
       createdAt: new Date().toISOString(),
     };
@@ -150,7 +150,7 @@ export default function EventCard({
         title: `Invited to ${typeLabel}`,
         message: `You've been invited to ${event.title}`,
         eventId: event.id,
-        playerId,
+        toPlayerId: playerId,
         read: false,
         createdAt: new Date().toISOString(),
       };
@@ -169,7 +169,7 @@ export default function EventCard({
         title: `Reminder: ${typeLabel}`,
         message: `Don't forget to RSVP for ${event.title}`,
         eventId: event.id,
-        playerId,
+        toPlayerId: playerId,
         read: false,
         createdAt: new Date().toISOString(),
       };
@@ -324,7 +324,7 @@ export default function EventCard({
                     >
                       {getRsvpIcon(player.id)}
                       <span className={cn('flex-1 text-sm', isMe ? 'text-white font-medium' : 'text-slate-300')}>
-                        {player.name}
+                        {`${player.firstName} ${player.lastName}`}
                       </span>
                       {isMe && (
                         <span className="text-[10px] font-bold bg-[#67e8f9]/20 text-[#67e8f9] px-1.5 py-0.5 rounded-md">
@@ -439,7 +439,7 @@ export default function EventCard({
                         key={player.id}
                         className="flex items-center justify-between px-3 py-2.5 first:rounded-t-2xl last:rounded-b-2xl"
                       >
-                        <span className="text-sm text-slate-200">{player.name}</span>
+                        <span className="text-sm text-slate-200">{`${player.firstName} ${player.lastName}`}</span>
                         <button
                           onClick={() => handleInvitePlayer(player.id)}
                           className="px-3 py-1 rounded-lg bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] text-xs font-medium hover:bg-[#67e8f9]/20 transition-all"
@@ -464,7 +464,7 @@ export default function EventCard({
                         key={player.id}
                         className="flex items-center justify-between px-3 py-2.5 first:rounded-t-2xl last:rounded-b-2xl"
                       >
-                        <span className="text-sm text-slate-200">{player.name}</span>
+                        <span className="text-sm text-slate-200">{`${player.firstName} ${player.lastName}`}</span>
                         <button
                           onClick={() => handleInvitePlayer(player.id)}
                           className="px-3 py-1 rounded-lg bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] text-xs font-medium hover:bg-[#67e8f9]/20 transition-all"

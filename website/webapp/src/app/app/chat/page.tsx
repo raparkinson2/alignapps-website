@@ -139,10 +139,11 @@ export default function ChatPage() {
   const currentPlayer = players.find((p) => p.id === currentPlayerId) ?? null;
 
   // Filtered mention suggestions
-  const mentionSuggestions = useMemo(() => {
+  type MentionSuggestion = { id: string; firstName: string; lastName: string; name?: string };
+  const mentionSuggestions = useMemo((): MentionSuggestion[] => {
     const q = mentionQuery.toLowerCase();
-    const everyone = { id: 'everyone', firstName: 'everyone', lastName: '', name: '@everyone' };
-    const playerList = players
+    const everyone: MentionSuggestion = { id: 'everyone', firstName: 'everyone', lastName: '', name: '@everyone' };
+    const playerList: MentionSuggestion[] = players
       .filter((p) => p.id !== currentPlayerId && p.status === 'active')
       .filter((p) => {
         if (!q) return true;
@@ -218,7 +219,7 @@ export default function ChatPage() {
     // Extract mentions
     const mentionedIds: string[] = [];
     let mentionType: 'all' | 'specific' | undefined;
-    const mentionMatches = msgText.matchAll(/@([\w ]+?)(?=\s|$)/g);
+    const mentionMatches = Array.from(msgText.matchAll(/@([\w ]+?)(?=\s|$)/g));
     for (const m of mentionMatches) {
       const name = m[1].trim().toLowerCase();
       if (name === 'everyone') {

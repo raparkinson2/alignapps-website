@@ -7,7 +7,7 @@ import { getSupabaseClient } from './supabase';
 import { useTeamStore } from './store';
 import type {
   Game, Event, Player, ChatMessage, PaymentPeriod, Photo,
-  AppNotification, Poll, TeamLink, TeamSettings
+  AppNotification, Poll, TeamLink, TeamSettings, DirectMessage
 } from './types';
 
 let activeChannel: ReturnType<ReturnType<typeof getSupabaseClient>['channel']> | null = null;
@@ -230,11 +230,15 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       { data: photosData },
       { data: pollsData },
       { data: linksData },
+      { data: dmData },
     ] = await Promise.all([
       supabase.from('payment_periods').select('*').eq('team_id', teamId).order('sort_order', { ascending: true }),
       supabase.from('photos').select('*').eq('team_id', teamId).order('uploaded_at', { ascending: false }),
       supabase.from('polls').select('*').eq('team_id', teamId).order('created_at', { ascending: false }),
       supabase.from('team_links').select('*').eq('team_id', teamId).order('created_at', { ascending: true }),
+      currentPlayerId
+        ? supabase.from('direct_messages').select('*').eq('team_id', teamId).or(`sender_id.eq.${currentPlayerId},recipient_ids.cs.{${currentPlayerId}}`).order('created_at', { ascending: false }).limit(100)
+        : Promise.resolve({ data: [] }),
     ]);
 
     const periodIds = (periodsData || []).map((p: any) => p.id);
@@ -283,6 +287,12 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       id: l.id, title: l.title, url: l.url, createdBy: l.created_by || '', createdAt: l.created_at,
     }));
 
+    const directMessages: DirectMessage[] = (dmData || []).map((m: any) => ({
+      id: m.id, teamId: m.team_id, senderId: m.sender_id, senderName: m.sender_name || '',
+      recipientIds: m.recipient_ids || [], subject: m.subject || '', body: m.body || '',
+      createdAt: m.created_at, readBy: m.read_by || [],
+    }));
+
     // Update store and teams[] with full picture
     const currentState = useTeamStore.getState();
     const teamEntry = {
@@ -295,7 +305,7 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       ? currentState.teams.map((t) => t.id === teamId ? { ...t, ...teamEntry } : t)
       : [...currentState.teams, teamEntry];
 
-    useTeamStore.setState({ paymentPeriods, photos, polls, teamLinks, teams: updatedTeams });
+    useTeamStore.setState({ paymentPeriods, photos, polls, teamLinks, directMessages, teams: updatedTeams });
 
     console.log(`SYNC: Phase 2 done — periods ${paymentPeriods.length}, photos ${photos.length}, polls ${polls.length}`);
     return true;
@@ -502,6 +512,33 @@ export function startRealtimeSync(teamId: string): void {
         id: l.id, title: l.title, url: l.url, createdBy: l.created_by || '', createdAt: l.created_at,
       }));
       useTeamStore.setState({ teamLinks });
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages', filter: `team_id=eq.${teamId}` }, (payload) => {
+      const store = useTeamStore.getState();
+      const m = payload.new as any;
+      const currentPid = store.currentPlayerId;
+      if (!currentPid) return;
+      if (m.sender_id !== currentPid && !(m.recipient_ids || []).includes(currentPid)) return;
+      if (store.directMessages.some((dm) => dm.id === m.id)) return;
+      const dm: DirectMessage = {
+        id: m.id, teamId: m.team_id, senderId: m.sender_id, senderName: m.sender_name || '',
+        recipientIds: m.recipient_ids || [], subject: m.subject || '', body: m.body || '',
+        createdAt: m.created_at, readBy: m.read_by || [],
+      };
+      useTeamStore.setState({ directMessages: [dm, ...store.directMessages] });
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'direct_messages' }, (payload) => {
+      const store = useTeamStore.getState();
+      const m = payload.new as any;
+      useTeamStore.setState({
+        directMessages: store.directMessages.map((dm) =>
+          dm.id === m.id ? { ...dm, readBy: m.read_by || [] } : dm
+        ),
+      });
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'direct_messages' }, (payload) => {
+      const store = useTeamStore.getState();
+      useTeamStore.setState({ directMessages: store.directMessages.filter((dm) => dm.id !== payload.old.id) });
     });
 
   channel.subscribe((status) => {
@@ -839,5 +876,51 @@ export async function deleteTeamLinkFromSupabase(linkId: string): Promise<void> 
     if (error) console.error('SYNC: TeamLink delete error:', error.message);
   } catch (err) {
     console.error('SYNC: deleteTeamLinkFromSupabase error:', err);
+  }
+}
+
+// ─── Direct Messages ──────────────────────────────────────────────────────────
+
+export async function pushDirectMessageToSupabase(message: DirectMessage): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('direct_messages').insert({
+      id: message.id,
+      team_id: message.teamId,
+      sender_id: message.senderId,
+      sender_name: message.senderName,
+      recipient_ids: message.recipientIds,
+      subject: message.subject,
+      body: message.body,
+      created_at: message.createdAt,
+      read_by: message.readBy,
+    });
+    if (error) console.error('SYNC: DirectMessage insert error:', error.message);
+  } catch (err) {
+    console.error('SYNC: pushDirectMessageToSupabase error:', err);
+  }
+}
+
+export async function markDirectMessageReadInSupabase(messageId: string, playerId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { data: existing } = await supabase.from('direct_messages').select('read_by').eq('id', messageId).single();
+    if (!existing) return;
+    const readBy: string[] = existing.read_by || [];
+    if (readBy.includes(playerId)) return;
+    const { error } = await supabase.from('direct_messages').update({ read_by: [...readBy, playerId] }).eq('id', messageId);
+    if (error) console.error('SYNC: DirectMessage read update error:', error.message);
+  } catch (err) {
+    console.error('SYNC: markDirectMessageReadInSupabase error:', err);
+  }
+}
+
+export async function deleteDirectMessageFromSupabase(messageId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('direct_messages').delete().eq('id', messageId);
+    if (error) console.error('SYNC: DirectMessage delete error:', error.message);
+  } catch (err) {
+    console.error('SYNC: deleteDirectMessageFromSupabase error:', err);
   }
 }

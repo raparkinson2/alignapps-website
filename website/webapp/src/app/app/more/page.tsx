@@ -6,7 +6,7 @@ import {
   Plus, Trash2, X, Bell, BellRing, Mail, HelpCircle, Lightbulb,
   Bug, FileText, ChevronRight, Check, ExternalLink, LogOut,
   UserPlus, Globe, UserCheck, Trophy, Calendar,
-  CheckCircle2, Send, ShieldCheck, Eye,
+  CheckCircle2, Send, ShieldCheck, Eye, History, MessageSquare,
 } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -475,9 +475,10 @@ function TeamPollsPage({ activeTeamId, currentPlayerId, isAdmin, polls, setPolls
 function StatsAnalyticsPage({ teamSettings, onBack }: { teamSettings: { showTeamStats?: boolean; showTeamRecords?: boolean }; onBack: () => void }) {
   const router = useRouter();
   const items = [
-    { icon: UserCheck, label: 'Attendance', sub: 'Track player game attendance', href: '/app/schedule', color: 'text-[#67e8f9]', bg: 'bg-[#67e8f9]/10' },
+    { icon: UserCheck, label: 'Attendance', sub: 'Track player game attendance', href: '/app/attendance', color: 'text-[#67e8f9]', bg: 'bg-[#67e8f9]/10' },
     ...(teamSettings.showTeamRecords ? [{ icon: Trophy, label: 'Team Records', sub: 'Wins, losses and season records', href: '/app/records', color: 'text-amber-400', bg: 'bg-amber-400/10' }] : []),
     ...(teamSettings.showTeamStats ? [{ icon: BarChart3, label: 'View Team Stats', sub: 'Player and team statistics', href: '/app/stats', color: 'text-[#a78bfa]', bg: 'bg-[#a78bfa]/10' }] : []),
+    { icon: History, label: 'Season History', sub: 'View archived seasons and stats', href: '/app/season-history', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
   ];
 
   return (
@@ -1174,6 +1175,7 @@ export default function MorePage() {
       <SectionCard title="Communication &amp; Alerts">
         <MenuItem icon={Bell} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Notifications" sub="Game invites &amp; reminders" badge={unreadCount} onClick={() => setTab('notif-view')} />
         <MenuItem icon={BellRing} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Notification Settings" sub="Manage push notification preferences" onClick={() => setTab('notifications')} />
+        <MenuItem icon={MessageSquare} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Messages" sub="Direct messages from your team" onClick={() => router.push('/app/messages')} />
         <MenuItem icon={Mail} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Email Team" sub="Send an email to all players" onClick={() => setShowEmailTeam(true)} last />
       </SectionCard>
 

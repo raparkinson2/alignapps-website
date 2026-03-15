@@ -65,6 +65,7 @@ export default function TopBar() {
   const notifications = useTeamStore((s) => s.notifications);
   const markNotificationRead = useTeamStore((s) => s.markNotificationRead);
   const getUnreadCount = useTeamStore((s) => s.getUnreadCount);
+  const getUnreadDirectMessageCount = useTeamStore((s) => s.getUnreadDirectMessageCount);
 
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -72,6 +73,7 @@ export default function TopBar() {
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId) ?? null;
   const unreadCount = getUnreadCount();
+  const unreadDmCount = currentPlayerId ? getUnreadDirectMessageCount(currentPlayerId) : 0;
   const pageTitle = getPageTitle(pathname);
   const emoji = SPORT_EMOJI[teamSettings.sport] ?? '🏆';
 
@@ -135,8 +137,27 @@ export default function TopBar() {
         <p className="hidden lg:block font-semibold text-slate-100">{pageTitle}</p>
       </div>
 
-      {/* Right: notification bell + avatar */}
+      {/* Right: messages icon + notification bell + avatar */}
       <div className="flex items-center gap-3">
+        {/* Messages inbox button */}
+        <button
+          onClick={() => router.push('/app/messages')}
+          className={cn(
+            'relative p-2 rounded-xl transition-colors',
+            unreadDmCount > 0
+              ? 'text-[#67e8f9] bg-[#67e8f9]/10 hover:bg-[#67e8f9]/15'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]'
+          )}
+          aria-label="Messages"
+        >
+          <MessageSquare size={18} />
+          {unreadDmCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5">
+              {unreadDmCount > 9 ? '9+' : unreadDmCount}
+            </span>
+          )}
+        </button>
+
         {/* Notification bell */}
         <button
           ref={bellRef}

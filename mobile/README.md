@@ -485,6 +485,37 @@ When players tap a payment method:
 - React Native Reanimated for animations
 - Lucide icons
 
+## Website (webapp)
+
+The website at `/website/webapp` is a Next.js 14 companion app that mirrors all mobile features. It uses the same dark design system (#080c14 background, #67e8f9 cyan accent) and shares the same Supabase backend.
+
+### Website Pages
+- `/app/schedule` — Events calendar and list view with RSVP
+- `/app/roster` — Player roster with position grouping
+- `/app/chat` — Team chat with GIF picker and mentions
+- `/app/photos` — Team photo gallery
+- `/app/payments` — Payment tracking and Stripe integration
+- `/app/admin` — Admin panel (players, settings, season archiving)
+- `/app/records` — Team records, championships, all-time leaders (across all seasons)
+- `/app/stats` — Player statistics tables (sport-specific, editable)
+- `/app/attendance` — Player attendance statistics with game-by-game history
+- `/app/season-history` — Archived season viewer with expandable player stats tables
+- `/app/messages` — Admin direct messaging (inbox/sent with read receipts)
+- `/app/more` — Availability, polls, team links, notifications, email team, support
+
+### Website Navigation
+- **Sidebar** (desktop lg+): Events, Roster, Chat, Photos, Payments, More, Admin
+- **TopBar**: Team name, notification bell with unread count, DM inbox icon with unread count
+- **MobileNav** (mobile web): Bottom tab bar with up to 4 features + More
+
+### Direct Messages (website)
+The Messages page (`/app/messages`) mirrors the mobile direct messaging system:
+- Admin-only compose with subject, body, and player multi-select
+- Inbox/Sent tabs with read status indicators
+- Real-time updates via Supabase channel
+- Read receipts showing which recipients have read a message
+- Delete messages (admin can delete any; recipient can delete from inbox)
+
 ## Data Persistence & Updates
 - All user data (accounts, teams, players, games, etc.) is stored locally using AsyncStorage
 - **Data Migration**: The app includes a migration system that preserves all user data during app updates

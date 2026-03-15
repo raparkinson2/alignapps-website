@@ -5,7 +5,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   Player, Game, Event, Photo, AppNotification, ChatMessage,
   PaymentPeriod, PlayerPayment, PaymentEntry, Poll, TeamLink,
-  Team, TeamSettings, Sport, Championship
+  Team, TeamSettings, Sport, Championship, DirectMessage
 } from './types';
 
 const defaultTeamSettings: TeamSettings = {
@@ -39,6 +39,7 @@ interface TeamStore {
   paymentPeriods: PaymentPeriod[];
   polls: Poll[];
   teamLinks: TeamLink[];
+  directMessages: DirectMessage[];
 
   // Auth
   isLoggedIn: boolean;
@@ -63,6 +64,7 @@ interface TeamStore {
   setNotifications: (notifications: AppNotification[]) => void;
   setPolls: (polls: Poll[]) => void;
   setTeamLinks: (links: TeamLink[]) => void;
+  setDirectMessages: (messages: DirectMessage[]) => void;
 
   // Player mutations
   addPlayer: (player: Player) => void;
@@ -112,6 +114,12 @@ interface TeamStore {
   addChampionship: (c: Championship) => void;
   removeChampionship: (id: string) => void;
 
+  // Direct Messages
+  addDirectMessage: (message: DirectMessage) => void;
+  markDirectMessageRead: (messageId: string, playerId: string) => void;
+  removeDirectMessage: (messageId: string) => void;
+  getUnreadDirectMessageCount: (playerId: string) => number;
+
   // Auth actions
   setIsLoggedIn: (v: boolean) => void;
   setCurrentPlayerId: (id: string | null) => void;
@@ -144,6 +152,7 @@ export const useTeamStore = create<TeamStore>()(
       paymentPeriods: [],
       polls: [],
       teamLinks: [],
+      directMessages: [],
       isLoggedIn: false,
       currentPlayerId: null,
       userEmail: null,
@@ -163,6 +172,7 @@ export const useTeamStore = create<TeamStore>()(
       setNotifications: (notifications) => set({ notifications }),
       setPolls: (polls) => set({ polls }),
       setTeamLinks: (teamLinks) => set({ teamLinks }),
+      setDirectMessages: (directMessages) => set({ directMessages }),
 
       addPlayer: (player) => set((s) => {
         if (s.players.some((p) => p.id === player.id)) {
@@ -317,6 +327,25 @@ export const useTeamStore = create<TeamStore>()(
         teamSettings: { ...s.teamSettings, championships: (s.teamSettings.championships || []).filter((c) => c.id !== id) },
       })),
 
+      addDirectMessage: (message) => set((s) => {
+        if (s.directMessages.some((m) => m.id === message.id)) return s;
+        return { directMessages: [message, ...s.directMessages] };
+      }),
+      markDirectMessageRead: (messageId, playerId) => set((s) => ({
+        directMessages: s.directMessages.map((m) =>
+          m.id === messageId ? { ...m, readBy: m.readBy.includes(playerId) ? m.readBy : [...m.readBy, playerId] } : m
+        ),
+      })),
+      removeDirectMessage: (messageId) => set((s) => ({
+        directMessages: s.directMessages.filter((m) => m.id !== messageId),
+      })),
+      getUnreadDirectMessageCount: (playerId) => {
+        const s = get();
+        return s.directMessages.filter(
+          (m) => m.recipientIds.includes(playerId) && !m.readBy.includes(playerId)
+        ).length;
+      },
+
       setIsLoggedIn: (v) => set({ isLoggedIn: v }),
       setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
       setActiveTeamId: (id) => set({ activeTeamId: id }),
@@ -364,6 +393,7 @@ export const useTeamStore = create<TeamStore>()(
         paymentPeriods: [],
         polls: [],
         teamLinks: [],
+        directMessages: [],
         teams: [],
       }),
 
@@ -408,6 +438,7 @@ export const useTeamStore = create<TeamStore>()(
         paymentPeriods: state.paymentPeriods,
         polls: state.polls,
         teamLinks: state.teamLinks,
+        directMessages: state.directMessages,
         isLoggedIn: state.isLoggedIn,
         currentPlayerId: state.currentPlayerId,
         userEmail: state.userEmail,
