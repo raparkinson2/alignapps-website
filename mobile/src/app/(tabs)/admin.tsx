@@ -316,6 +316,7 @@ export default function AdminScreen() {
 
   // Season Management modal
   const [isEndSeasonModalVisible, setIsEndSeasonModalVisible] = useState(false);
+  const [isRefreshmentModalVisible, setIsRefreshmentModalVisible] = useState(false);
   const [endSeasonName, setEndSeasonName] = useState(teamSettings.currentSeasonName || '');
   const [endSeasonStep, setEndSeasonStep] = useState<'name' | 'confirm'>('name');
 
@@ -1771,8 +1772,14 @@ export default function AdminScreen() {
               Culture
             </Text>
 
-            {/* Refreshment Duty Toggle */}
-            <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
+            {/* Refreshments Nav Item */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsRefreshmentModalVisible(true);
+              }}
+              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+            >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <View className="bg-cyan-500/20 p-2 rounded-full">
@@ -1785,45 +1792,9 @@ export default function AdminScreen() {
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={teamSettings.showRefreshmentDuty !== false}
-                  onValueChange={(value) => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setTeamSettingsAndSync({ showRefreshmentDuty: value });
-                  }}
-                  trackColor={{ false: '#334155', true: '#22c55e' }}
-                  thumbColor="#ffffff"
-                />
+                <ChevronRight size={20} color="#64748b" />
               </View>
-            </View>
-
-            {/* 21+ Toggle - only show when refreshment duty is enabled */}
-            {teamSettings.showRefreshmentDuty !== false && (
-              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/30 ml-4">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="bg-amber-500/10 p-2 rounded-full">
-                      <Beer size={18} color="#d97706" />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text className="text-slate-200 font-medium">21+ Beverages</Text>
-                      <Text className="text-slate-400 text-sm">
-                        Show beer mug icon instead
-                      </Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={teamSettings.refreshmentDutyIs21Plus === true}
-                    onValueChange={(value) => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setTeamSettingsAndSync({ refreshmentDutyIs21Plus: value });
-                    }}
-                    trackColor={{ false: '#334155', true: '#22c55e' }}
-                    thumbColor="#ffffff"
-                  />
-                </View>
-              </View>
-            )}
+            </Pressable>
           </Animated.View>
 
           {/* Danger Zone Section */}
@@ -2613,6 +2584,86 @@ export default function AdminScreen() {
                   <Text className="text-purple-400 font-semibold">Tip:</Text> Disable roles your team doesn't use to simplify player management. The "Player" role is always required.
                 </Text>
               </View>
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+
+      {/* Refreshments Modal */}
+      <Modal
+        visible={isRefreshmentModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsRefreshmentModalVisible(false)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setIsRefreshmentModalVisible(false)}>
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">Refreshments</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-6">
+              <Text className="text-slate-400 text-sm mb-6">
+                Configure refreshment duty assignments for your team.
+              </Text>
+
+              {/* Enable Refreshments */}
+              <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-cyan-500/20 p-2 rounded-full">
+                      <JuiceBoxIcon size={20} color="#67e8f9" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-white font-semibold">Enable Refreshment Duty</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Assign players to bring refreshments
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={teamSettings.showRefreshmentDuty !== false}
+                    onValueChange={(value) => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTeamSettingsAndSync({ showRefreshmentDuty: value });
+                    }}
+                    trackColor={{ false: '#334155', true: '#22c55e' }}
+                    thumbColor="#ffffff"
+                  />
+                </View>
+              </View>
+
+              {/* 21+ Beverages - only show when refreshments is enabled */}
+              {teamSettings.showRefreshmentDuty !== false && (
+                <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <View className="bg-amber-500/10 p-2 rounded-full">
+                        <Beer size={18} color="#d97706" />
+                      </View>
+                      <View className="ml-3 flex-1">
+                        <Text className="text-white font-semibold">21+ Beverages</Text>
+                        <Text className="text-slate-400 text-sm">
+                          Show beer mug icon instead
+                        </Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={teamSettings.refreshmentDutyIs21Plus === true}
+                      onValueChange={(value) => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setTeamSettingsAndSync({ refreshmentDutyIs21Plus: value });
+                      }}
+                      trackColor={{ false: '#334155', true: '#22c55e' }}
+                      thumbColor="#ffffff"
+                    />
+                  </View>
+                </View>
+              )}
             </ScrollView>
           </SafeAreaView>
         </View>
