@@ -175,14 +175,11 @@ export default function EventDetailScreen() {
     }
   }, [event?.id]);
 
-  // Track that this player has viewed the event (only if they are invited and haven't already)
+  // Track that this player has viewed the event
   useEffect(() => {
     if (!event || !currentPlayerId) return;
-    const isInvited = event.invitedPlayers?.includes(currentPlayerId);
-    if (!isInvited) return;
     const alreadyViewed = event.viewedBy?.includes(currentPlayerId);
     if (alreadyViewed) return;
-    // Only track view if they haven't confirmed or declined (don't overwrite real RSVPs in Supabase)
     markEventViewed(event.id, currentPlayerId);
     pushEventViewedToSupabase(event.id, currentPlayerId).catch(console.error);
   }, [event?.id, currentPlayerId]);
