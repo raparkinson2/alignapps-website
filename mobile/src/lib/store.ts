@@ -632,6 +632,7 @@ export interface Event {
   confirmedPlayers: string[];
   declinedPlayers?: string[];
   declinedNotes?: Record<string, string>; // playerId -> reason for declining
+  viewedBy?: string[]; // playerIds who have opened the event detail
   // Invite release options
   inviteReleaseOption?: InviteReleaseOption;
   inviteReleaseDate?: string; // ISO date string for scheduled release
@@ -797,6 +798,7 @@ interface TeamStore {
   removeEvent: (id: string) => void;
   confirmEventAttendance: (eventId: string, playerId: string) => void;
   declineEventAttendance: (eventId: string, playerId: string, note?: string) => void;
+  markEventViewed: (eventId: string, playerId: string) => void;
   invitePlayersToEvent: (eventId: string, playerIds: string[]) => void;
 
   photos: Photo[];
@@ -1453,6 +1455,13 @@ export const useTeamStore = create<TeamStore>()(
       invitePlayersToEvent: (eventId, playerIds) => set((state) => ({
         events: state.events.map((e) =>
           e.id === eventId ? { ...e, invitedPlayers: playerIds } : e
+        ),
+      })),
+      markEventViewed: (eventId, playerId) => set((state) => ({
+        events: state.events.map((e) =>
+          e.id === eventId && !(e.viewedBy || []).includes(playerId)
+            ? { ...e, viewedBy: [...(e.viewedBy || []), playerId] }
+            : e
         ),
       })),
 

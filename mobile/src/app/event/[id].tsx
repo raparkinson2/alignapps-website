@@ -22,6 +22,7 @@ import {
   BellOff,
   StickyNote,
   FileText,
+  Eye,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -29,7 +30,7 @@ import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, getPlayerName, AppNotification, InviteReleaseOption } from '@/lib/store';
-import { pushEventToSupabase, pushEventResponseToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
+import { pushEventToSupabase, pushEventResponseToSupabase, pushEventViewedToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -126,6 +127,7 @@ export default function EventDetailScreen() {
   const canManageTeam = useTeamStore((s) => s.canManageTeam);
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
+  const markEventViewed = useTeamStore((s) => s.markEventViewed);
 
   const event = events.find((e) => e.id === id);
 
@@ -162,6 +164,18 @@ export default function EventDetailScreen() {
       });
     }
   }, [event?.id]);
+
+  // Track that this player has viewed the event (only if they are invited and haven't already)
+  useEffect(() => {
+    if (!event || !currentPlayerId) return;
+    const isInvited = event.invitedPlayers?.includes(currentPlayerId);
+    if (!isInvited) return;
+    const alreadyViewed = event.viewedBy?.includes(currentPlayerId);
+    if (alreadyViewed) return;
+    // Only track view if they haven't confirmed or declined (don't overwrite real RSVPs in Supabase)
+    markEventViewed(event.id, currentPlayerId);
+    pushEventViewedToSupabase(event.id, currentPlayerId).catch(console.error);
+  }, [event?.id, currentPlayerId]);
 
   if (!event) {
     return (
@@ -786,6 +800,47 @@ export default function EventDetailScreen() {
                 )}
               </View>
             </Animated.View>
+
+            {/* Viewed By — admin/captain only */}
+            {canManageTeam() && event.invitedPlayers && event.invitedPlayers.length > 0 && (
+              <Animated.View entering={FadeInDown.delay(300).springify()} className="px-5 mt-4 mb-2">
+                <View className="flex-row items-center mb-3">
+                  <Eye size={15} color="#94a3b8" />
+                  <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider ml-1.5">
+                    Viewed By ({(event.viewedBy || []).length}/{event.invitedPlayers.length})
+                  </Text>
+                </View>
+                <View className="bg-slate-800/50 rounded-2xl p-4">
+                  {event.invitedPlayers.map((playerId, index) => {
+                    const player = players.find((p) => p.id === playerId);
+                    if (!player) return null;
+                    const hasViewed = (event.viewedBy || []).includes(playerId) ||
+                      (event.confirmedPlayers || []).includes(playerId) ||
+                      (event.declinedPlayers || []).includes(playerId);
+                    return (
+                      <Animated.View
+                        key={playerId}
+                        entering={FadeInDown.delay(index * 30).springify()}
+                        className="flex-row items-center py-2 border-b border-slate-700/30 last:border-0"
+                      >
+                        <PlayerAvatar player={player} size={32} />
+                        <Text className="text-slate-300 text-sm ml-3 flex-1">{getPlayerName(player)}</Text>
+                        {hasViewed ? (
+                          <View className="flex-row items-center">
+                            <Eye size={14} color="#22d3ee" />
+                            <Text className="text-cyan-400 text-xs ml-1">Viewed</Text>
+                          </View>
+                        ) : (
+                          <Text className="text-slate-600 text-xs">Not opened</Text>
+                        )}
+                      </Animated.View>
+                    );
+                  })}
+                </View>
+              </Animated.View>
+            )}
+
+            <View className="h-8" />
           </View>
         </ScrollView>
       </SafeAreaView>

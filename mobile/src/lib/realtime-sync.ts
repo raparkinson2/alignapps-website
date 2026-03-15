@@ -251,17 +251,18 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     });
 
     // Build event responses map
-    const eventResponsesMap: Record<string, { confirmed: string[]; declined: string[]; invited: string[]; notes: Record<string, string> }> = {};
+    const eventResponsesMap: Record<string, { confirmed: string[]; declined: string[]; invited: string[]; notes: Record<string, string>; viewed: string[] }> = {};
     for (const r of erData || []) {
-      if (!eventResponsesMap[r.event_id]) eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {} };
+      if (!eventResponsesMap[r.event_id]) eventResponsesMap[r.event_id] = { confirmed: [], declined: [], invited: [], notes: {}, viewed: [] };
       const map = eventResponsesMap[r.event_id];
       if (r.response === 'confirmed') { map.confirmed.push(r.player_id); map.invited.push(r.player_id); }
       else if (r.response === 'declined') { map.declined.push(r.player_id); map.invited.push(r.player_id); if (r.note) map.notes[r.player_id] = r.note; }
       else if (r.response === 'invited') { map.invited.push(r.player_id); }
+      else if (r.response === 'viewed') { map.viewed.push(r.player_id); map.invited.push(r.player_id); }
     }
     const events: Event[] = (eventsData || []).map((e: any) => {
-      const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {} };
-      return { ...mapEvent(e), confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes };
+      const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {}, viewed: [] };
+      return { ...mapEvent(e), confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes, viewedBy: resp.viewed };
     });
 
     // Flush priority data to store — Events tab is now fully renderable
@@ -617,7 +618,7 @@ export function startRealtimeSync(teamId: string): void {
       const existing = store.events.find((e) => e.id === updated.id);
       useTeamStore.setState({
         events: store.events.map((e) => e.id === updated.id
-          ? { ...updated, confirmedPlayers: existing?.confirmedPlayers || [], declinedPlayers: existing?.declinedPlayers || [], invitedPlayers: existing?.invitedPlayers || [], declinedNotes: existing?.declinedNotes }
+          ? { ...updated, confirmedPlayers: existing?.confirmedPlayers || [], declinedPlayers: existing?.declinedPlayers || [], invitedPlayers: existing?.invitedPlayers || [], declinedNotes: existing?.declinedNotes, viewedBy: existing?.viewedBy || [] }
           : e
         ),
       });
@@ -640,20 +641,25 @@ export function startRealtimeSync(teamId: string): void {
         let confirmed = [...(event.confirmedPlayers || [])];
         let declined = [...(event.declinedPlayers || [])];
         let invited = [...(event.invitedPlayers || [])];
+        let viewed = [...(event.viewedBy || [])];
         const notes = { ...(event.declinedNotes || {}) };
 
-        confirmed = confirmed.filter((id) => id !== row.player_id);
-        declined = declined.filter((id) => id !== row.player_id);
+        // Only strip non-viewed responses for the player; keep viewed separately
+        if (row.response !== 'viewed') {
+          confirmed = confirmed.filter((id) => id !== row.player_id);
+          declined = declined.filter((id) => id !== row.player_id);
+          delete notes[row.player_id];
+        }
         invited = invited.filter((id) => id !== row.player_id);
-        delete notes[row.player_id];
 
         if (payload.eventType !== 'DELETE') {
           if (row.response === 'confirmed') { confirmed.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); }
           else if (row.response === 'declined') { declined.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); if (row.note) notes[row.player_id] = row.note; }
           else if (row.response === 'invited') { if (!invited.includes(row.player_id)) invited.push(row.player_id); }
+          else if (row.response === 'viewed') { if (!viewed.includes(row.player_id)) viewed.push(row.player_id); if (!invited.includes(row.player_id)) invited.push(row.player_id); }
         }
 
-        return { ...event, confirmedPlayers: confirmed, declinedPlayers: declined, invitedPlayers: invited, declinedNotes: notes };
+        return { ...event, confirmedPlayers: confirmed, declinedPlayers: declined, invitedPlayers: invited, declinedNotes: notes, viewedBy: viewed };
       });
       useTeamStore.setState({ events });
     })
@@ -1083,6 +1089,25 @@ export async function pushEventResponseToSupabase(eventId: string, playerId: str
     );
   } catch (err) {
     console.error('SYNC: pushEventResponseToSupabase error:', err);
+  }
+}
+
+export async function pushEventViewedToSupabase(eventId: string, playerId: string): Promise<void> {
+  try {
+    // Only insert 'viewed' if no response row exists yet — don't overwrite a real RSVP
+    const { data } = await supabase
+      .from('event_responses')
+      .select('response')
+      .eq('event_id', eventId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+    if (!data) {
+      await supabase.from('event_responses').insert(
+        { event_id: eventId, player_id: playerId, response: 'viewed' }
+      );
+    }
+  } catch (err) {
+    console.error('SYNC: pushEventViewedToSupabase error:', err);
   }
 }
 
