@@ -1277,16 +1277,14 @@ export default function MoreScreen() {
             Teams
           </Text>
 
-          {/* Switch Team - only show if user belongs to multiple teams */}
-          {hasMultipleTeams && (
-            <MenuItem
-              icon={<ArrowLeftRight size={20} color="#67e8f9" />}
-              title="Switch Team"
-              subtitle={`You're on ${userTeams.length} teams`}
-              onPress={handleSwitchTeam}
-              index={0}
-            />
-          )}
+          {/* Switch Team */}
+          <MenuItem
+            icon={<ArrowLeftRight size={20} color="#67e8f9" />}
+            title="Switch Team"
+            subtitle={hasMultipleTeams ? `You're on ${userTeams.length} teams` : 'Switch or join another team'}
+            onPress={handleSwitchTeam}
+            index={0}
+          />
 
           <MenuItem
             icon={<CalendarOff size={20} color="#67e8f9" />}

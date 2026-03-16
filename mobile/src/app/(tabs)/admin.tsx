@@ -1109,17 +1109,13 @@ export default function AdminScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
-          {/* Type Selection - commented out, sport is set at team creation and doesn't need to change
-          <Animated.View entering={FadeInDown.delay(50).springify()}>
+          {/* Type Selection */}
+          <Animated.View entering={FadeInDown.delay(50).springify()} className="mb-6">
             <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">
-              Type
+              Sport
             </Text>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingBottom: 12 }}
-            >
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((sport) => (
                 <Pressable
                   key={sport}
@@ -1141,9 +1137,8 @@ export default function AdminScreen() {
                   </Text>
                 </Pressable>
               ))}
-            </ScrollView>
+            </View>
           </Animated.View>
-          */}
 
           {/* Team Identity Section */}
           <Animated.View entering={FadeInDown.delay(100).springify()}>
