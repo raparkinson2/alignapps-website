@@ -1109,37 +1109,6 @@ export default function AdminScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
-          {/* Type Selection */}
-          <Animated.View entering={FadeInDown.delay(50).springify()} className="mb-6">
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-4">
-              Sport
-            </Text>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((sport) => (
-                <Pressable
-                  key={sport}
-                  onPress={() => handleChangeSport(sport)}
-                  className={cn(
-                    'items-center justify-center px-4 py-2 rounded-2xl border',
-                    teamSettings.sport === sport
-                      ? 'bg-cyan-500/20 border-cyan-500/50'
-                      : 'bg-slate-800/80 border-slate-700/50'
-                  )}
-                >
-                  <Text
-                    className={cn(
-                      'text-sm font-medium',
-                      teamSettings.sport === sport ? 'text-cyan-400' : 'text-slate-400'
-                    )}
-                  >
-                    {SPORT_NAMES[sport]}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </Animated.View>
-
           {/* Team Identity Section */}
           <Animated.View entering={FadeInDown.delay(100).springify()}>
             <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4">

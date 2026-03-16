@@ -427,34 +427,6 @@ export default function TeamSettingsForm() {
           />
         </div>
 
-        {/* ── Sport ─────────────────────────────────────────────────────────── */}
-        <div className="mb-4">
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Sport</label>
-          {sportWarning && (
-            <div className="flex items-start gap-2 bg-orange-500/10 border border-orange-500/20 rounded-xl p-3 mb-2 text-orange-400 text-xs">
-              <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-              <span>Changing sport will affect position groupings on the roster and stats pages.</span>
-            </div>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {SPORTS.map((sport) => (
-              <button
-                key={sport}
-                type="button"
-                onClick={() => handleSportChange(sport)}
-                className={cn(
-                  'px-3 py-1.5 rounded-xl border text-sm font-medium capitalize transition-all whitespace-nowrap shrink-0',
-                  localSettings.sport === sport
-                    ? 'border-[#67e8f9]/50 bg-[#67e8f9]/10 text-[#67e8f9]'
-                    : 'border-white/10 text-slate-400 hover:border-white/20'
-                )}
-              >
-                {SPORT_NAMES[sport]}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* ── Jersey Colors ─────────────────────────────────────────────────── */}
         <div className="mb-5">
           <label className="block text-xs font-medium text-slate-400 mb-1.5">Jersey Colors</label>
