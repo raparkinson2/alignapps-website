@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import {
   ArrowLeft,
   FolderOpen,
@@ -25,7 +25,7 @@ import {
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTeamStore } from '@/lib/store';
 import {
@@ -220,9 +220,15 @@ export default function FileStorageScreen() {
     queryKey: ['team-files', teamId],
     queryFn: () => fetchTeamFiles(teamId),
     enabled: !!teamId,
-    refetchOnWindowFocus: false,
-    staleTime: 60_000,
+    staleTime: 0,
   });
+
+  // Refetch whenever the screen comes into focus so deletions from other clients show immediately
+  useFocusEffect(
+    useCallback(() => {
+      if (teamId) queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
+    }, [teamId, queryClient])
+  );
 
   // Merge server list with locally-uploaded files; server wins on id collision
   const serverIds = new Set(serverFiles.map((f) => f.id));

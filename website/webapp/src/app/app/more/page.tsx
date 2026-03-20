@@ -1052,12 +1052,14 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch files on mount
-  React.useEffect(() => {
+  const loadFiles = React.useCallback(() => {
     if (!activeTeamId) return;
     setLoading(true);
+    setError(null);
     fetch(`${BACKEND_URL}/api/team-files/${activeTeamId}`)
       .then(r => r.json())
       .then((d: { data?: TeamFile[] }) => {
@@ -1068,10 +1070,12 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
       .catch(() => { setError('Failed to load files'); setLoading(false); });
   }, [activeTeamId, BACKEND_URL]);
 
+  // Fetch files on mount
+  React.useEffect(() => { loadFiles(); }, [loadFiles]);
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeTeamId) return;
-    // Block video/audio
     if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
       setUploadError('Video and audio files are not supported.');
       return;
@@ -1098,11 +1102,11 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploading(false);
-      // reset input so same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
+<<<<<<< HEAD
   const handleDelete = async (file: TeamFile) => {
     setDeletingId(file.id);
     try {
@@ -1114,6 +1118,19 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
         setFiles(prev => prev.filter(f => f.id !== file.id));
       }
     } catch { /* network error */ }
+=======
+  const handleDelete = async (fileId: string) => {
+    setDeletingId(fileId);
+    setDeleteError(null);
+    setConfirmDeleteId(null);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/team-files/delete/${fileId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      setFiles(prev => prev.filter(f => f.id !== fileId));
+    } catch {
+      setDeleteError('Failed to delete file. Please try again.');
+    }
+>>>>>>> github-align/main
     setDeletingId(null);
   };
 
@@ -1166,6 +1183,35 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
         </div>
       )}
 
+      {/* Delete error */}
+      {deleteError && (
+        <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 mb-4">
+          <X size={14} className="text-rose-400 shrink-0" />
+          <p className="text-rose-400 text-sm">{deleteError}</p>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {confirmDeleteId && (
+        <div className="bg-[#1a0a0a] border border-rose-500/20 rounded-2xl p-4 mb-4">
+          <p className="text-slate-200 text-sm font-medium mb-3">Delete this file? This cannot be undone.</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setConfirmDeleteId(null)}
+              className="flex-1 py-2 rounded-xl bg-white/5 text-slate-300 text-sm font-medium hover:bg-white/10 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(confirmDeleteId)}
+              className="flex-1 py-2 rounded-xl bg-rose-500/20 text-rose-400 text-sm font-semibold hover:bg-rose-500/30 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* File list */}
       {loading ? (
         <div className="flex flex-col items-center py-16 gap-3">
@@ -1173,8 +1219,14 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
           <p className="text-slate-500 text-sm">Loading files…</p>
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center py-16 gap-2">
+        <div className="flex flex-col items-center py-16 gap-3">
           <p className="text-rose-400 text-sm">{error}</p>
+          <button
+            onClick={loadFiles}
+            className="px-4 py-2 rounded-xl bg-white/5 text-slate-300 text-sm hover:bg-white/10 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       ) : files.length === 0 ? (
         <div className="flex flex-col items-center py-16 gap-3">
@@ -1229,7 +1281,11 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
                 </a>
                 {isAdmin && (
                   <button
+<<<<<<< HEAD
                     onClick={() => handleDelete(file)}
+=======
+                    onClick={() => setConfirmDeleteId(file.id)}
+>>>>>>> github-align/main
                     disabled={deletingId === file.id}
                     className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors disabled:opacity-40"
                     title="Delete file"
