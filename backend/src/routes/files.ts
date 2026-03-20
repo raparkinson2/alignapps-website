@@ -159,9 +159,12 @@ filesRouter.get("/:teamId", async (c) => {
   return c.json({ data: files });
 });
 
-// Delete a file by its storage path (id = path)
-filesRouter.delete("/delete/:fileId", async (c) => {
-  const { fileId } = c.req.param();
+// Delete a file by its storage path — passed as ?path= to avoid slash-in-URL issues
+filesRouter.delete("/delete", async (c) => {
+  const filePath = c.req.query("path");
+  if (!filePath) {
+    return c.json({ error: "Missing required query param: path" }, 400);
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let supabase: any;
@@ -171,15 +174,14 @@ filesRouter.delete("/delete/:fileId", async (c) => {
     return c.json({ error: e.message }, 500);
   }
 
-  // fileId may be a full path like "team-xxx/ts__name.pdf"
-  // or just an opaque id — try to delete by treating it as the path first
-  const { error } = await supabase.storage.from(BUCKET).remove([fileId]);
+  const { error } = await supabase.storage.from(BUCKET).remove([filePath]);
 
   if (error) {
     console.error("[files] Supabase delete error:", error.message);
     return c.json({ error: "Delete failed" }, 500);
   }
 
+  console.log("[files] Deleted:", filePath);
   return c.json({ data: { success: true } });
 });
 

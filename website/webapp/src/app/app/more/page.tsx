@@ -1003,6 +1003,7 @@ function ReportBugPage({ currentPlayer, onBack }: { currentPlayer: Player | null
 
 type TeamFile = {
   id: string;
+  path: string;
   displayName: string;
   contentType: string;
   sizeBytes: number;
@@ -1102,12 +1103,17 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
     }
   };
 
-  const handleDelete = async (fileId: string) => {
-    setDeletingId(fileId);
+  const handleDelete = async (file: TeamFile) => {
+    setDeletingId(file.id);
     try {
-      await fetch(`${BACKEND_URL}/api/team-files/delete/${fileId}`, { method: 'DELETE' });
-      setFiles(prev => prev.filter(f => f.id !== fileId));
-    } catch { /* ignore */ }
+      const res = await fetch(
+        `${BACKEND_URL}/api/team-files/delete?path=${encodeURIComponent(file.path)}`,
+        { method: 'DELETE' }
+      );
+      if (res.ok) {
+        setFiles(prev => prev.filter(f => f.id !== file.id));
+      }
+    } catch { /* network error */ }
     setDeletingId(null);
   };
 
@@ -1223,7 +1229,7 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
                 </a>
                 {isAdmin && (
                   <button
-                    onClick={() => handleDelete(file.id)}
+                    onClick={() => handleDelete(file)}
                     disabled={deletingId === file.id}
                     className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors disabled:opacity-40"
                     title="Delete file"

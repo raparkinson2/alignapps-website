@@ -3,6 +3,7 @@ import { BACKEND_URL } from './config';
 
 export type TeamFile = {
   id: string;
+  path: string;
   displayName: string;
   originalFilename: string;
   contentType: string;
@@ -61,13 +62,15 @@ export async function fetchTeamFiles(teamId: string): Promise<TeamFile[]> {
   return data.data ?? [];
 }
 
-/** Delete a file by its storage ID */
-export async function deleteTeamFile(fileId: string): Promise<void> {
-  const response = await fetch(`${BACKEND_URL}/api/team-files/delete/${fileId}`, {
-    method: 'DELETE',
-  });
+/** Delete a file by its storage path */
+export async function deleteTeamFile(filePath: string): Promise<void> {
+  const response = await fetch(
+    `${BACKEND_URL}/api/team-files/delete?path=${encodeURIComponent(filePath)}`,
+    { method: 'DELETE' }
+  );
   if (!response.ok) {
-    throw new Error('Delete failed');
+    const data = await response.json().catch(() => ({})) as { error?: string };
+    throw new Error(data.error ?? 'Delete failed');
   }
 }
 

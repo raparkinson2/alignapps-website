@@ -257,12 +257,16 @@ export default function FileStorageScreen() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (fileId: string) => deleteTeamFile(fileId),
-    onSuccess: (_, fileId) => {
-      setPendingFiles((prev) => prev.filter((f) => f.id !== fileId));
+    mutationFn: (filePath: string) => deleteTeamFile(filePath),
+    onSuccess: (_, filePath) => {
+      setPendingFiles((prev) => prev.filter((f) => f.path !== filePath));
       queryClient.invalidateQueries({ queryKey: ['team-files', teamId] });
       setFileToDelete(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    onError: () => {
+      setFileToDelete(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });
 
@@ -512,7 +516,7 @@ export default function FileStorageScreen() {
       <DeleteModal
         file={fileToDelete}
         onClose={() => setFileToDelete(null)}
-        onConfirm={() => fileToDelete && deleteMutation.mutate(fileToDelete.id)}
+        onConfirm={() => fileToDelete && deleteMutation.mutate(fileToDelete.path)}
         isDeleting={deleteMutation.isPending}
       />
     </View>
