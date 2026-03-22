@@ -159,25 +159,12 @@ filesRouter.get("/:teamId", async (c) => {
   return c.json({ data: files });
 });
 
-<<<<<<< HEAD
 // Delete a file by its storage path — passed as ?path= to avoid slash-in-URL issues
 filesRouter.delete("/delete", async (c) => {
   const filePath = c.req.query("path");
   if (!filePath) {
     return c.json({ error: "Missing required query param: path" }, 400);
   }
-=======
-// Fallback: legacy single-segment id (UUID from old storage service) — just return success
-filesRouter.delete("/delete/:fileId", async (c) => {
-  console.log("[files] legacy delete id:", c.req.param("fileId"), "— returning success");
-  return c.json({ data: { success: true } });
-});
-
-// Delete a file by its storage path: /delete/:teamId/:filename
-filesRouter.delete("/delete/:teamId/:filename", async (c) => {
-  const { teamId, filename } = c.req.param();
-  const filePath = `${teamId}/${filename}`;
->>>>>>> github-align/main
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let supabase: any;
@@ -187,11 +174,6 @@ filesRouter.delete("/delete/:teamId/:filename", async (c) => {
     return c.json({ error: e.message }, 500);
   }
 
-<<<<<<< HEAD
-=======
-  // fileId may be a full path like "team-xxx/ts__name.pdf"
-  // or just an opaque id — try to delete by treating it as the path first
->>>>>>> github-align/main
   const { error } = await supabase.storage.from(BUCKET).remove([filePath]);
 
   if (error) {
