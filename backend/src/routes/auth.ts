@@ -36,26 +36,6 @@ async function getAuthUserByEmail(supabaseUrl: string, serviceKey: string, email
   return user ? { id: user.id, email: user.email } : null;
 }
 
-async function getAllAuthUsers(supabaseUrl: string, serviceKey: string): Promise<{ id: string; email: string }[]> {
-  const all: { id: string; email: string }[] = [];
-  let page = 1;
-  const perPage = 1000;
-  while (true) {
-    const res = await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=${perPage}&page=${page}`, {
-      headers: {
-        Authorization: `Bearer ${serviceKey}`,
-        apikey: serviceKey,
-      },
-    });
-    if (!res.ok) break;
-    const data = await res.json() as { users?: any[] };
-    const users = (data.users || []).filter((u: any) => u.email).map((u: any) => ({ id: u.id, email: u.email as string }));
-    all.push(...users);
-    if (users.length < perPage) break; // last page
-    page++;
-  }
-  return all;
-}
 
 /**
  * POST /api/auth/delete-account
@@ -234,12 +214,14 @@ authRouter.post("/delete-team", async (c) => {
       }
     }
 
-    // 3. Delete auth accounts for exclusive players
+    // 3. Delete auth accounts for exclusive players.
+    // Look up each email individually — avoids fetching all users in the system (O(1) per email vs O(total users)).
     if (emailsExclusiveToThisTeam.length > 0) {
-      const allAuthUsers = await getAllAuthUsers(supabaseUrl, serviceKey);
-      const emailsLower = new Set(emailsExclusiveToThisTeam);
-      const toDelete = allAuthUsers.filter((u) => emailsLower.has(u.email.toLowerCase()));
-      await Promise.all(toDelete.map((u) => deleteAuthUserById(supabaseUrl, serviceKey, u.id)));
+      const authUsers = await Promise.all(
+        emailsExclusiveToThisTeam.map((email) => getAuthUserByEmail(supabaseUrl!, serviceKey!, email))
+      );
+      const toDelete = authUsers.filter((u): u is { id: string; email: string } => u !== null);
+      await Promise.all(toDelete.map((u) => deleteAuthUserById(supabaseUrl!, serviceKey!, u.id)));
       console.log(`delete-team: deleted ${toDelete.length} auth accounts for team ${teamId}`);
     }
 
