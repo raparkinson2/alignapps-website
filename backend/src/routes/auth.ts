@@ -37,15 +37,24 @@ async function getAuthUserByEmail(supabaseUrl: string, serviceKey: string, email
 }
 
 async function getAllAuthUsers(supabaseUrl: string, serviceKey: string): Promise<{ id: string; email: string }[]> {
-  const res = await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=1000`, {
-    headers: {
-      Authorization: `Bearer ${serviceKey}`,
-      apikey: serviceKey,
-    },
-  });
-  if (!res.ok) return [];
-  const data = await res.json() as { users?: any[] };
-  return (data.users || []).filter((u: any) => u.email).map((u: any) => ({ id: u.id, email: u.email }));
+  const all: { id: string; email: string }[] = [];
+  let page = 1;
+  const perPage = 1000;
+  while (true) {
+    const res = await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=${perPage}&page=${page}`, {
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+      },
+    });
+    if (!res.ok) break;
+    const data = await res.json() as { users?: any[] };
+    const users = (data.users || []).filter((u: any) => u.email).map((u: any) => ({ id: u.id, email: u.email as string }));
+    all.push(...users);
+    if (users.length < perPage) break; // last page
+    page++;
+  }
+  return all;
 }
 
 /**
@@ -207,24 +216,23 @@ authRouter.post("/delete-team", async (c) => {
       .map((p) => p.email?.toLowerCase())
       .filter((e): e is string => !!e);
 
-    // 2. For each email, check if that player exists on ANY other team
-    //    by looking up players with that email excluding this team_id
+    // 2. Batch-check: fetch all players with those emails who are on a DIFFERENT team.
+    //    Any email NOT in that result set belongs exclusively to this team.
     const emailsExclusiveToThisTeam: string[] = [];
-    await Promise.all(
-      teamEmails.map(async (email) => {
-        const res = await fetch(
-          `${supabaseUrl}/rest/v1/players?email=ilike.${encodeURIComponent(email)}&team_id=neq.${encodeURIComponent(teamId!)}&select=id`,
-          { headers }
-        );
-        if (res.ok) {
-          const others = await res.json() as any[];
-          if (others.length === 0) {
-            // Not on any other team — safe to delete auth
-            emailsExclusiveToThisTeam.push(email);
-          }
+    if (teamEmails.length > 0) {
+      const emailList = teamEmails.map((e) => `"${e}"`).join(",");
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/players?email=in.(${encodeURIComponent(emailList)})&team_id=neq.${encodeURIComponent(teamId!)}&select=email`,
+        { headers }
+      );
+      const onOtherTeams: { email: string }[] = res.ok ? (await res.json() as { email: string }[]) : [];
+      const onOtherTeamsSet = new Set(onOtherTeams.map((p) => p.email?.toLowerCase()).filter(Boolean));
+      for (const email of teamEmails) {
+        if (!onOtherTeamsSet.has(email)) {
+          emailsExclusiveToThisTeam.push(email);
         }
-      })
-    );
+      }
+    }
 
     // 3. Delete auth accounts for exclusive players
     if (emailsExclusiveToThisTeam.length > 0) {

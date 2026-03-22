@@ -8,11 +8,15 @@ const BUCKET = "team-files";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseClient = ReturnType<typeof createClient<any>>;
 
+// Singleton client — created once, reused across all requests
+let _supabase: SupabaseClient | null = null;
 function getSupabase(): SupabaseClient {
+  if (_supabase) return _supabase;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("Supabase env vars not set");
-  return createClient(url, key) as SupabaseClient;
+  _supabase = createClient(url, key) as SupabaseClient;
+  return _supabase;
 }
 
 // Blocked MIME type prefixes
@@ -125,7 +129,7 @@ filesRouter.get("/:teamId", async (c) => {
 
   const { data, error } = await supabase.storage
     .from(BUCKET)
-    .list(teamId, { limit: 500, sortBy: { column: "created_at", order: "desc" } });
+    .list(teamId, { limit: 1000, sortBy: { column: "created_at", order: "desc" } });
 
   if (error) {
     console.error("[files] Supabase list error:", error.message);
