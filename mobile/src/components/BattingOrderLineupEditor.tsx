@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal , Platform } from 'react-native';
 import { useState, useMemo, useCallback } from 'react';
 import { X, Plus, Minus, User, Trash2, GripVertical } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -208,7 +208,7 @@ export function BattingOrderLineupEditor({
       onRequestClose={handleClose}
     >
       <View className="flex-1 bg-slate-900">
-        <SafeAreaView className="flex-1">
+        <SafeAreaView className="flex-1" edges={Platform.OS === 'android' ? ['top', 'bottom'] : ['bottom']}>
           {/* Header */}
           <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
             <Pressable onPress={handleClose} className="p-1">
@@ -383,7 +383,7 @@ export function BattingOrderLineupEditor({
         onRequestClose={() => setSelectingSlot(null)}
       >
         <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+          <SafeAreaView className="flex-1" edges={Platform.OS === 'android' ? ['top', 'bottom'] : ['bottom']}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Pressable onPress={() => setSelectingSlot(null)} className="p-1">
                 <X size={24} color="#64748b" />
@@ -438,7 +438,7 @@ export function BattingOrderLineupEditor({
         onRequestClose={() => setSelectingPosition(null)}
       >
         <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+          <SafeAreaView className="flex-1" edges={Platform.OS === 'android' ? ['top', 'bottom'] : ['bottom']}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Pressable onPress={() => setSelectingPosition(null)} className="p-1">
                 <X size={24} color="#64748b" />

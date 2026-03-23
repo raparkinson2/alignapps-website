@@ -1,4 +1,4 @@
-import { View, Text, Modal, Pressable, ScrollView } from 'react-native';
+import { View, Text, Modal, Pressable, ScrollView , Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -35,7 +35,7 @@ export function LineupViewer({
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-slate-900">
-        <SafeAreaView className="flex-1">
+        <SafeAreaView className="flex-1" edges={Platform.OS === 'android' ? ['top', 'bottom'] : ['bottom']}>
           {/* Header */}
           <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
             <Pressable onPress={onClose} className="p-1">

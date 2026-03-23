@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal , Platform } from 'react-native';
 import { useState, useMemo } from 'react';
 import { Image } from 'expo-image';
 import { X, Plus, Minus, User, Trash2 } from 'lucide-react-native';
@@ -301,7 +301,7 @@ export function BasketballLineupEditor({
       onRequestClose={handleClose}
     >
       <View className="flex-1 bg-slate-900">
-        <SafeAreaView className="flex-1">
+        <SafeAreaView className="flex-1" edges={Platform.OS === 'android' ? ['top', 'bottom'] : ['bottom']}>
           {/* Header */}
           <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
             <Pressable onPress={handleClose} className="p-1">
@@ -590,7 +590,7 @@ export function BasketballLineupEditor({
         onRequestClose={() => setPlayerSelectModal(null)}
       >
         <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
+          <SafeAreaView className="flex-1" edges={Platform.OS === 'android' ? ['top', 'bottom'] : ['bottom']}>
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
               <Pressable onPress={() => setPlayerSelectModal(null)} className="p-1">
                 <X size={24} color="#64748b" />
