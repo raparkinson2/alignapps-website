@@ -3,7 +3,7 @@
     "name": "Align Sports",
     "slug": "align-sports-4gvibl",
     "scheme": "alignsports",
-    "version": "7.5.0",
+    "version": "7.5.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
@@ -26,7 +26,7 @@
     "android": {
       "edgeToEdgeEnabled": true,
       "package": "com.vibecode.alignsports",
-      "versionCode": 6
+      "versionCode": 7
     },
     "extra": {
       "eas": {
