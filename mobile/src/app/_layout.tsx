@@ -601,7 +601,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <KeyboardProvider>
-            <StatusBar style="light" translucent={Platform.OS === 'ios'} backgroundColor="transparent" />
+            <StatusBar style="light" translucent backgroundColor="transparent" />
             <RootLayoutNav />
           </KeyboardProvider>
         </GestureHandlerRootView>
