@@ -1350,18 +1350,48 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
           </button>
           {privOpen && (
             <div className="px-4 pb-4 border-t border-white/[0.05] pt-3 space-y-3 text-xs text-slate-400 leading-relaxed">
-              <p className="text-[#67e8f9] font-bold text-sm">ALIGN Sports Privacy Policy</p>
-              <p className="text-slate-500 text-[11px]">Effective Date: January 1, 2025</p>
-              <p>ALIGN Sports (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;), operated by ALIGN Apps, provides a team management platform that allows users to manage schedules, track availability, send invites, post announcements, and communicate within teams (the &quot;Services&quot;).</p>
-              <p>This Privacy Policy explains how we collect, use, disclose, store, and protect information when you use the ALIGN Sports application.</p>
-              <p className="font-semibold text-slate-300">Information We Collect</p>
-              <p>We collect information you provide directly (name, email, phone, jersey number), team data (schedules, attendance, payments), and usage data to improve the app.</p>
-              <p className="font-semibold text-slate-300">How We Use Your Information</p>
-              <p>We use your information to provide and improve our services, send notifications, process payments via Stripe, and communicate with you about your team.</p>
-              <p className="font-semibold text-slate-300">Data Security</p>
-              <p>We use industry-standard security measures. Payment data is handled exclusively by Stripe (PCI-DSS Level 1 certified). We never store card numbers or CVVs.</p>
-              <p className="font-semibold text-slate-300">Contact</p>
-              <p>For privacy questions, contact us at <span className="text-[#67e8f9]">rob@alignapps.com</span></p>
+              <p className="text-[#67e8f9] font-bold text-sm">Privacy Policy</p>
+              <p className="text-slate-500 text-[11px]">Last Updated: March 2026</p>
+              <p>ALIGN Sports (&quot;ALIGN Sports,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) respects your privacy and is committed to protecting your personal information. This Privacy Policy describes how we collect, use, disclose, and safeguard information when you use the ALIGN Sports mobile application, related services, and website located at www.alignapps.com (collectively, the &quot;Services&quot;).</p>
+              <p>By accessing or using the Services, you agree to the collection and use of information in accordance with this Privacy Policy.</p>
+
+              <p className="font-semibold text-slate-300">1. Information We Collect</p>
+              <p className="text-slate-400 italic">a. Information You Provide to Us</p>
+              <p>Account Information: Name, email address, and password. Profile and Team Information: Team names, rosters, player details, and related content you create or upload. User Content: Photos, messages, and other content shared within the app. Communications: Information you provide when contacting support or communicating with other users.</p>
+              <p className="text-slate-400 italic">b. Payment Information</p>
+              <p>Payments are processed by Stripe. We do not store or have access to your full payment card details.</p>
+              <p className="text-slate-400 italic">c. Automatically Collected Information</p>
+              <p>Device type, operating system, app version, usage activity within the Services, and log and diagnostic data. This information is used to maintain security and improve functionality.</p>
+
+              <p className="font-semibold text-slate-300">2. How We Use Your Information</p>
+              <p>To provide, operate, and maintain the Services; facilitate team management features; send notifications; process transactions; respond to support requests; monitor and improve performance; and enforce our terms and legal obligations.</p>
+
+              <p className="font-semibold text-slate-300">3. How We Share Information</p>
+              <p>We do not sell your personal information. We share information only with: Stripe (payment processing), Supabase (data storage and real-time infrastructure), and Apple Inc. (push notification delivery). We may also share information if required by law or in connection with a merger, sale, or acquisition. All third-party service providers are contractually obligated to safeguard your information.</p>
+
+              <p className="font-semibold text-slate-300">4. Team Data and Visibility</p>
+              <p>Content created within a team is visible only to members of that team. We do not use team content for advertising and do not disclose it to unrelated third parties except as necessary to operate the Services.</p>
+
+              <p className="font-semibold text-slate-300">5. Data Retention</p>
+              <p>We retain personal information as long as necessary to provide the Services, comply with legal obligations, resolve disputes, and enforce agreements. Upon account deletion, personal data is permanently removed within 30 days.</p>
+
+              <p className="font-semibold text-slate-300">6. Your Rights and Choices</p>
+              <p>You may have the right to access, correct, or delete your data, object to or restrict processing, and withdraw consent. Contact us at rob@alignapps.com to exercise these rights.</p>
+
+              <p className="font-semibold text-slate-300">7. Children&apos;s Privacy</p>
+              <p>The Services are not directed to children under 13. We do not knowingly collect personal information from children under 13. If we become aware of such collection, we will delete it promptly.</p>
+
+              <p className="font-semibold text-slate-300">8. Security</p>
+              <p>We implement reasonable administrative, technical, and organizational measures to protect your information. No system can be guaranteed 100% secure.</p>
+
+              <p className="font-semibold text-slate-300">9. Data Use Restrictions</p>
+              <p>ALIGN Sports does not use collected data for third-party advertising, data brokering, or cross-app/cross-site tracking. Personal information is used solely for providing and improving the Services.</p>
+
+              <p className="font-semibold text-slate-300">10. Changes to This Privacy Policy</p>
+              <p>We may update this Privacy Policy from time to time. Changes are effective when posted. Continued use of the Services constitutes acceptance of the updated policy.</p>
+
+              <p className="font-semibold text-slate-300">11. Contact Us</p>
+              <p>Email: <span className="text-[#67e8f9]">rob@alignapps.com</span></p>
             </div>
           )}
         </div>
