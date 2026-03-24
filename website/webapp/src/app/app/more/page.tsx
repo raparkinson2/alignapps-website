@@ -1293,6 +1293,7 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
 function NoticesPage({ onBack }: { onBack: () => void }) {
   const [permOpen, setPermOpen] = useState(false);
   const [privOpen, setPrivOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const permSections = [
     { color: 'text-purple-400', title: 'Admin Only', items: ['Access Admin Panel', 'Add/edit/delete games & events', 'Set lineups', 'Send invites', 'Create team links & polls', 'Add/remove players from roster', 'Edit player profiles', 'Create & delete payment periods', 'Connect Stripe', 'Add/remove championships', 'Delete the team'] },
@@ -1392,6 +1393,71 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
 
               <p className="font-semibold text-slate-300">11. Contact Us</p>
               <p>Email: <span className="text-[#67e8f9]">rob@alignapps.com</span></p>
+            </div>
+          )}
+        </div>
+
+        {/* Terms of Service */}
+        <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl overflow-hidden">
+          <button onClick={() => setTermsOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-4 hover:bg-white/[0.03] transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
+              <p className="text-sm font-semibold text-slate-100">Terms of Service</p>
+            </div>
+            <ChevronRight size={16} className={cn('text-slate-600 transition-transform', termsOpen && 'rotate-90')} />
+          </button>
+          {termsOpen && (
+            <div className="px-4 pb-4 border-t border-white/[0.05] pt-3 space-y-3 text-xs text-slate-400 leading-relaxed">
+              <p className="text-emerald-400 font-bold text-sm">Terms of Service</p>
+              <p className="text-slate-500 text-[11px]">Last Updated: March 2026</p>
+              <p>These Terms of Service (&quot;Terms&quot;) govern your access to and use of the ALIGN Sports mobile application, website located at www.alignapps.com, and related services (collectively, the &quot;Services&quot;). By creating an account or using the Services, you agree to be bound by these Terms.</p>
+
+              <p className="font-semibold text-slate-300">1. Company Information</p>
+              <p>ALIGN Sports provides a platform for managing sports teams, including scheduling, communication, and payment tracking tools.</p>
+
+              <p className="font-semibold text-slate-300">2. Eligibility</p>
+              <p>You must be at least 13 years old to use the Services. If under the age of majority in your jurisdiction, you may use the Services only with involvement of a parent or legal guardian.</p>
+
+              <p className="font-semibold text-slate-300">3. Account Registration and Security</p>
+              <p>You agree to provide accurate information, maintain confidentiality of your credentials, and be responsible for all activities under your account. Notify us immediately of any unauthorized use.</p>
+
+              <p className="font-semibold text-slate-300">4. User Content</p>
+              <p>You retain ownership of your content. By using the Services, you grant ALIGN Sports a limited license to host, store, and display your content to operate the Services. Content must not violate any law, infringe rights, or be harmful or inappropriate.</p>
+
+              <p className="font-semibold text-slate-300">5. Team Administration</p>
+              <p>Team administrators control membership, roles, and settings. ALIGN Sports is not responsible for decisions made by team administrators or disputes between users.</p>
+
+              <p className="font-semibold text-slate-300">6. Payments and Financial Features</p>
+              <p>ALIGN Sports provides tools to track payments but does not process payments directly. Payments are facilitated through Stripe. ALIGN Sports is not responsible for payment disputes, chargebacks, or refunds.</p>
+
+              <p className="font-semibold text-slate-300">7. Acceptable Use</p>
+              <p>You agree not to use the Services for unlawful purposes, harass or harm other users, upload malicious code, attempt unauthorized access, or use the Services for unauthorized commercial purposes.</p>
+
+              <p className="font-semibold text-slate-300">8. Third-Party Services</p>
+              <p>The Services rely on third-party providers including Stripe, Supabase, Apple Inc., and Google. We are not responsible for the availability, accuracy, or practices of third-party services.</p>
+
+              <p className="font-semibold text-slate-300">9. Intellectual Property</p>
+              <p>All rights in and to the Services (excluding user content) are owned by ALIGN Sports. You may not copy, modify, distribute, reverse engineer, or use ALIGN Sports branding without permission.</p>
+
+              <p className="font-semibold text-slate-300">10. Termination</p>
+              <p>We may suspend or terminate your access at any time if you violate these Terms, if required by law, or to protect the Services or other users. You may delete your account at any time through the app.</p>
+
+              <p className="font-semibold text-slate-300">11. Disclaimers</p>
+              <p>The Services are provided &quot;as is&quot; and &quot;as available.&quot; ALIGN Sports disclaims all warranties to the fullest extent permitted by law and does not guarantee the Services will be uninterrupted or error-free.</p>
+
+              <p className="font-semibold text-slate-300">12. Limitation of Liability</p>
+              <p>ALIGN Sports shall not be liable for indirect, incidental, or consequential damages, loss of data or profits, or user disputes. Total liability shall not exceed amounts paid in the 12 months preceding any claim.</p>
+
+              <p className="font-semibold text-slate-300">13. Governing Law</p>
+              <p>These Terms shall be governed by the laws of the State of Ohio, without regard to conflict of law principles.</p>
+
+              <p className="font-semibold text-slate-300">14. Changes to These Terms</p>
+              <p>We may update these Terms from time to time. Changes are effective when posted. Continued use constitutes acceptance of the updated Terms.</p>
+
+              <p className="font-semibold text-slate-300">15. Contact Us</p>
+              <p>Email: <span className="text-emerald-400">rob@alignapps.com</span></p>
             </div>
           )}
         </div>

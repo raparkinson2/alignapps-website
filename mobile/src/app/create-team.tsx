@@ -136,6 +136,7 @@ export default function CreateTeamScreen() {
   const isParent = memberRole === 'parent';
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [teamNameInput, setTeamNameInput] = useState('');
   const [sport, setSport] = useState<Sport | null>(null);
   const [jerseyColors, setJerseyColors] = useState<{ name: string; color: string }[]>([]);
@@ -550,6 +551,10 @@ export default function CreateTeamScreen() {
       }
       if (password !== confirmPassword) {
         setError('Passwords do not match');
+        return;
+      }
+      if (!termsAccepted) {
+        setError('Please accept the Terms of Service and Privacy Policy to continue');
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1083,6 +1088,28 @@ export default function CreateTeamScreen() {
                     <Text className="text-green-400 text-sm mt-2">Passwords match</Text>
                   )}
                 </View>
+
+                {/* Terms Acceptance */}
+                <Pressable
+                  onPress={() => {
+                    setTermsAccepted(v => !v);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  className="flex-row items-center mt-2 gap-3"
+                >
+                  <View className={cn(
+                    'w-5 h-5 rounded border-2 items-center justify-center',
+                    termsAccepted ? 'bg-cyan-500 border-cyan-500' : 'border-slate-500 bg-transparent'
+                  )}>
+                    {termsAccepted && <Check size={12} color="white" />}
+                  </View>
+                  <Text className="text-slate-400 text-sm flex-1">
+                    By creating an account, I agree to the{' '}
+                    <Text className="text-cyan-400" onPress={() => Linking.openURL('https://alignapps.com/privacy')}>Privacy Policy</Text>
+                    {' '}and{' '}
+                    <Text className="text-cyan-400" onPress={() => Linking.openURL('https://alignapps.com/terms')}>Terms of Service</Text>
+                  </Text>
+                </Pressable>
               </Animated.View>
             )}
 

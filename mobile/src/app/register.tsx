@@ -1,4 +1,4 @@
-import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -41,6 +41,7 @@ export default function RegisterScreen() {
   const [showLoginLink, setShowLoginLink] = useState(false);  const [isLoading, setIsLoading] = useState(false);
   const [foundPlayer, setFoundPlayer] = useState<{ id: string; firstName: string; lastName: string; number: string } | null>(null);
   const [existingPassword, setExistingPassword] = useState(''); // For existing users joining new team
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // State for Supabase-based invitations (cross-device)
   const [supabaseInvitation, setSupabaseInvitation] = useState<TeamInvitation | null>(null);
@@ -257,6 +258,10 @@ export default function RegisterScreen() {
     }
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      return;
+    }
+    if (!termsAccepted) {
+      setError('Please accept the Terms of Service and Privacy Policy to continue');
       return;
     }
 
@@ -866,6 +871,28 @@ export default function RegisterScreen() {
                     <Text className="text-green-400 text-sm mt-2">Passwords match</Text>
                   )}
                 </View>
+
+                {/* Terms Acceptance */}
+                <Pressable
+                  onPress={() => {
+                    setTermsAccepted(v => !v);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  className="flex-row items-center mb-6 gap-3"
+                >
+                  <View className={cn(
+                    'w-5 h-5 rounded border-2 items-center justify-center',
+                    termsAccepted ? 'bg-cyan-500 border-cyan-500' : 'border-slate-500 bg-transparent'
+                  )}>
+                    {termsAccepted && <Check size={12} color="white" />}
+                  </View>
+                  <Text className="text-slate-400 text-sm flex-1">
+                    By creating an account, I agree to the{' '}
+                    <Text className="text-cyan-400" onPress={() => Linking.openURL('https://alignapps.com/privacy')}>Privacy Policy</Text>
+                    {' '}and{' '}
+                    <Text className="text-cyan-400" onPress={() => Linking.openURL('https://alignapps.com/terms')}>Terms of Service</Text>
+                  </Text>
+                </Pressable>
 
                 {/* Error Message */}
                 {error ? (

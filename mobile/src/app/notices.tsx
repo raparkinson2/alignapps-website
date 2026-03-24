@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, FileText, ChevronDown, ChevronUp, Shield, Users, UserCheck, Eye } from 'lucide-react-native';
+import { ArrowLeft, FileText, ChevronDown, ChevronUp, Shield, Users, UserCheck, Eye, ScrollText } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
@@ -11,6 +11,7 @@ export default function NoticesScreen() {
   const router = useRouter();
   const [isPrivacyExpanded, setIsPrivacyExpanded] = useState(false);
   const [isPermissionsExpanded, setIsPermissionsExpanded] = useState(false);
+  const [isTermsExpanded, setIsTermsExpanded] = useState(false);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -261,6 +262,107 @@ export default function NoticesScreen() {
                   </Text>
 
                   <Text className="text-white font-semibold mt-3 mb-2">11. Contact Us</Text>
+                  <Text className="text-slate-400 text-sm leading-5">
+                    Email: rob@alignapps.com
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </Animated.View>
+
+          {/* Terms of Service */}
+          <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-3">
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsTermsExpanded(!isTermsExpanded);
+              }}
+              className="bg-slate-800/80 rounded-xl p-4 border border-slate-700/50 active:bg-slate-700/80"
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="w-10 h-10 rounded-full bg-emerald-500/20 items-center justify-center mr-3">
+                    <ScrollText size={18} color="#34d399" />
+                  </View>
+                  <Text className="text-white font-semibold">Terms of Service</Text>
+                </View>
+                {isTermsExpanded ? (
+                  <ChevronUp size={20} color="#64748b" />
+                ) : (
+                  <ChevronDown size={20} color="#64748b" />
+                )}
+              </View>
+
+              {isTermsExpanded && (
+                <View className="mt-4 pt-4 border-t border-slate-700/50">
+                  <Text className="text-emerald-400 font-bold text-lg mb-1">Terms of Service</Text>
+                  <Text className="text-slate-500 text-xs mb-4">Last Updated: March 2026</Text>
+
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    These Terms of Service ("Terms") govern your access to and use of the ALIGN Sports mobile application, website located at www.alignapps.com, and related services (collectively, the "Services").{'\n\n'}By creating an account or using the Services, you agree to be bound by these Terms. If you do not agree, you may not use the Services.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">1. Company Information</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    ALIGN Sports provides a platform for managing sports teams, including scheduling, communication, and payment tracking tools.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">2. Eligibility</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    You must be at least 13 years old to use the Services. If you are under the age of majority in your jurisdiction, you may use the Services only with the involvement of a parent or legal guardian.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">3. Account Registration and Security</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    To access certain features, you must create an account. You agree to:{'\n'}• Provide accurate, current, and complete information{'\n'}• Maintain the confidentiality of your login credentials{'\n'}• Be responsible for all activities under your account{'\n\n'}You must notify us immediately of any unauthorized use of your account.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">4. User Content</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    You retain ownership of your content. By using the Services, you grant ALIGN Sports a limited, non-exclusive, worldwide, royalty-free license to host, store, reproduce, and display your content solely for the purpose of operating and improving the Services.{'\n\n'}You agree that your content will not violate any law, infringe intellectual property or privacy rights, or be harmful, abusive, or inappropriate.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">5. Payments and Financial Features</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    ALIGN Sports provides tools to track and organize payments but does not process payments directly. Payments may be facilitated through third-party providers such as Stripe.{'\n\n'}ALIGN Sports is not responsible for payment disputes, chargebacks, or refunds.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">6. Acceptable Use</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    You agree not to:{'\n'}• Use the Services for unlawful or fraudulent purposes{'\n'}• Harass, threaten, or harm other users{'\n'}• Upload malicious code or attempt to disrupt the Services{'\n'}• Attempt unauthorized access to systems or data
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">7. Intellectual Property</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    All rights, title, and interest in and to the Services (excluding user content) are owned by ALIGN Sports. You may not copy, modify, distribute, reverse engineer, or use ALIGN Sports branding without permission.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">8. Termination</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    We may suspend or terminate your access at any time if you violate these Terms, if required by law, or to protect the Services or other users. You may delete your account at any time through the app.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">9. Disclaimers</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    The Services are provided on an "as is" and "as available" basis. To the fullest extent permitted by law, ALIGN Sports disclaims all warranties, express or implied. We do not guarantee that the Services will be uninterrupted or error-free.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">10. Limitation of Liability</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    To the maximum extent permitted by law, ALIGN Sports shall not be liable for indirect, incidental, special, or consequential damages, loss of data, profits, or disputes between users. Total liability shall not exceed amounts paid in the 12 months preceding any claim.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">11. Governing Law</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    These Terms shall be governed by the laws of the State of Ohio, without regard to conflict of law principles.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">12. Changes to These Terms</Text>
+                  <Text className="text-slate-400 text-sm leading-5 mb-3">
+                    We may update these Terms from time to time. Changes will be effective when posted. Continued use of the Services constitutes acceptance of the updated Terms.
+                  </Text>
+
+                  <Text className="text-white font-semibold mt-3 mb-2">13. Contact Us</Text>
                   <Text className="text-slate-400 text-sm leading-5">
                     Email: rob@alignapps.com
                   </Text>
