@@ -42,6 +42,7 @@ export default function RegisterScreen() {
   const [foundPlayer, setFoundPlayer] = useState<{ id: string; firstName: string; lastName: string; number: string } | null>(null);
   const [existingPassword, setExistingPassword] = useState(''); // For existing users joining new team
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   // State for Supabase-based invitations (cross-device)
   const [supabaseInvitation, setSupabaseInvitation] = useState<TeamInvitation | null>(null);
@@ -262,6 +263,10 @@ export default function RegisterScreen() {
     }
     if (!termsAccepted) {
       setError('Please accept the Terms of Service and Privacy Policy to continue');
+      return;
+    }
+    if (!ageConfirmed) {
+      setError('Please confirm you are 13 years of age or older');
       return;
     }
 
@@ -878,7 +883,7 @@ export default function RegisterScreen() {
                     setTermsAccepted(v => !v);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
-                  className="flex-row items-center mb-8 gap-3"
+                  className="flex-row items-center mb-3 gap-3"
                 >
                   <View className={cn(
                     'w-5 h-5 rounded border-2 items-center justify-center',
@@ -891,6 +896,25 @@ export default function RegisterScreen() {
                     <Text className="text-cyan-400" onPress={() => Linking.openURL('https://alignapps.com/privacy')}>Privacy Policy</Text>
                     {' '}and{' '}
                     <Text className="text-cyan-400" onPress={() => Linking.openURL('https://alignapps.com/terms')}>Terms of Service</Text>
+                  </Text>
+                </Pressable>
+
+                {/* Age Confirmation */}
+                <Pressable
+                  onPress={() => {
+                    setAgeConfirmed(v => !v);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  className="flex-row items-center mb-8 gap-3"
+                >
+                  <View className={cn(
+                    'w-5 h-5 rounded border-2 items-center justify-center',
+                    ageConfirmed ? 'bg-cyan-500 border-cyan-500' : 'border-slate-500 bg-transparent'
+                  )}>
+                    {ageConfirmed && <Check size={12} color="white" />}
+                  </View>
+                  <Text className="text-slate-400 text-sm flex-1">
+                    I confirm that I am 13 years of age or older
                   </Text>
                 </Pressable>
 

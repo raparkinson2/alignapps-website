@@ -137,6 +137,7 @@ export default function CreateTeamScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [teamNameInput, setTeamNameInput] = useState('');
   const [sport, setSport] = useState<Sport | null>(null);
   const [jerseyColors, setJerseyColors] = useState<{ name: string; color: string }[]>([]);
@@ -555,6 +556,10 @@ export default function CreateTeamScreen() {
       }
       if (!termsAccepted) {
         setError('Please accept the Terms of Service and Privacy Policy to continue');
+        return;
+      }
+      if (!ageConfirmed) {
+        setError('Please confirm you are 13 years of age or older');
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1095,7 +1100,7 @@ export default function CreateTeamScreen() {
                     setTermsAccepted(v => !v);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
-                  className="flex-row items-center mt-6 mb-6 gap-3"
+                  className="flex-row items-center mt-6 mb-3 gap-3"
                 >
                   <View className={cn(
                     'w-5 h-5 rounded border-2 items-center justify-center',
@@ -1108,6 +1113,25 @@ export default function CreateTeamScreen() {
                     <Text className="text-cyan-400" onPress={() => Linking.openURL('https://alignapps.com/privacy')}>Privacy Policy</Text>
                     {' '}and{' '}
                     <Text className="text-cyan-400" onPress={() => Linking.openURL('https://alignapps.com/terms')}>Terms of Service</Text>
+                  </Text>
+                </Pressable>
+
+                {/* Age Confirmation */}
+                <Pressable
+                  onPress={() => {
+                    setAgeConfirmed(v => !v);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  className="flex-row items-center mb-6 gap-3"
+                >
+                  <View className={cn(
+                    'w-5 h-5 rounded border-2 items-center justify-center',
+                    ageConfirmed ? 'bg-cyan-500 border-cyan-500' : 'border-slate-500 bg-transparent'
+                  )}>
+                    {ageConfirmed && <Check size={12} color="white" />}
+                  </View>
+                  <Text className="text-slate-400 text-sm flex-1">
+                    I confirm that I am 13 years of age or older
                   </Text>
                 </Pressable>
               </Animated.View>
@@ -1316,14 +1340,14 @@ export default function CreateTeamScreen() {
             {/* Continue Button */}
             <Pressable
               onPress={handleNext}
-              disabled={isLoading || (step === 2 && !termsAccepted)}
+              disabled={isLoading || (step === 2 && (!termsAccepted || !ageConfirmed))}
               className="rounded-xl py-4 flex-row items-center justify-center mb-8"
               style={{
-                backgroundColor: (step === 2 && !termsAccepted) ? '#1e3a4a' : '#06b6d4',
-                opacity: (isLoading || (step === 2 && !termsAccepted)) ? 0.5 : 1,
+                backgroundColor: (step === 2 && (!termsAccepted || !ageConfirmed)) ? '#1e3a4a' : '#06b6d4',
+                opacity: (isLoading || (step === 2 && (!termsAccepted || !ageConfirmed))) ? 0.5 : 1,
                 shadowColor: '#22d3ee',
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: (step === 2 && !termsAccepted) ? 0 : 0.4,
+                shadowOpacity: (step === 2 && (!termsAccepted || !ageConfirmed)) ? 0 : 0.4,
                 shadowRadius: 8,
                 elevation: 6,
               }}
