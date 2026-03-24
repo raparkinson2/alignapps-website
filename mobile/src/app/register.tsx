@@ -904,7 +904,9 @@ export default function RegisterScreen() {
                 {/* Create Account Button */}
                 <Pressable
                   onPress={handleCreateAccount}
-                  className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 mb-8"
+                  disabled={!termsAccepted}
+                  className="rounded-xl py-4 flex-row items-center justify-center mb-8"
+                  style={{ backgroundColor: termsAccepted ? '#06b6d4' : '#1e3a4a', opacity: termsAccepted ? 1 : 0.5 }}
                 >
                   <Text className="text-white font-semibold text-lg">Continue</Text>
                 </Pressable>

@@ -1316,12 +1316,14 @@ export default function CreateTeamScreen() {
             {/* Continue Button */}
             <Pressable
               onPress={handleNext}
-              disabled={isLoading}
-              className="bg-cyan-500 rounded-xl py-4 flex-row items-center justify-center active:bg-cyan-600 disabled:opacity-50 mb-8"
+              disabled={isLoading || (step === 2 && !termsAccepted)}
+              className="rounded-xl py-4 flex-row items-center justify-center mb-8"
               style={{
+                backgroundColor: (step === 2 && !termsAccepted) ? '#1e3a4a' : '#06b6d4',
+                opacity: (isLoading || (step === 2 && !termsAccepted)) ? 0.5 : 1,
                 shadowColor: '#22d3ee',
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.4,
+                shadowOpacity: (step === 2 && !termsAccepted) ? 0 : 0.4,
                 shadowRadius: 8,
                 elevation: 6,
               }}
