@@ -1106,19 +1106,6 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
     }
   };
 
-<<<<<<< HEAD
-  const handleDelete = async (file: TeamFile) => {
-    setDeletingId(file.id);
-    try {
-      const res = await fetch(
-        `${BACKEND_URL}/api/team-files/delete?path=${encodeURIComponent(file.path)}`,
-        { method: 'DELETE' }
-      );
-      if (res.ok) {
-        setFiles(prev => prev.filter(f => f.id !== file.id));
-      }
-    } catch { /* network error */ }
-=======
   const handleDelete = async (fileId: string) => {
     setDeletingId(fileId);
     setDeleteError(null);
@@ -1130,7 +1117,6 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
     } catch {
       setDeleteError('Failed to delete file. Please try again.');
     }
->>>>>>> github-align/main
     setDeletingId(null);
   };
 
@@ -1281,11 +1267,7 @@ function FileStoragePage({ activeTeamId, isAdmin, onBack }: {
                 </a>
                 {isAdmin && (
                   <button
-<<<<<<< HEAD
-                    onClick={() => handleDelete(file)}
-=======
                     onClick={() => setConfirmDeleteId(file.id)}
->>>>>>> github-align/main
                     disabled={deletingId === file.id}
                     className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors disabled:opacity-40"
                     title="Delete file"
