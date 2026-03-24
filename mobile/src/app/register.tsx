@@ -878,7 +878,7 @@ export default function RegisterScreen() {
                     setTermsAccepted(v => !v);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
-                  className="flex-row items-center mb-6 gap-3"
+                  className="flex-row items-center mb-8 gap-3"
                 >
                   <View className={cn(
                     'w-5 h-5 rounded border-2 items-center justify-center',
