@@ -177,7 +177,7 @@ export default function NoticesScreen() {
           </Animated.View>
 
           {/* Privacy Policy */}
-          <Animated.View entering={FadeInDown.delay(150).springify()}>
+          <Animated.View entering={FadeInDown.delay(150).springify()} className="mb-3">
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
