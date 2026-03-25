@@ -130,7 +130,7 @@ export default function LoginScreen() {
       } else {
         // New user — send them to create/join a team
         useTeamStore.setState({ userEmail: email.toLowerCase() });
-        router.push('/create-team');
+        router.push('/create-team?fromApple=1');
       }
     } catch (err) {
       setError('Apple Sign In failed. Please try again.');

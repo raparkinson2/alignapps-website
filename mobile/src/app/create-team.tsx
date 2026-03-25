@@ -1,7 +1,7 @@
 import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { ChevronLeft, User, Mail, Lock, Users, Check, Palette, X, Camera, ImageIcon, Phone, Hash, Edit3, UserCog, UserMinus } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -117,9 +117,12 @@ function SportIcon({ sport, color, size = 24 }: { sport: Sport; color: string; s
 
 export default function CreateTeamScreen() {
   const router = useRouter();
+  const { fromApple } = useLocalSearchParams<{ fromApple?: string }>();
+  const isFromApple = fromApple === '1';
   const createNewTeam = useTeamStore((s) => s.createNewTeam);
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const teams = useTeamStore((s) => s.teams);
+  const storedUserEmail = useTeamStore((s) => s.userEmail);
 
   // Persisted form store
   const formStore = useCreateTeamFormStore();
@@ -157,7 +160,10 @@ export default function CreateTeamScreen() {
 
   // Restore form state on mount if valid (within 10 minutes)
   useEffect(() => {
-    if (isFormValid && !hasRestoredForm) {
+    // Pre-fill email from Apple Sign In if available
+    if (isFromApple && storedUserEmail) {
+      setEmail(storedUserEmail);
+    } else if (isFormValid && !hasRestoredForm) {
       console.log('Restoring create-team form state from storage');
       setStep(formStore.step);
       setName(formStore.name);
@@ -541,18 +547,21 @@ export default function CreateTeamScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setStep(2);
     } else if (step === 2) {
-      if (!password.trim()) {
-        setError('Please create a password');
-        return;
-      }
-      const errors = validatePassword(password);
-      if (errors.length > 0) {
-        setError('Password does not meet requirements');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError('Passwords do not match');
-        return;
+      // Skip password validation for Apple Sign In users
+      if (!isFromApple) {
+        if (!password.trim()) {
+          setError('Please create a password');
+          return;
+        }
+        const errors = validatePassword(password);
+        if (errors.length > 0) {
+          setError('Password does not meet requirements');
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          return;
+        }
       }
       if (!termsAccepted) {
         setError('Please accept the Terms of Service and Privacy Policy to continue');
@@ -622,21 +631,23 @@ export default function CreateTeamScreen() {
     setIsLoading(true);
 
     try {
-      // First, create the user in Supabase
-      const supabaseResult = await signUpWithEmail(email.trim(), password);
+      // Skip Supabase sign-up for Apple Sign In users (already registered via Apple)
+      if (!isFromApple) {
+        const supabaseResult = await signUpWithEmail(email.trim(), password);
 
-      if (!supabaseResult.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setError(supabaseResult.error || 'Failed to create account');
+        if (!supabaseResult.success) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setError(supabaseResult.error || 'Failed to create account');
 
-        // If already registered, go back to step 1 so user can change email
-        if (supabaseResult.alreadyRegistered) {
-          setStep(1);
-          setEmailError(supabaseResult.error || 'This email is already registered');
+          // If already registered, go back to step 1 so user can change email
+          if (supabaseResult.alreadyRegistered) {
+            setStep(1);
+            setEmailError(supabaseResult.error || 'This email is already registered');
+          }
+
+          setIsLoading(false);
+          return;
         }
-
-        setIsLoading(false);
-        return;
       }
 
       // Split name into firstName and lastName
@@ -648,8 +659,8 @@ export default function CreateTeamScreen() {
       if (isCoach) roles.push('coach');
       if (isParent) roles.push('parent');
 
-      // Hash the password before storing
-      const hashedPassword = await hashPassword(password);
+      // Hash the password before storing (empty for Apple Sign In users)
+      const hashedPassword = isFromApple ? '' : await hashPassword(password);
 
       // Create the admin player object with hashed password
       const adminPlayer: Player = {
@@ -1026,73 +1037,79 @@ export default function CreateTeamScreen() {
                   <View className="w-16 h-16 rounded-full bg-cyan-500/20 items-center justify-center mb-4 border-2 border-cyan-500/50">
                     <Lock size={32} color="#67e8f9" />
                   </View>
-                  <Text className="text-white text-2xl font-bold">Create Password</Text>
+                  <Text className="text-white text-2xl font-bold">
+                    {isFromApple ? 'Almost There!' : 'Create Password'}
+                  </Text>
                   <Text className="text-slate-400 text-center mt-2">
-                    Secure your account
+                    {isFromApple ? 'You\'ll sign in with Apple each time' : 'Secure your account'}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <Text className="text-slate-400 text-sm mb-2">Password</Text>
-                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                    <Lock size={20} color="#64748b" />
-                    <TextInput
-                      value={password}
-                      onChangeText={setPassword}
-                      placeholder="Create a password"
-                      placeholderTextColor="#64748b"
-                      secureTextEntry
-                      className="flex-1 py-4 px-3 text-white text-base"
-                    />
-                  </View>
-                </View>
-
-                {/* Password Requirements */}
-                <View className="mb-4 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-                  <Text className="text-slate-400 text-sm mb-2">Password must have:</Text>
-                  {[
-                    { label: 'At least 8 characters', met: password.length >= 8 },
-                    { label: 'At least one uppercase letter', met: /[A-Z]/.test(password) },
-                    { label: 'At least one lowercase letter', met: /[a-z]/.test(password) },
-                    { label: 'At least one special symbol', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
-                  ].map((req) => (
-                    <View key={req.label} className="flex-row items-center mt-1">
-                      <View className={cn(
-                        'w-4 h-4 rounded-full items-center justify-center mr-2',
-                        password.length > 0 && req.met ? 'bg-green-500' : 'bg-slate-600'
-                      )}>
-                        {password.length > 0 && req.met && <Check size={10} color="white" />}
+                {!isFromApple && (
+                  <>
+                    <View className="mb-4">
+                      <Text className="text-slate-400 text-sm mb-2">Password</Text>
+                      <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                        <Lock size={20} color="#64748b" />
+                        <TextInput
+                          value={password}
+                          onChangeText={setPassword}
+                          placeholder="Create a password"
+                          placeholderTextColor="#64748b"
+                          secureTextEntry
+                          className="flex-1 py-4 px-3 text-white text-base"
+                        />
                       </View>
-                      <Text className={cn(
-                        'text-sm',
-                        password.length > 0 && req.met ? 'text-green-400' : 'text-slate-500'
-                      )}>
-                        {req.label}
-                      </Text>
                     </View>
-                  ))}
-                </View>
 
-                <View className="mb-4">
-                  <Text className="text-slate-400 text-sm mb-2">Confirm Password</Text>
-                  <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
-                    <Lock size={20} color="#64748b" />
-                    <TextInput
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      placeholder="Confirm your password"
-                      placeholderTextColor="#64748b"
-                      secureTextEntry
-                      className="flex-1 py-4 px-3 text-white text-base"
-                    />
-                  </View>
-                  {confirmPassword.length > 0 && password !== confirmPassword && (
-                    <Text className="text-red-400 text-sm mt-2">Passwords do not match</Text>
-                  )}
-                  {confirmPassword.length > 0 && password === confirmPassword && isPasswordValid && (
-                    <Text className="text-green-400 text-sm mt-2">Passwords match</Text>
-                  )}
-                </View>
+                    {/* Password Requirements */}
+                    <View className="mb-4 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+                      <Text className="text-slate-400 text-sm mb-2">Password must have:</Text>
+                      {[
+                        { label: 'At least 8 characters', met: password.length >= 8 },
+                        { label: 'At least one uppercase letter', met: /[A-Z]/.test(password) },
+                        { label: 'At least one lowercase letter', met: /[a-z]/.test(password) },
+                        { label: 'At least one special symbol', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
+                      ].map((req) => (
+                        <View key={req.label} className="flex-row items-center mt-1">
+                          <View className={cn(
+                            'w-4 h-4 rounded-full items-center justify-center mr-2',
+                            password.length > 0 && req.met ? 'bg-green-500' : 'bg-slate-600'
+                          )}>
+                            {password.length > 0 && req.met && <Check size={10} color="white" />}
+                          </View>
+                          <Text className={cn(
+                            'text-sm',
+                            password.length > 0 && req.met ? 'text-green-400' : 'text-slate-500'
+                          )}>
+                            {req.label}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View className="mb-4">
+                      <Text className="text-slate-400 text-sm mb-2">Confirm Password</Text>
+                      <View className="flex-row items-center bg-slate-800/80 rounded-xl border border-slate-700/50 px-4">
+                        <Lock size={20} color="#64748b" />
+                        <TextInput
+                          value={confirmPassword}
+                          onChangeText={setConfirmPassword}
+                          placeholder="Confirm your password"
+                          placeholderTextColor="#64748b"
+                          secureTextEntry
+                          className="flex-1 py-4 px-3 text-white text-base"
+                        />
+                      </View>
+                      {confirmPassword.length > 0 && password !== confirmPassword && (
+                        <Text className="text-red-400 text-sm mt-2">Passwords do not match</Text>
+                      )}
+                      {confirmPassword.length > 0 && password === confirmPassword && isPasswordValid && (
+                        <Text className="text-green-400 text-sm mt-2">Passwords match</Text>
+                      )}
+                    </View>
+                  </>
+                )}
 
                 {/* Terms Acceptance */}
                 <Pressable
