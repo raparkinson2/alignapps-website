@@ -1,9 +1,9 @@
 {
   "expo": {
     "name": "Align Sports",
-    "slug": "align-sports",
+    "slug": "align-sports-4gvibl",
     "scheme": "alignsports",
-    "version": "7.5.2",
+    "version": "7.5.3",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
@@ -26,7 +26,7 @@
     "android": {
       "edgeToEdgeEnabled": true,
       "package": "com.vibecode.alignsports",
-      "versionCode": 7
+      "versionCode": 8
     },
     "extra": {
       "eas": {
