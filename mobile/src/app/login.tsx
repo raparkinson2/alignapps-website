@@ -2,14 +2,15 @@ import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, Scrol
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mail, Lock, LogIn, UserPlus, Users, User, ChevronRight, X, KeyRound, ShieldQuestion, Phone, MailCheck, RefreshCw, KeySquare, Eye, EyeOff } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
-import { signInWithEmail, sendPasswordResetSMS, resendConfirmationEmail, verifySMSOtpAndResetPassword } from '@/lib/supabase-auth';
+import { signInWithEmail, sendPasswordResetSMS, resendConfirmationEmail, verifySMSOtpAndResetPassword, signInWithApple } from '@/lib/supabase-auth';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { secureLoginWithEmail, secureLoginWithPhone, secureResetPassword, verifyPlayerSecurityAnswer } from '@/lib/secure-auth';
 import { loadTeamFromSupabase } from '@/lib/realtime-sync';
 import { supabase } from '@/lib/supabase';
@@ -81,6 +82,62 @@ export default function LoginScreen() {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingConfirmEmail, setPendingConfirmEmail] = useState('');
   const [isResending, setIsResending] = useState(false);
+  const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
+
+  useEffect(() => {
+    AppleAuthentication.isAvailableAsync().then(setIsAppleAvailable).catch(() => setIsAppleAvailable(false));
+  }, []);
+
+  const handleAppleSignIn = async () => {
+    setIsAppleLoading(true);
+    setError('');
+    try {
+      const result = await signInWithApple();
+      if (!result.success) {
+        if (result.error !== 'cancelled') {
+          setError(result.error ?? 'Apple Sign In failed');
+        }
+        setIsAppleLoading(false);
+        return;
+      }
+      const email = result.email;
+      if (!email) {
+        setError('Could not retrieve your email from Apple. Please sign in with email instead.');
+        setIsAppleLoading(false);
+        return;
+      }
+      // Try to find their player record in Supabase
+      const { data: playerRows } = await supabase
+        .from('players')
+        .select('team_id, id')
+        .eq('email', email.toLowerCase());
+
+      if (playerRows && playerRows.length > 0) {
+        for (const row of playerRows) {
+          await loadTeamFromSupabase(row.team_id);
+        }
+        useTeamStore.setState({
+          activeTeamId: playerRows[0].team_id,
+          userEmail: email.toLowerCase(),
+          currentPlayerId: playerRows[0].id,
+          isLoggedIn: true,
+        });
+        if (playerRows.length > 1) {
+          useTeamStore.setState({ pendingTeamIds: playerRows.map(r => r.team_id) });
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        // New user — send them to create/join a team
+        useTeamStore.setState({ userEmail: email.toLowerCase() });
+        router.push('/create-team');
+      }
+    } catch (err) {
+      setError('Apple Sign In failed. Please try again.');
+    } finally {
+      setIsAppleLoading(false);
+    }
+  };
 
   // Helper to detect if input is phone or email
   const isPhoneNumber = (value: string): boolean => {
@@ -623,6 +680,22 @@ export default function LoginScreen() {
             >
               <Text className="text-cyan-400 text-center text-sm">Forgot Password?</Text>
             </Pressable>
+
+            {/* Sign in with Apple */}
+            {isAppleAvailable && (
+              <View className="mt-2 mb-2">
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                  cornerRadius={12}
+                  style={{ width: '100%', height: 52 }}
+                  onPress={handleAppleSignIn}
+                />
+                {isAppleLoading && (
+                  <Text className="text-slate-400 text-center text-sm mt-2">Signing in with Apple...</Text>
+                )}
+              </View>
+            )}
 
             {/* Divider */}
             <View className="flex-row items-center my-6">

@@ -1,4 +1,5 @@
 import { supabase, clearInvalidSession, getSafeSession } from './supabase';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 export interface AuthResult {
   success: boolean;
@@ -338,5 +339,45 @@ export async function resendConfirmationEmail(email: string): Promise<AuthResult
     return { success: true };
   } catch (err) {
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Sign in with Apple using expo-apple-authentication + Supabase
+ */
+export async function signInWithApple(): Promise<AuthResult & { email?: string }> {
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    if (!credential.identityToken) {
+      return { success: false, error: 'No identity token received from Apple' };
+    }
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: credential.identityToken,
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    if (!data.user) {
+      return { success: false, error: 'Failed to sign in with Apple' };
+    }
+
+    const email = data.user.email ?? credential.email ?? undefined;
+    return { success: true, userId: data.user.id, email };
+  } catch (err: any) {
+    if (err.code === 'ERR_REQUEST_CANCELED') {
+      return { success: false, error: 'cancelled' };
+    }
+    console.error('signInWithApple error:', err);
+    return { success: false, error: err.message || 'Apple Sign In failed' };
   }
 }
