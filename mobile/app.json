@@ -1,20 +1,22 @@
 {
   "expo": {
     "name": "Align Sports",
-    "slug": "align-sports-4gvibl",
+    "slug": "align-sports",
     "scheme": "alignsports",
-    "version": "7.5.3",
+    "version": "7.5.4",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "ios": {
-  "supportsTablet": true,
-  "bundleIdentifier": "com.vibecode.alignsports-jy5wjr",
-  "buildNumber": "121",
-  "entitlements": {
-    "aps-environment": "production",
-    "com.apple.developer.applesignin": ["Default"]
-  },
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vibecode.alignsports-jy5wjr",
+      "buildNumber": "130",
+      "entitlements": {
+        "aps-environment": "production",
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "Align Sports uses the camera to capture photos inside the app before you publish them.",
         "NSPhotoLibraryUsageDescription": "Align Sports accesses your photo library to let you choose media that appears in the app.",
