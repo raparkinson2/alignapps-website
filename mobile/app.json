@@ -1,16 +1,16 @@
 {
   "expo": {
     "name": "Align Sports",
-    "slug": "align-sports-4gvibl",
+    "slug": "align-sports",
     "scheme": "alignsports",
-    "version": "7.5.1",
+    "version": "7.5.2",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vibecode.alignsports-jy5wjr",
-      "buildNumber": "120",
+      "buildNumber": "121",
       "entitlements": {
         "aps-environment": "production"
       },
