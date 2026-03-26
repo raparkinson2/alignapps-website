@@ -14,6 +14,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { secureLoginWithEmail, secureLoginWithPhone, secureResetPassword, verifyPlayerSecurityAnswer } from '@/lib/secure-auth';
 import { loadTeamFromSupabase } from '@/lib/realtime-sync';
 import { supabase } from '@/lib/supabase';
+import { BACKEND_URL } from '@/lib/config';
 
 interface PlayerLoginCardProps {
   player: Player;
@@ -565,7 +566,6 @@ export default function LoginScreen() {
             // Use the backend (service role) to verify the password, bypassing RLS.
             console.log('LOGIN: Supabase auth failed, trying backend password verification');
             try {
-              const { BACKEND_URL } = await import('@/lib/config');
               const verifyRes = await fetch(`${BACKEND_URL}/api/auth/verify-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
