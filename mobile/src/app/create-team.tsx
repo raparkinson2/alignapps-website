@@ -12,7 +12,8 @@ import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, PlayerStatus, SPO
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
-import { signUpWithEmail, checkEmailExists, checkPhoneExists } from '@/lib/supabase-auth';
+import { signUpWithEmail, checkEmailExists, checkPhoneExists, signInWithApple } from '@/lib/supabase-auth';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
 import { hashPassword } from '@/lib/crypto';
 import { pushTeamToSupabase, pushPlayerToSupabase } from '@/lib/realtime-sync';
@@ -152,11 +153,45 @@ export default function CreateTeamScreen() {
   const [editingColorName, setEditingColorName] = useState('');
   const [hasRestoredForm, setHasRestoredForm] = useState(false);
 
+  // Apple Sign-In state
+  const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+  const [appleSignedIn, setAppleSignedIn] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
+
+  // Treat as Apple user if came from Apple login OR signed in with Apple on this screen
+  const isAppleUser = isFromApple || appleSignedIn;
+
   // Real-time validation states
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [isValidatingEmail, setIsValidatingEmail] = useState(false);
   const [isValidatingPhone, setIsValidatingPhone] = useState(false);
+
+  // Check Apple availability
+  useEffect(() => {
+    AppleAuthentication.isAvailableAsync()
+      .then(setIsAppleAvailable)
+      .catch(() => setIsAppleAvailable(false));
+  }, []);
+
+  const handleAppleSignIn = async () => {
+    setIsAppleLoading(true);
+    setError('');
+    const result = await signInWithApple();
+    setIsAppleLoading(false);
+    if (!result.success) {
+      if (result.error !== 'cancelled') setError(result.error ?? 'Apple Sign In failed');
+      return;
+    }
+    const appleEmail = result.email;
+    if (!appleEmail) {
+      setError('Could not get email from Apple. Please enter it manually.');
+      return;
+    }
+    setEmail(appleEmail);
+    setAppleSignedIn(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
 
   // Restore form state on mount if valid (within 10 minutes)
   useEffect(() => {
@@ -548,7 +583,7 @@ export default function CreateTeamScreen() {
       setStep(2);
     } else if (step === 2) {
       // Skip password validation for Apple Sign In users
-      if (!isFromApple) {
+      if (!isAppleUser) {
         if (!password.trim()) {
           setError('Please create a password');
           return;
@@ -632,7 +667,7 @@ export default function CreateTeamScreen() {
 
     try {
       // Skip Supabase sign-up for Apple Sign In users (already registered via Apple)
-      if (!isFromApple) {
+      if (!isAppleUser) {
         const supabaseResult = await signUpWithEmail(email.trim(), password);
 
         if (!supabaseResult.success) {
@@ -660,7 +695,7 @@ export default function CreateTeamScreen() {
       if (isParent) roles.push('parent');
 
       // Hash the password before storing (empty for Apple Sign In users)
-      const hashedPassword = isFromApple ? '' : await hashPassword(password);
+      const hashedPassword = isAppleUser ? '' : await hashPassword(password);
 
       // Create the admin player object with hashed password
       const adminPlayer: Player = {
@@ -920,6 +955,33 @@ export default function CreateTeamScreen() {
 
                 <View className="mb-3">
                   <Text className="text-slate-300 text-sm mb-2">Email Address <Text className="text-red-400">*</Text></Text>
+
+                  {/* Sign in with Apple — pre-fills email and skips password */}
+                  {isAppleAvailable && !appleSignedIn && !isFromApple && (
+                    <View className="mb-3">
+                      <AppleAuthentication.AppleAuthenticationButton
+                        buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                        buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                        cornerRadius={12}
+                        style={{ width: '100%', height: 48 }}
+                        onPress={handleAppleSignIn}
+                      />
+                      {isAppleLoading && (
+                        <Text className="text-slate-400 text-center text-xs mt-1">Signing in with Apple...</Text>
+                      )}
+                      <View className="flex-row items-center my-3">
+                        <View className="flex-1 h-px bg-slate-700" />
+                        <Text className="text-slate-500 text-xs mx-3">or enter manually</Text>
+                        <View className="flex-1 h-px bg-slate-700" />
+                      </View>
+                    </View>
+                  )}
+
+                  {appleSignedIn && (
+                    <View className="flex-row items-center bg-green-500/10 border border-green-500/30 rounded-xl px-3 py-2 mb-3">
+                      <Text className="text-green-400 text-sm flex-1">Signed in with Apple</Text>
+                    </View>
+                  )}
                   <View className={cn(
                     "flex-row items-center bg-slate-800/60 rounded-xl border px-3",
                     emailError ? "border-red-500/70" : "border-slate-700/40"
@@ -1038,14 +1100,14 @@ export default function CreateTeamScreen() {
                     <Lock size={32} color="#67e8f9" />
                   </View>
                   <Text className="text-white text-2xl font-bold">
-                    {isFromApple ? 'Almost There!' : 'Create Password'}
+                    {isAppleUser ? 'Almost There!' : 'Create Password'}
                   </Text>
                   <Text className="text-slate-400 text-center mt-2">
-                    {isFromApple ? 'You\'ll sign in with Apple each time' : 'Secure your account'}
+                    {isAppleUser ? 'You\'ll sign in with Apple each time' : 'Secure your account'}
                   </Text>
                 </View>
 
-                {!isFromApple && (
+                {!isAppleUser && (
                   <>
                     <View className="mb-4">
                       <Text className="text-slate-400 text-sm mb-2">Password</Text>
