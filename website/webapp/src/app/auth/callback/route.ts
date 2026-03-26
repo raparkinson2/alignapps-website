@@ -15,9 +15,7 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
+          getAll() { return cookieStore.getAll(); },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options);
@@ -29,10 +27,25 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Check if this user has an existing player record
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        const { data: players } = await supabase
+          .from('players')
+          .select('id')
+          .eq('email', user.email.toLowerCase())
+          .limit(1);
+
+        if (!players || players.length === 0) {
+          // No account found — sign them out and redirect to a friendly page
+          await supabase.auth.signOut();
+          return NextResponse.redirect(`${origin}/no-account`);
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
 
-  // Something went wrong — send back to login with an error hint
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
 }
