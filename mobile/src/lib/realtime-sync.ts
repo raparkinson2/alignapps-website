@@ -184,6 +184,7 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
           .from('teams').select('*').eq('id', teamId).maybeSingle();
         if (retryError || !retryData) {
           console.warn('SYNC: Failed to load team after upload:', retryError?.message);
+          useTeamStore.getState().setIsSyncing(false);
           return false;
         }
         // Continue with the retried data by re-invoking (simpler than inlining)
@@ -191,6 +192,7 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       }
 
       console.warn('SYNC: Team not found in Supabase and no local data:', teamId);
+      useTeamStore.getState().setIsSyncing(false);
       return false;
     }
 
