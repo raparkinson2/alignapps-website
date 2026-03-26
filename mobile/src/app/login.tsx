@@ -577,16 +577,44 @@ export default function LoginScreen() {
             }
 
             if (playerCheck?.password) {
-              // Player has a password stored — Supabase auth user may be Apple-linked.
-              // Fall through to local password check against the players table.
-              console.log('LOGIN: Supabase failed but player has local password, trying local auth');
-              const localResult = await secureLoginWithEmail(trimmedIdentifier, password);
-              if (localResult.success) {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                setIsLoading(false);
-                return;
+              // Player has a password in Supabase — verify it directly against the stored hash
+              console.log('LOGIN: Supabase auth failed but player has stored password, verifying hash');
+              const { isAlreadyHashed, verifyPassword } = await import('@/lib/crypto');
+              let passwordOk = false;
+              if (isAlreadyHashed(playerCheck.password)) {
+                passwordOk = await verifyPassword(password, playerCheck.password);
+              } else {
+                passwordOk = playerCheck.password === password;
               }
-              // Local check also failed — genuinely wrong password
+
+              if (passwordOk) {
+                // Password correct — load their team and log in
+                console.log('LOGIN: Hash verified, loading team from Supabase');
+                const { data: playerRows } = await supabase
+                  .from('players')
+                  .select('team_id, id')
+                  .eq('email', trimmedIdentifier.toLowerCase());
+
+                if (playerRows && playerRows.length > 0) {
+                  for (const row of playerRows) {
+                    await loadTeamFromSupabase(row.team_id);
+                  }
+                  useTeamStore.setState({
+                    activeTeamId: playerRows[0].team_id,
+                    userEmail: trimmedIdentifier.toLowerCase(),
+                    currentPlayerId: playerRows[0].id,
+                    isLoggedIn: true,
+                  });
+                  if (playerRows.length > 1) {
+                    useTeamStore.setState({ pendingTeamIds: playerRows.map(r => r.team_id) });
+                  }
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  setIsLoading(false);
+                  return;
+                }
+              }
+
+              // Password didn't match
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               setError('Incorrect password. Please try again.');
               setIsLoading(false);
