@@ -86,7 +86,64 @@ export default function LoginScreen() {
   const [isAppleLoading, setIsAppleLoading] = useState(false);
 
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      // On web, Apple OAuth is always available
+      setIsAppleAvailable(true);
+      return;
+    }
     AppleAuthentication.isAvailableAsync().then(setIsAppleAvailable).catch(() => setIsAppleAvailable(false));
+  }, []);
+
+  // On web: listen for SIGNED_IN event after OAuth redirect
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const handleWebSession = async (user: { id: string; email?: string }) => {
+      const email = user.email;
+      if (!email) {
+        setError('Could not retrieve your email from Apple. Please sign in with email instead.');
+        setIsAppleLoading(false);
+        return;
+      }
+      const { data: playerRows } = await supabase
+        .from('players')
+        .select('team_id, id')
+        .eq('email', email.toLowerCase());
+
+      if (playerRows && playerRows.length > 0) {
+        for (const row of playerRows) {
+          await loadTeamFromSupabase(row.team_id);
+        }
+        useTeamStore.setState({
+          activeTeamId: playerRows[0].team_id,
+          userEmail: email.toLowerCase(),
+          currentPlayerId: playerRows[0].id,
+          isLoggedIn: true,
+        });
+        if (playerRows.length > 1) {
+          useTeamStore.setState({ pendingTeamIds: playerRows.map((r: { team_id: string }) => r.team_id) });
+        }
+      } else {
+        useTeamStore.setState({ userEmail: email.toLowerCase() });
+        router.push('/create-team?fromApple=1');
+      }
+      setIsAppleLoading(false);
+    };
+
+    // Check if already signed in (e.g. after OAuth redirect)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        handleWebSession(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        handleWebSession(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleAppleSignIn = async () => {
@@ -137,6 +194,23 @@ export default function LoginScreen() {
     } finally {
       setIsAppleLoading(false);
     }
+  };
+
+  const handleAppleSignInWeb = async () => {
+    setIsAppleLoading(true);
+    setError('');
+    const redirectTo = typeof window !== 'undefined'
+      ? window.location.origin + '/login'
+      : undefined;
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo },
+    });
+    if (oauthError) {
+      setError(oauthError.message);
+      setIsAppleLoading(false);
+    }
+    // If no error, the browser will redirect to Apple — loading state stays until redirect
   };
 
   // Helper to detect if input is phone or email
@@ -684,14 +758,35 @@ export default function LoginScreen() {
             {/* Sign in with Apple */}
             {isAppleAvailable && (
               <View className="mt-2 mb-2">
-                <AppleAuthentication.AppleAuthenticationButton
-                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-                  cornerRadius={12}
-                  style={{ width: '100%', height: 52 }}
-                  onPress={handleAppleSignIn}
-                />
-                {isAppleLoading && (
+                {Platform.OS === 'web' ? (
+                  <Pressable
+                    onPress={handleAppleSignInWeb}
+                    disabled={isAppleLoading}
+                    style={{
+                      width: '100%',
+                      height: 52,
+                      backgroundColor: '#000',
+                      borderRadius: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: isAppleLoading ? 0.6 : 1,
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 17, fontWeight: '600' }}>
+                      {isAppleLoading ? 'Redirecting to Apple...' : ' Sign in with Apple'}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                    cornerRadius={12}
+                    style={{ width: '100%', height: 52 }}
+                    onPress={handleAppleSignIn}
+                  />
+                )}
+                {isAppleLoading && Platform.OS !== 'web' && (
                   <Text className="text-slate-400 text-center text-sm mt-2">Signing in with Apple...</Text>
                 )}
               </View>
