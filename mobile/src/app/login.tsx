@@ -561,65 +561,53 @@ export default function LoginScreen() {
 
           if (supabaseResult.error.toLowerCase().includes('invalid') ||
               supabaseResult.error.toLowerCase().includes('credentials')) {
-            const { data: playerRows } = await supabase
-              .from('players')
-              .select('password')
-              .eq('email', trimmedIdentifier.toLowerCase())
-              .limit(1);
+            // Supabase auth failed — user may have both Apple Sign-In and a password set.
+            // Use the backend (service role) to verify the password, bypassing RLS.
+            console.log('LOGIN: Supabase auth failed, trying backend password verification');
+            try {
+              const { BACKEND_URL } = await import('@/lib/config');
+              const verifyRes = await fetch(`${BACKEND_URL}/api/auth/verify-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: trimmedIdentifier.toLowerCase(), password }),
+              });
+              const verifyData = await verifyRes.json() as { success?: boolean; players?: { id: string; team_id: string }[]; error?: string };
+              console.log('LOGIN: Backend verify-password response:', verifyRes.status, JSON.stringify(verifyData));
 
-            const playerCheck = playerRows?.[0] ?? null;
-
-            if (playerCheck && (!playerCheck.password || playerCheck.password === '')) {
-              // Apple-only account — no password set
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              setError('This account was created with Sign in with Apple. Please use the Sign in with Apple button below.');
-              setIsLoading(false);
-              return;
-            }
-
-            if (playerCheck?.password) {
-              // Player has a password in Supabase — verify it directly against the stored hash
-              console.log('LOGIN: Supabase auth failed but player has stored password, verifying hash');
-              const { isAlreadyHashed, verifyPassword } = await import('@/lib/crypto');
-              let passwordOk = false;
-              if (isAlreadyHashed(playerCheck.password)) {
-                passwordOk = await verifyPassword(password, playerCheck.password);
-              } else {
-                passwordOk = playerCheck.password === password;
+              if (verifyData.error === 'apple_only') {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                setError('This account was created with Sign in with Apple. Please use the Sign in with Apple button below.');
+                setIsLoading(false);
+                return;
               }
 
-              if (passwordOk) {
-                // Password correct — load their team and log in
-                console.log('LOGIN: Hash verified, loading team from Supabase');
-                const { data: playerRows } = await supabase
-                  .from('players')
-                  .select('team_id, id')
-                  .eq('email', trimmedIdentifier.toLowerCase());
-
-                if (playerRows && playerRows.length > 0) {
-                  for (const row of playerRows) {
-                    await loadTeamFromSupabase(row.team_id);
-                  }
-                  useTeamStore.setState({
-                    activeTeamId: playerRows[0].team_id,
-                    userEmail: trimmedIdentifier.toLowerCase(),
-                    currentPlayerId: playerRows[0].id,
-                    isLoggedIn: true,
-                  });
-                  if (playerRows.length > 1) {
-                    useTeamStore.setState({ pendingTeamIds: playerRows.map(r => r.team_id) });
-                  }
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  setIsLoading(false);
-                  return;
+              if (verifyData.success && verifyData.players && verifyData.players.length > 0) {
+                console.log('LOGIN: Backend password verified, loading teams');
+                for (const row of verifyData.players) {
+                  await loadTeamFromSupabase(row.team_id);
                 }
+                useTeamStore.setState({
+                  activeTeamId: verifyData.players[0].team_id,
+                  userEmail: trimmedIdentifier.toLowerCase(),
+                  currentPlayerId: verifyData.players[0].id,
+                  isLoggedIn: true,
+                });
+                if (verifyData.players.length > 1) {
+                  useTeamStore.setState({ pendingTeamIds: verifyData.players.map((r: { id: string; team_id: string }) => r.team_id) });
+                }
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setIsLoading(false);
+                return;
               }
 
-              // Password didn't match
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              setError('Incorrect password. Please try again.');
-              setIsLoading(false);
-              return;
+              if (verifyRes.status === 401) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                setError('Incorrect password. Please try again.');
+                setIsLoading(false);
+                return;
+              }
+            } catch (verifyErr) {
+              console.error('LOGIN: Backend verify-password error:', verifyErr);
             }
           }
 

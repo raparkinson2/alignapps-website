@@ -1,6 +1,89 @@
 import { Hono } from "hono";
+import { createHash } from "crypto";
 
 const authRouter = new Hono();
+
+/**
+ * POST /api/auth/verify-password
+ * Verifies a player's password using the service role key (bypasses RLS).
+ * Returns player+team rows if the password matches.
+ */
+authRouter.post("/verify-password", async (c) => {
+  const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
+  if (!supabaseUrl || !serviceKey) {
+    return c.json({ error: "Supabase admin not configured" }, 503);
+  }
+
+  let email: string | undefined;
+  let password: string | undefined;
+  try {
+    const body = await c.req.json();
+    email = body.email?.toLowerCase().trim();
+    password = body.password;
+  } catch {
+    return c.json({ error: "Invalid request body" }, 400);
+  }
+
+  if (!email || !password) {
+    return c.json({ error: "email and password are required" }, 400);
+  }
+
+  // Compute the SHA-256 hash the same way the mobile app does
+  const SHARED_SALT = "align_sports_shared_salt_v1";
+  const passwordHash = createHash("sha256")
+    .update(`${SHARED_SALT}:${password}`)
+    .digest("hex");
+
+  const headers = {
+    Authorization: `Bearer ${serviceKey}`,
+    apikey: serviceKey,
+    "Content-Type": "application/json",
+  };
+
+  // Fetch all player rows for this email (service role bypasses RLS)
+  const playersRes = await fetch(
+    `${supabaseUrl}/rest/v1/players?email=eq.${encodeURIComponent(email)}&select=id,team_id,email,password`,
+    { headers }
+  );
+
+  if (!playersRes.ok) {
+    return c.json({ error: "Failed to query players" }, 500);
+  }
+
+  const players: { id: string; team_id: string; email: string; password: string | null }[] =
+    await playersRes.json() as any[];
+
+  if (!players || players.length === 0) {
+    return c.json({ error: "No account found" }, 404);
+  }
+
+  // Find any player row with a matching password
+  const playerWithPassword = players.find(
+    (p) => p.password && p.password === passwordHash
+  );
+
+  // Also check if any row has a plain-text password matching (legacy)
+  const playerWithPlainPassword = !playerWithPassword
+    ? players.find((p) => p.password && !/^[a-f0-9]{64}$/i.test(p.password) && p.password === password)
+    : null;
+
+  const matchedPlayer = playerWithPassword || playerWithPlainPassword;
+
+  if (!matchedPlayer) {
+    // Check if they have an Apple-only account (no password set)
+    const appleOnlyPlayer = players.find((p) => !p.password || p.password === "");
+    if (appleOnlyPlayer) {
+      return c.json({ error: "apple_only" }, 403);
+    }
+    return c.json({ error: "Incorrect password" }, 401);
+  }
+
+  // Return all team IDs for this email so the app can load all teams
+  return c.json({
+    success: true,
+    players: players.map((p) => ({ id: p.id, team_id: p.team_id })),
+  });
+});
 
 function getSupabaseConfig() {
   return {
