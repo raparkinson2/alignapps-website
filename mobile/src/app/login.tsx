@@ -561,12 +561,13 @@ export default function LoginScreen() {
 
           if (supabaseResult.error.toLowerCase().includes('invalid') ||
               supabaseResult.error.toLowerCase().includes('credentials')) {
-            const { data: playerCheck } = await supabase
+            const { data: playerRows } = await supabase
               .from('players')
               .select('password')
               .eq('email', trimmedIdentifier.toLowerCase())
-              .limit(1)
-              .single();
+              .limit(1);
+
+            const playerCheck = playerRows?.[0] ?? null;
 
             if (playerCheck && (!playerCheck.password || playerCheck.password === '')) {
               // Apple-only account — no password set
