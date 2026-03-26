@@ -559,8 +559,6 @@ export default function LoginScreen() {
         if (supabaseResult.error) {
           console.log('LOGIN: Supabase error:', supabaseResult.error);
 
-          // Check if this is an Apple-only account (no password stored)
-          // before showing a generic "wrong password" error
           if (supabaseResult.error.toLowerCase().includes('invalid') ||
               supabaseResult.error.toLowerCase().includes('credentials')) {
             const { data: playerCheck } = await supabase
@@ -571,8 +569,26 @@ export default function LoginScreen() {
               .single();
 
             if (playerCheck && (!playerCheck.password || playerCheck.password === '')) {
+              // Apple-only account — no password set
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
               setError('This account was created with Sign in with Apple. Please use the Sign in with Apple button below.');
+              setIsLoading(false);
+              return;
+            }
+
+            if (playerCheck?.password) {
+              // Player has a password stored — Supabase auth user may be Apple-linked.
+              // Fall through to local password check against the players table.
+              console.log('LOGIN: Supabase failed but player has local password, trying local auth');
+              const localResult = await secureLoginWithEmail(trimmedIdentifier, password);
+              if (localResult.success) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setIsLoading(false);
+                return;
+              }
+              // Local check also failed — genuinely wrong password
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              setError('Incorrect password. Please try again.');
               setIsLoading(false);
               return;
             }
