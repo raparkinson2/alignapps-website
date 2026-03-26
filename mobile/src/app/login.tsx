@@ -574,13 +574,6 @@ export default function LoginScreen() {
               const verifyData = await verifyRes.json() as { success?: boolean; players?: { id: string; team_id: string }[]; error?: string };
               console.log('LOGIN: Backend verify-password response:', verifyRes.status, JSON.stringify(verifyData));
 
-              if (verifyData.error === 'apple_only') {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                setError('This account was created with Sign in with Apple. Please use the Sign in with Apple button below.');
-                setIsLoading(false);
-                return;
-              }
-
               if (verifyData.success && verifyData.players && verifyData.players.length > 0) {
                 console.log('LOGIN: Backend password verified, loading teams');
                 for (const row of verifyData.players) {

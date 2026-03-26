@@ -70,11 +70,6 @@ authRouter.post("/verify-password", async (c) => {
   const matchedPlayer = playerWithPassword || playerWithPlainPassword;
 
   if (!matchedPlayer) {
-    // Check if they have an Apple-only account (no password set)
-    const appleOnlyPlayer = players.find((p) => !p.password || p.password === "");
-    if (appleOnlyPlayer) {
-      return c.json({ error: "apple_only" }, 403);
-    }
     return c.json({ error: "Incorrect password" }, 401);
   }
 

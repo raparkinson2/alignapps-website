@@ -46,6 +46,8 @@ import * as Clipboard from 'expo-clipboard';
 import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials, TeamLink } from '@/lib/store';
 import { pushPlayerToSupabase } from '@/lib/realtime-sync';
+import { secureResetPassword } from '@/lib/secure-auth';
+import { supabase } from '@/lib/supabase';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { sendTestNotification, registerForPushNotificationsAsync } from '@/lib/notifications';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -1502,9 +1504,21 @@ export default function MoreScreen() {
       <ChangePasswordModal
         visible={passwordModalVisible}
         onClose={() => setPasswordModalVisible(false)}
-        onSave={(password) => {
-          // In a real app, this would call an API to update the password
-          console.log('Password updated');
+        onSave={async (newPassword) => {
+          if (!currentPlayerId) return;
+          // Hash and save to local store
+          await secureResetPassword(currentPlayerId, newPassword);
+          // Immediately sync to Supabase so the new password is available on all devices
+          if (activeTeamId) {
+            const updatedPlayer = useTeamStore.getState().players.find(p => p.id === currentPlayerId)
+              ?? useTeamStore.getState().teams.find(t => t.id === activeTeamId)?.players.find(p => p.id === currentPlayerId);
+            if (updatedPlayer) {
+              await pushPlayerToSupabase(updatedPlayer, activeTeamId).catch(console.error);
+            }
+          }
+          // Also update Supabase auth password if the user has a session
+          await supabase.auth.updateUser({ password: newPassword }).catch(() => {});
+          console.log('Password updated and synced');
         }}
       />
 
