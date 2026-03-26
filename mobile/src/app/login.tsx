@@ -558,6 +558,26 @@ export default function LoginScreen() {
         // If Supabase login failed with an error, show it
         if (supabaseResult.error) {
           console.log('LOGIN: Supabase error:', supabaseResult.error);
+
+          // Check if this is an Apple-only account (no password stored)
+          // before showing a generic "wrong password" error
+          if (supabaseResult.error.toLowerCase().includes('invalid') ||
+              supabaseResult.error.toLowerCase().includes('credentials')) {
+            const { data: playerCheck } = await supabase
+              .from('players')
+              .select('password')
+              .eq('email', trimmedIdentifier.toLowerCase())
+              .limit(1)
+              .single();
+
+            if (playerCheck && (!playerCheck.password || playerCheck.password === '')) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              setError('This account was created with Sign in with Apple. Please use the Sign in with Apple button below.');
+              setIsLoading(false);
+              return;
+            }
+          }
+
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           setError(supabaseResult.error);
           setIsLoading(false);
