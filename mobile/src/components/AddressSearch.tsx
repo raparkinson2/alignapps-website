@@ -311,7 +311,8 @@ export function AddressSearch({
       {/* Display Field - Tap to open search modal */}
       <Pressable
         onPress={openSearch}
-        className="flex-row items-center bg-slate-800 rounded-xl px-4 py-2.5 border border-transparent"
+        className="flex-row items-center bg-slate-800 rounded-xl px-4 border border-transparent"
+        style={{ height: 48 }}
       >
         <Search size={16} color="#64748b" />
         <Text
