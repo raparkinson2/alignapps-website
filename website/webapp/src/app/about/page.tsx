@@ -47,8 +47,13 @@ export default function AboutPage() {
         style={{ background: 'rgba(8,12,20,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
       >
         <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <span className="text-xl">🏆</span>
-          <span className="font-bold text-lg tracking-tight">ALIGN Sports</span>
+          <span className="text-2xl">🏆</span>
+          <span
+            className="font-black text-xl tracking-tight"
+            style={{ background: 'linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+          >
+            ALIGN Sports
+          </span>
         </Link>
 
         <div className="hidden md:flex items-center gap-7">
