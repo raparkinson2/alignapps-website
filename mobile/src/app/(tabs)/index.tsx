@@ -1095,7 +1095,7 @@ export default function ScheduleScreen() {
 
   // Initialize selected players with active players by default
   const initializeSelectedPlayers = () => {
-    setSelectedPlayerIds(activePlayers.map((p) => p.id));
+    setSelectedPlayerIds([]);
   };
 
   // Sort games by date
@@ -1978,7 +1978,7 @@ export default function ScheduleScreen() {
                       <Text className="text-white text-sm font-medium">Invite Players</Text>
                       <Text className="text-slate-400 text-xs">
                         {selectedPlayerIds.length === 0
-                          ? 'All active players (default)'
+                          ? 'No players selected'
                           : `${selectedPlayerIds.length} player${selectedPlayerIds.length !== 1 ? 's' : ''} selected`}
                       </Text>
                     </View>
@@ -2031,7 +2031,7 @@ export default function ScheduleScreen() {
                       <Pressable
                         onPress={selectedPlayerIds.length === players.length ? deselectAll : selectAll}
                         className={cn(
-                          'py-1.5 px-2.5 rounded-lg border items-center',
+                          'flex-1 py-1.5 rounded-lg border items-center',
                           selectedPlayerIds.length === players.length
                             ? 'bg-cyan-500/20 border-cyan-500/50'
                             : 'bg-slate-700/50 border-slate-600'
