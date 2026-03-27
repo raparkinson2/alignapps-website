@@ -1071,7 +1071,7 @@ export default function ScheduleScreen() {
   const [showBeerDuty, setShowBeerDuty] = useState(teamSettings?.showRefreshmentDuty !== false);
   const [selectedBeerDutyPlayer, setSelectedBeerDutyPlayer] = useState<string | null>(null);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
-  const [showPlayerSelection, setShowPlayerSelection] = useState(false);
+  const [showPlayerSelection, setShowPlayerSelection] = useState(true);
 
   // Invite release options
   const [inviteReleaseOption, setInviteReleaseOption] = useState<InviteReleaseOption>('now');
@@ -1477,6 +1477,7 @@ export default function ScheduleScreen() {
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   setIsModalVisible(true);
+                  initializeSelectedPlayers();
                 }}
               >
                 <CalendarPlus size={24} color="#22c55e" />
@@ -1588,7 +1589,7 @@ export default function ScheduleScreen() {
                   </Text>
                   {canManageTeam() && (
                     <Pressable
-                      onPress={() => setIsModalVisible(true)}
+                      onPress={() => { setIsModalVisible(true); initializeSelectedPlayers(); }}
                       className="mt-4 bg-cyan-500 rounded-xl px-6 py-3"
                     >
                       <Text className="text-white font-semibold">Add Game or Event</Text>
@@ -1688,6 +1689,7 @@ export default function ScheduleScreen() {
               onAddGameOnDate={(date) => {
                 setGameDate(date);
                 setIsModalVisible(true);
+                initializeSelectedPlayers();
               }}
             />
           )}
@@ -1945,9 +1947,6 @@ export default function ScheduleScreen() {
               <View className="mb-2">
                 <Pressable
                   onPress={() => {
-                    if (!showPlayerSelection && selectedPlayerIds.length === 0) {
-                      initializeSelectedPlayers();
-                    }
                     setShowPlayerSelection(!showPlayerSelection);
                   }}
                   className="flex-row items-center justify-between bg-slate-800/60 rounded-xl px-3 py-2.5"
