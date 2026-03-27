@@ -227,10 +227,10 @@ export default function AboutPage() {
           <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
             Come play with{' '}
             <span style={{ background: 'linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              ALIGN.
+              ALIGN Sports.
             </span>
           </h2>
-          <p className="text-slate-400 mb-10 text-lg">Sign in to the web platform and get your team organized in minutes. The mobile app is coming soon.</p>
+          <p className="text-slate-400 mb-10 text-lg">Sign up in the app and get your team organized in minutes.</p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <div
