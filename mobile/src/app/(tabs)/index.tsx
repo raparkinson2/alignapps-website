@@ -2315,56 +2315,55 @@ export default function ScheduleScreen() {
                 {showBeerDuty && (
                   <View className="mt-1.5">
                     <Text className="text-slate-400 text-[10px] mb-1.5">Assign Player</Text>
-                    {/* None option row */}
-                    <View className="flex-row mb-1.5">
-                      <Pressable
-                        onPress={() => setSelectedBeerDutyPlayer(null)}
-                        className={cn(
-                          'flex-1 py-1.5 rounded-lg mx-0.5 items-center justify-center border',
-                          selectedBeerDutyPlayer === null
-                            ? 'bg-amber-500 border-amber-500'
-                            : 'bg-slate-800 border-slate-700'
-                        )}
-                      >
-                        <Text className={cn(
-                          'font-medium text-sm',
-                          selectedBeerDutyPlayer === null ? 'text-slate-900' : 'text-slate-400'
-                        )}>
-                          None
-                        </Text>
-                      </Pressable>
-                      {/* fill remaining 3 slots */}
-                      <View className="flex-1 mx-0.5" /><View className="flex-1 mx-0.5" /><View className="flex-1 mx-0.5" />
-                    </View>
-                    {/* Players grid — 4 per row */}
-                    {Array.from({ length: Math.ceil(activePlayers.length / 4) }, (_, rowIdx) => {
-                      const row = activePlayers.slice(rowIdx * 4, rowIdx * 4 + 4);
+                    {/* Combined grid: None + players, 4 per row */}
+                    {Array.from({ length: Math.ceil((activePlayers.length + 1) / 4) }, (_, rowIdx) => {
+                      const items = [null, ...activePlayers].slice(rowIdx * 4, rowIdx * 4 + 4);
                       return (
                         <View key={rowIdx} className="flex-row mb-1.5">
-                          {row.map((player) => (
-                            <Pressable
-                              key={player.id}
-                              onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setSelectedBeerDutyPlayer(player.id);
-                              }}
-                              className={cn(
-                                'flex-1 flex-row items-center justify-center px-1 py-1.5 rounded-lg mx-0.5 border',
-                                selectedBeerDutyPlayer === player.id
-                                  ? 'bg-amber-500 border-amber-500'
-                                  : 'bg-slate-800 border-slate-700'
-                              )}
-                            >
-                              <PlayerAvatar player={player} size={20} />
-                              <Text className={cn(
-                                'font-medium ml-1 text-xs',
-                                selectedBeerDutyPlayer === player.id ? 'text-slate-900' : 'text-slate-400'
-                              )} numberOfLines={1}>
-                                {player.firstName}
-                              </Text>
-                            </Pressable>
-                          ))}
-                          {row.length < 4 && Array.from({ length: 4 - row.length }).map((_, i) => (
+                          {items.map((item, i) =>
+                            item === null ? (
+                              <Pressable
+                                key="none"
+                                onPress={() => setSelectedBeerDutyPlayer(null)}
+                                className={cn(
+                                  'flex-1 py-1.5 rounded-lg mx-0.5 items-center justify-center border',
+                                  selectedBeerDutyPlayer === null
+                                    ? 'bg-amber-500 border-amber-500'
+                                    : 'bg-slate-800 border-slate-700'
+                                )}
+                              >
+                                <Text className={cn(
+                                  'font-medium text-sm',
+                                  selectedBeerDutyPlayer === null ? 'text-slate-900' : 'text-slate-400'
+                                )}>
+                                  None
+                                </Text>
+                              </Pressable>
+                            ) : (
+                              <Pressable
+                                key={item.id}
+                                onPress={() => {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                  setSelectedBeerDutyPlayer(item.id);
+                                }}
+                                className={cn(
+                                  'flex-1 flex-row items-center justify-center px-1 py-1.5 rounded-lg mx-0.5 border',
+                                  selectedBeerDutyPlayer === item.id
+                                    ? 'bg-amber-500 border-amber-500'
+                                    : 'bg-slate-800 border-slate-700'
+                                )}
+                              >
+                                <PlayerAvatar player={item} size={20} />
+                                <Text className={cn(
+                                  'font-medium ml-1 text-xs',
+                                  selectedBeerDutyPlayer === item.id ? 'text-slate-900' : 'text-slate-400'
+                                )} numberOfLines={1}>
+                                  {item.firstName}
+                                </Text>
+                              </Pressable>
+                            )
+                          )}
+                          {items.length < 4 && Array.from({ length: 4 - items.length }).map((_, i) => (
                             <View key={`empty-${i}`} className="flex-1 mx-0.5" />
                           ))}
                         </View>
