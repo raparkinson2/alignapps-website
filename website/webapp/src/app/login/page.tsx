@@ -436,6 +436,10 @@ export default function LoginPage() {
           </svg>
           {appleLoading ? 'Redirecting to Apple...' : 'Sign in with Apple'}
         </button>
+
+        <p className="text-center text-xs text-slate-500 mt-3">
+          New player joining a team? Sign in with Apple — no password needed.
+        </p>
       </div>
     </div>
   );
