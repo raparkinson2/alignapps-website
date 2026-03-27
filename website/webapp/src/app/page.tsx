@@ -102,7 +102,7 @@ const FAQS = [
   },
   {
     q: 'Is ALIGN Sports available on Android?',
-    a: 'Currently available on iOS. Android support is coming soon.',
+    a: 'The mobile app is coming soon for both iOS and Android.',
   },
   {
     q: 'What is your cancellation policy?',
@@ -429,7 +429,7 @@ export default function HomePage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">App</p>
               <ul className="space-y-2">
-                {['Features', 'Supported Sports', 'Download iOS'].map((l) => (
+                {['Features', 'Supported Sports', 'Mobile App — Coming Soon'].map((l) => (
                   <li key={l}>
                     <a href="#features" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">{l}</a>
                   </li>
