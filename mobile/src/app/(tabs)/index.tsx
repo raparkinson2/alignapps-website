@@ -1821,8 +1821,7 @@ export default function ScheduleScreen() {
                     placeholder="e.g., Ice Wolves"
                     placeholderTextColor="#64748b"
                     autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 text-white text-base"
-                    style={{ height: 48 }}
+                    className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base"
                   />
                 </View>
               )}
@@ -1837,8 +1836,7 @@ export default function ScheduleScreen() {
                     placeholder="e.g., Team Practice, Team Dinner"
                     placeholderTextColor="#64748b"
                     autoCapitalize="words"
-                    className="bg-slate-800 rounded-xl px-4 text-white text-base"
-                    style={{ height: 48 }}
+                    className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base"
                   />
                 </View>
               )}
@@ -1848,8 +1846,7 @@ export default function ScheduleScreen() {
                 <Text className="text-slate-400 text-sm mb-1">Date <Text className="text-red-400">*</Text></Text>
                 <Pressable
                   onPress={() => setShowDatePicker(!showDatePicker)}
-                  className="bg-slate-800 rounded-xl px-4 justify-center"
-                  style={{ height: 48 }}
+                  className="bg-slate-800 rounded-xl px-4 py-2.5 justify-center"
                 >
                   <Text className="text-white text-base">
                     {format(gameDate, 'EEEE, MMMM d, yyyy')}
@@ -1882,8 +1879,7 @@ export default function ScheduleScreen() {
                     onChangeText={setGameTimeValue}
                     placeholder="7:00"
                     placeholderTextColor="#64748b"
-                    className="bg-slate-800 rounded-xl px-4 text-white text-base flex-1"
-                    style={{ height: 48 }}
+                    className="bg-slate-800 rounded-xl px-4 py-2.5 text-white text-base flex-1"
                     keyboardType="numbers-and-punctuation"
                   />
                   <View className="flex-row ml-2">
@@ -1893,12 +1889,11 @@ export default function ScheduleScreen() {
                         setGameTimePeriod('AM');
                       }}
                       className={cn(
-                        'px-3 rounded-l-xl justify-center',
+                        'px-3 py-2.5 rounded-l-xl',
                         gameTimePeriod === 'AM'
                           ? 'bg-cyan-500'
                           : 'bg-slate-800 border border-slate-700'
                       )}
-                      style={{ height: 48 }}
                     >
                       <Text className={cn(
                         'font-semibold',
@@ -1913,12 +1908,11 @@ export default function ScheduleScreen() {
                         setGameTimePeriod('PM');
                       }}
                       className={cn(
-                        'px-3 rounded-r-xl justify-center',
+                        'px-3 py-2.5 rounded-r-xl',
                         gameTimePeriod === 'PM'
                           ? 'bg-cyan-500'
                           : 'bg-slate-800 border border-slate-700'
                       )}
-                      style={{ height: 48 }}
                     >
                       <Text className={cn(
                         'font-semibold',
@@ -1945,7 +1939,7 @@ export default function ScheduleScreen() {
               {recordType === 'game' && (
                 <View className="mb-2">
                   <Text className="text-slate-400 text-sm mb-1">Jersey Color</Text>
-                  <View className="flex-row bg-slate-800/80 rounded-xl px-1" style={{ height: 48 }}>
+                  <View className="flex-row bg-slate-800/80 rounded-xl p-1">
                     {(teamSettings.jerseyColors ?? []).map((color, index) => (
                       <Pressable
                         key={color.name}
@@ -1954,7 +1948,7 @@ export default function ScheduleScreen() {
                           setSelectedJersey(color.name);
                         }}
                         className={cn(
-                          'flex-1 flex-row items-center justify-center rounded-lg',
+                          'flex-1 flex-row items-center justify-center py-2.5 rounded-lg',
                           selectedJersey === color.name
                             ? 'bg-slate-700'
                             : ''
