@@ -18,7 +18,7 @@ const DIFFERENTIATORS = [
   {
     icon: '⚡',
     title: 'Everything in One Place',
-    desc: 'No more bouncing between group texts, spreadsheets, Venmo, and random websites. Scheduling, rosters, payments, chat, stats, lineups, and photos — all in a single app your whole team will actually use.',
+    desc: 'No more bouncing between group texts, spreadsheets, emails, payment apps, and random websites. Your schedule, roster, payments, chat, stats, lineups, and photos all in a single app your whole team will actually use.',
     color: 'green',
   },
   {
