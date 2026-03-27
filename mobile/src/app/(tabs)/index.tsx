@@ -26,7 +26,7 @@ import {
   CalendarDays,
   ChevronLeft,
 } from 'lucide-react-native';
-import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, useSharedValue, withSpring, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, useSharedValue, withSpring, withRepeat, withTiming, cancelAnimation } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Trash2 } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -448,6 +448,10 @@ function SwipeableGameCard({
   const translateX = useSharedValue(0);
   const DELETE_THRESHOLD = -80;
 
+  useEffect(() => {
+    return () => { cancelAnimation(translateX); };
+  }, []);
+
   const handleDelete = () => {
     translateX.value = withSpring(0);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -630,6 +634,10 @@ function SwipeableEventCard({
 }: SwipeableEventCardProps) {
   const translateX = useSharedValue(0);
   const DELETE_THRESHOLD = -80;
+
+  useEffect(() => {
+    return () => { cancelAnimation(translateX); };
+  }, []);
 
   const handleDelete = () => {
     translateX.value = withSpring(0);
@@ -1045,6 +1053,9 @@ export default function ScheduleScreen() {
   const skeletonOpacity = useSharedValue(0.4);
   useEffect(() => {
     skeletonOpacity.value = withRepeat(withTiming(0.9, { duration: 800 }), -1, true);
+    return () => {
+      cancelAnimation(skeletonOpacity);
+    };
   }, []);
   const skeletonStyle = useAnimatedStyle(() => ({ opacity: skeletonOpacity.value }));
 
