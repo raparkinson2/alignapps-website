@@ -158,7 +158,7 @@ export default function AboutPage() {
             Native mobile app.<br />Full web dashboard.
           </h2>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-12 leading-relaxed">
-            Your players manage everything from the iOS app on the sideline. You manage rosters, stats, schedules, and payments from the full web platform at home. Same data. Always in sync. No compromise.
+            Manage your team from the mobile app or the website. Manage rosters, lineups, stats, schedules, and payments. Same data. Always in sync. No compromise. No chaos.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             {[
