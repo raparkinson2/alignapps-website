@@ -41,6 +41,15 @@ export async function GET(request: NextRequest) {
           await supabase.auth.signOut();
           return NextResponse.redirect(`${origin}/no-account`);
         }
+
+        // Link this Supabase user ID to the player record so future
+        // OAuth logins (e.g. Sign in with Apple) can be found by auth_user_id
+        if (players[0]?.id) {
+          await supabase
+            .from('players')
+            .update({ auth_user_id: user.id })
+            .eq('id', players[0].id);
+        }
       }
 
       return NextResponse.redirect(`${origin}${next}`);

@@ -54,7 +54,7 @@ export function useAuth() {
               if (email) store.setUserEmail(email);
               store.setIsLoggedIn(true);
             } else {
-              // Couldn't load team — sign out and go to login
+              // Couldn't load team data
               await supabase.auth.signOut();
               store.logout();
             }
@@ -62,9 +62,12 @@ export function useAuth() {
             // Fallback: already had an activeTeamId stored, just reload
             await loadTeamFromSupabase(activeTeamId);
           } else {
-            // No player record found for this Apple account
+            // No player record found for this OAuth account — break the loop
+            // by sending to no-account instead of /login
             await supabase.auth.signOut();
             store.logout();
+            window.location.href = '/no-account';
+            return;
           }
         }
       } else {
