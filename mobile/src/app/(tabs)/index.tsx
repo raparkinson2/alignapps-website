@@ -1138,7 +1138,7 @@ export default function ScheduleScreen() {
     setShowBeerDuty(false);
     setSelectedBeerDutyPlayer(null);
     setSelectedPlayerIds([]);
-    setShowPlayerSelection(false);
+    setShowPlayerSelection(true);
     setInviteReleaseOption('now');
     setInviteReleaseDate(new Date());
     setShowInviteReleaseDatePicker(false);
