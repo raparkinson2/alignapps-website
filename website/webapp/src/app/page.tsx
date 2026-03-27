@@ -167,6 +167,7 @@ export default function HomePage() {
             { label: 'Sports',       href: '#sports' },
             { label: 'How It Works', href: '#how-it-works' },
             { label: 'FAQ',          href: '#faq' },
+            { label: 'About',        href: '/about' },
           ].map((item) => (
             <a key={item.label} href={item.href} className="text-sm text-slate-400 hover:text-slate-100 transition-colors">
               {item.label}
@@ -428,6 +429,9 @@ export default function HomePage() {
                     <a href="#features" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">{l}</a>
                   </li>
                 ))}
+                <li>
+                  <Link href="/about" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">About Us</Link>
+                </li>
               </ul>
             </div>
 
