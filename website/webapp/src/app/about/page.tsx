@@ -96,7 +96,7 @@ export default function AboutPage() {
           </h1>
 
           <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            ALIGN Sports started with a simple frustration: running a recreational sports team should not require a spreadsheet, three group chats, and a prayer that everyone shows up.
+            ALIGN Sports started with a simple frustration...a beer league hockey captain herding cats. Running a recreational sports team should not require a spreadsheet, three group chats, an app and a prayer that everyone shows up.
           </p>
         </div>
       </section>
