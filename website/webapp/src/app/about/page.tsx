@@ -111,7 +111,7 @@ export default function AboutPage() {
         <div className="max-w-3xl mx-auto px-6">
           <div className="space-y-6 text-slate-300 leading-relaxed text-lg">
             <p>
-              We are <span className="text-slate-100 font-semibold">ALIGN Apps, LLC</span>...a small team of athletes and coders who got tired of the same problem season after season. Messing around with too many tools to get organized that caused too much friction, and teammates who never knew when the game was. Team management was chaos.
+              We are <span className="text-slate-100 font-semibold">ALIGN Apps</span>, a small team of athletes and coders who got tired of the same problem season after season. We found ourselves using too many tools to get organized and that caused too much friction with teammates who never knew when the game was. Team management was chaos.
             </p>
             <p>
               So we built something better. ALIGN Sports is the team management app that we always wished existed. One app that handles scheduling for games, practice and events, manages rosters, payments, chat, stats, and lineups all in one place...all without requiring a degree in computer science to operate.
