@@ -2,21 +2,23 @@ import { View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform, Scrol
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, Mail, Lock, UserPlus, Check, AlertCircle, Camera, ImageIcon, SkipForward, Phone } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { Image } from 'expo-image';
 import { useTeamStore } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
-import { signUpWithEmail, getCurrentUser } from '@/lib/supabase-auth';
+import { signUpWithEmail, getCurrentUser, signInWithApple } from '@/lib/supabase-auth';
 import { secureRegisterInvitedPlayer, secureRegisterInvitedPlayerByPhone, secureLoginWithEmail, secureLoginWithPhone } from '@/lib/secure-auth';
 import { signInWithEmail } from '@/lib/supabase-auth';
 import { checkPendingInvitation, acceptTeamInvitation, TeamInvitation } from '@/lib/team-invitations';
 import { pushPlayerToSupabase, loadTeamFromSupabase, findPlayerInSupabaseByContact } from '@/lib/realtime-sync';
 import { hashPassword } from '@/lib/crypto';
+import { supabase } from '@/lib/supabase';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -47,6 +49,64 @@ export default function RegisterScreen() {
   // State for Supabase-based invitations (cross-device)
   const [supabaseInvitation, setSupabaseInvitation] = useState<TeamInvitation | null>(null);
   const [invitedTeamName, setInvitedTeamName] = useState<string>(''); // Team being joined (may be different from current)
+
+  // Apple Sign In
+  const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setIsAppleAvailable);
+    }
+  }, []);
+
+  const handleAppleSignInJoin = async () => {
+    setIsAppleLoading(true);
+    setError('');
+    try {
+      const result = await signInWithApple();
+      if (!result.success) {
+        if (result.error !== 'cancelled') {
+          setError(result.error ?? 'Apple Sign In failed');
+        }
+        setIsAppleLoading(false);
+        return;
+      }
+      const email = result.email;
+      if (!email) {
+        setError('Could not retrieve your email from Apple. Please use email search instead.');
+        setIsAppleLoading(false);
+        return;
+      }
+      const { data: playerRows } = await supabase
+        .from('players')
+        .select('team_id, id')
+        .eq('email', email.toLowerCase());
+
+      if (playerRows && playerRows.length > 0) {
+        for (const row of playerRows) {
+          await loadTeamFromSupabase(row.team_id);
+        }
+        useTeamStore.setState({
+          activeTeamId: playerRows[0].team_id,
+          userEmail: email.toLowerCase(),
+          currentPlayerId: playerRows[0].id,
+          isLoggedIn: true,
+        });
+        if (playerRows.length > 1) {
+          useTeamStore.setState({ pendingTeamIds: playerRows.map(r => r.team_id) });
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace('/');
+      } else {
+        setError('No invitation found for this Apple ID. Ask your team admin to add you using your Apple email first.');
+      }
+    } catch {
+      setError('Apple Sign In failed. Please try again.');
+    } finally {
+      setIsAppleLoading(false);
+    }
+  };
 
   const hasTeam = players.length > 0;
 
@@ -774,6 +834,31 @@ export default function RegisterScreen() {
                     {isLoading ? 'Checking...' : 'Check Invitation'}
                   </Text>
                 </Pressable>
+
+                {/* Divider */}
+                {isAppleAvailable && (
+                  <>
+                    <View className="flex-row items-center my-1 mb-4">
+                      <View className="flex-1 h-px bg-slate-700" />
+                      <Text className="text-slate-500 mx-4 text-sm">or</Text>
+                      <View className="flex-1 h-px bg-slate-700" />
+                    </View>
+
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                      cornerRadius={12}
+                      style={{ width: '100%', height: 52, marginBottom: 8 }}
+                      onPress={handleAppleSignInJoin}
+                    />
+                    {isAppleLoading && (
+                      <Text className="text-slate-400 text-center text-sm mb-2">Signing in with Apple...</Text>
+                    )}
+                    <Text className="text-slate-500 text-center text-xs mb-4">
+                      New player joining a team? Sign in with Apple — no password needed.
+                    </Text>
+                  </>
+                )}
 
                 {/* Already have account */}
                 <Pressable
