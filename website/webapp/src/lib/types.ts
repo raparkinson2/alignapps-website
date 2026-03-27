@@ -29,6 +29,23 @@ export const SPORT_NAMES: Record<Sport, string> = {
   softball: 'Softball',
 };
 
+// Returns 'Soccer' for US/Canada locales, 'Football' everywhere else
+export function getSoccerName(): string {
+  try {
+    const locale = Intl.DateTimeFormat().resolvedOptions().locale;
+    const isUSOrCA = locale.endsWith('-US') || locale.endsWith('-CA');
+    return isUSOrCA ? 'Soccer' : 'Football';
+  } catch {
+    return 'Soccer';
+  }
+}
+
+// Locale-aware sport display name
+export function getSportName(sport: Sport): string {
+  if (sport === 'soccer') return getSoccerName();
+  return SPORT_NAMES[sport];
+}
+
 export const SPORT_EMOJI: Record<Sport, string> = {
   hockey: '🏒',
   baseball: '⚾',

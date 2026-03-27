@@ -8,7 +8,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, Sport, SPORT_NAMES, Player, PlayerRole, PlayerStatus, SPORT_POSITIONS, useCreateTeamFormStore, useCreateTeamFormValid } from '@/lib/store';
+import { useTeamStore, Sport, SPORT_NAMES, getSportName, Player, PlayerRole, PlayerStatus, SPORT_POSITIONS, useCreateTeamFormStore, useCreateTeamFormValid } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
 import Svg, { Path, Circle as SvgCircle, Line, Ellipse } from 'react-native-svg';
@@ -872,7 +872,7 @@ export default function CreateTeamScreen() {
                     Sport {(memberRole === 'player' || memberRole === 'reserve') && <Text className="text-red-400">*</Text>}
                   </Text>
                   <View className="flex-row gap-1.5">
-                    {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((s) => (
+                    {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => getSportName(a).localeCompare(getSportName(b))).map((s) => (
                       <Pressable
                         key={s}
                         onPress={() => {
@@ -897,7 +897,7 @@ export default function CreateTeamScreen() {
                           adjustsFontSizeToFit
                           minimumFontScale={0.7}
                         >
-                          {SPORT_NAMES[s]}
+                          {getSportName(s)}
                         </Text>
                       </Pressable>
                     ))}

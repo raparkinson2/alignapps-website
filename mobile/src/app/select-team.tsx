@@ -6,7 +6,7 @@ import { Users, ChevronRight, Plus, Shield, Star } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useTeamStore, Team, SPORT_NAMES, getPlayerName } from '@/lib/store';
+import { useTeamStore, Team, SPORT_NAMES, getSportName, getPlayerName } from '@/lib/store';
 
 interface TeamCardProps {
   team: Team;
@@ -16,7 +16,7 @@ interface TeamCardProps {
 }
 
 function TeamCard({ team, userRole, index, onSelect }: TeamCardProps) {
-  const sportName = SPORT_NAMES[team.teamSettings.sport];
+  const sportName = getSportName(team.teamSettings.sport);
   const playerCount = team.players.length;
 
   return (

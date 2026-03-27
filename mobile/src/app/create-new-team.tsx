@@ -8,7 +8,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { useTeamStore, Sport, SPORT_NAMES, SPORT_POSITIONS, Player, PlayerRole, getPlayerName } from '@/lib/store';
+import { useTeamStore, Sport, SPORT_NAMES, getSportName, SPORT_POSITIONS, Player, PlayerRole, getPlayerName } from '@/lib/store';
 import { pushTeamToSupabase, pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { uploadPhotoToStorage } from '@/lib/photo-storage';
 import { cn } from '@/lib/cn';
@@ -416,7 +416,7 @@ export default function CreateNewTeamScreen() {
                 <View className="mb-4">
                   <Text className="text-slate-300 text-sm mb-2">Sport <Text className="text-red-400">*</Text></Text>
                   <View className="flex-row gap-1.5">
-                    {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => SPORT_NAMES[a].localeCompare(SPORT_NAMES[b])).map((s) => (
+                    {(Object.keys(SPORT_NAMES) as Sport[]).sort((a, b) => getSportName(a).localeCompare(getSportName(b))).map((s) => (
                       <Pressable
                         key={s}
                         onPress={() => {
@@ -440,7 +440,7 @@ export default function CreateNewTeamScreen() {
                           adjustsFontSizeToFit
                           minimumFontScale={0.7}
                         >
-                          {SPORT_NAMES[s]}
+                          {getSportName(s)}
                         </Text>
                       </Pressable>
                     ))}

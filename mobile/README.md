@@ -1,6 +1,10 @@
 # Team Manager
 
-A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, Lacrosse, Soccer, and Softball.
+A mobile app for recreational sports teams to manage schedules, rosters, check-ins, payments, and team communication. Supports multiple sports including Hockey, Baseball, Basketball, Lacrosse, Soccer/Football, and Softball.
+
+## Locale-Aware Sport Names
+
+The app automatically displays "Soccer" for users in the US and Canada, and "Football" for users in all other countries/locales. This uses `Intl.DateTimeFormat().resolvedOptions().locale` to detect the user's locale at runtime. The helper functions `getSoccerName()` and `getSportName(sport)` in `src/lib/store.ts` handle this logic — use `getSportName()` instead of `SPORT_NAMES[sport]` for any user-facing sport name display.
 
 ## Roster Member Roles
 

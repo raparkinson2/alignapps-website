@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { getSoccerName } from '@/lib/types';
 
 const SPORTS = [
   { emoji: '🏒', name: 'Hockey' },
   { emoji: '⚾', name: 'Baseball' },
   { emoji: '🏀', name: 'Basketball' },
-  { emoji: '⚽', name: 'Soccer' },
+  { emoji: '⚽', name: getSoccerName() },
   { emoji: '🥍', name: "Men's Lacrosse" },
   { emoji: '🥍', name: "Women's Lacrosse" },
   { emoji: '🥎', name: 'Softball' },

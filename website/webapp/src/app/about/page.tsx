@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { getSoccerName } from '@/lib/types';
 
 const DIFFERENTIATORS = [
   {
@@ -24,7 +25,7 @@ const DIFFERENTIATORS = [
   {
     icon: '🎯',
     title: 'Sport-Specific Features',
-    desc: 'Other sports apps treat every sport the same. ALIGN Sports has sport-specific lineup builders for baseball, softball, basketball, hockey, soccer, and lacrosse built by people who know how each game actually works.',
+    desc: `Other sports apps treat every sport the same. ALIGN Sports has sport-specific lineup builders for baseball, softball, basketball, hockey, ${getSoccerName().toLowerCase()}, and lacrosse built by people who know how each game actually works.`,
     color: 'cyan',
   },
 ];

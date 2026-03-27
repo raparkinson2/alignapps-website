@@ -53,6 +53,7 @@ import {
   Player,
   Sport,
   SPORT_NAMES,
+  getSportName,
   SPORT_POSITIONS,
   SPORT_POSITION_NAMES,
   PlayerRole,
@@ -3200,7 +3201,7 @@ export default function AdminScreen() {
                 Change Type?
               </Text>
               <Text className="text-slate-400 text-center mt-2">
-                Switching to {pendingSport ? SPORT_NAMES[pendingSport] : ''} will reset all player positions and clear their statistics.
+                Switching to {pendingSport ? getSportName(pendingSport) : ''} will reset all player positions and clear their statistics.
               </Text>
               <Text className="text-amber-400 text-center mt-3 font-medium">
                 This action cannot be undone.

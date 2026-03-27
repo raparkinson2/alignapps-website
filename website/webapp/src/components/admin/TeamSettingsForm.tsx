@@ -11,7 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { pushTeamSettingsToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
-import { SPORT_NAMES } from '@/lib/types';
+import { SPORT_NAMES, getSportName } from '@/lib/types';
 import type { TeamSettings, Sport } from '@/lib/types';
 
 const SPORTS: Sport[] = ['hockey', 'baseball', 'basketball', 'soccer', 'lacrosse', 'softball'];

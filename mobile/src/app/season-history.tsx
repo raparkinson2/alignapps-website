@@ -6,7 +6,7 @@ import { ArrowLeft, Calendar, Trophy, ChevronDown, ChevronUp, Users, RotateCcw }
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { useTeamStore, ArchivedSeason, ArchivedPlayerStats, SPORT_NAMES, Sport, getPlayerPositions } from '@/lib/store';
+import { useTeamStore, ArchivedSeason, ArchivedPlayerStats, SPORT_NAMES, getSportName, Sport, getPlayerPositions } from '@/lib/store';
 import { format, parseISO } from 'date-fns';
 
 // Get stat headers based on sport
@@ -292,7 +292,7 @@ export default function SeasonHistoryScreen() {
                       <View className="flex-1">
                         <Text className="text-white font-semibold text-base">{season.seasonName}</Text>
                         <Text className="text-slate-400 text-sm">
-                          {formatRecord(season)} • {SPORT_NAMES[season.sport]}
+                          {formatRecord(season)} • {getSportName(season.sport)}
                         </Text>
                       </View>
                       <View className="flex-row items-center">
