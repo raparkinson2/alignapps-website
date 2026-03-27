@@ -18,9 +18,54 @@ export function useAuth() {
     // Check initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        // If we have a valid session but aren't logged in to a team yet, try to load data
-        if (!isLoggedIn && activeTeamId) {
-          await loadTeamFromSupabase(activeTeamId);
+        if (!isLoggedIn) {
+          // We have a Supabase session but the store isn't initialized.
+          // This happens after OAuth (e.g. Sign in with Apple) — bootstrap from the session.
+          const store = useTeamStore.getState();
+          const email = session.user.email?.toLowerCase();
+          const userId = session.user.id;
+
+          // Try to find the player record by auth_user_id first, then by email
+          let playerRows: Array<{ id: string; team_id: string }> | null = null;
+
+          const { data: byUserId } = await supabase
+            .from('players')
+            .select('id, team_id')
+            .eq('auth_user_id', userId)
+            .limit(1);
+
+          if (byUserId && byUserId.length > 0) {
+            playerRows = byUserId;
+          } else if (email) {
+            const { data: byEmail } = await supabase
+              .from('players')
+              .select('id, team_id')
+              .eq('email', email)
+              .limit(1);
+            playerRows = byEmail ?? null;
+          }
+
+          if (playerRows && playerRows.length > 0) {
+            const player = playerRows[0];
+            const ok = await loadTeamFromSupabase(player.team_id);
+            if (ok) {
+              store.setCurrentPlayerId(player.id);
+              store.setActiveTeamId(player.team_id);
+              if (email) store.setUserEmail(email);
+              store.setIsLoggedIn(true);
+            } else {
+              // Couldn't load team — sign out and go to login
+              await supabase.auth.signOut();
+              store.logout();
+            }
+          } else if (activeTeamId) {
+            // Fallback: already had an activeTeamId stored, just reload
+            await loadTeamFromSupabase(activeTeamId);
+          } else {
+            // No player record found for this Apple account
+            await supabase.auth.signOut();
+            store.logout();
+          }
         }
       } else {
         // No session — force logout state
