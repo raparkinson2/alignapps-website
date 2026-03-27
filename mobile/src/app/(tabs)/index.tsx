@@ -1983,6 +1983,7 @@ export default function ScheduleScreen() {
 
               {/* Player Invitations */}
               <View className="mb-2">
+                <Text className="text-slate-400 text-sm mb-1">Invite Players</Text>
                 <Pressable
                   onPress={() => {
                     setShowPlayerSelection(!showPlayerSelection);
@@ -2154,7 +2155,7 @@ export default function ScheduleScreen() {
 
               {/* Invite Release Options */}
               <View className="mb-2">
-                <Text className="text-slate-400 text-xs mb-1">Release Invites</Text>
+                <Text className="text-slate-400 text-sm mb-1">Release Invites</Text>
                 <View className="bg-slate-800/40 rounded-xl p-1.5">
                   {/* Release Now Option */}
                   <Pressable
@@ -2331,7 +2332,7 @@ export default function ScheduleScreen() {
 
                 {showBeerDuty && (
                   <View className="mt-1.5">
-                    <Text className="text-slate-400 text-[10px] mb-1.5">Assign Player</Text>
+                    <Text className="text-slate-400 text-sm mb-1.5">Assign Player</Text>
                     {/* Combined grid: None + players, 4 per row */}
                     {Array.from({ length: Math.ceil((activePlayers.length + 1) / 4) }, (_, rowIdx) => {
                       const items = [null, ...activePlayers].slice(rowIdx * 4, rowIdx * 4 + 4);
