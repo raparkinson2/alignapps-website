@@ -754,7 +754,7 @@ export async function deleteChatMessageFromSupabase(messageId: string): Promise<
   } catch (err) { console.error('SYNC: deleteChatMessageFromSupabase error:', err); }
 }
 
-export async function pushPlayerToSupabase(player: Player, teamId: string): Promise<void> {
+export async function pushPlayerToSupabase(player: Player, teamId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = getSupabaseClient();
     const { error } = await supabase.from('players').upsert({
@@ -767,8 +767,16 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
       stats: player.stats || {}, goalie_stats: player.goalieStats || {}, pitcher_stats: player.pitcherStats || {},
       game_logs: player.gameLogs || [],
     }, { onConflict: 'id' });
-    if (error) console.error('SYNC: pushPlayerToSupabase error:', error.message);
-  } catch (err) { console.error('SYNC: pushPlayerToSupabase error:', err); }
+    if (error) {
+      console.error('SYNC: pushPlayerToSupabase error:', error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('SYNC: pushPlayerToSupabase error:', msg);
+    return { success: false, error: msg };
+  }
 }
 
 export async function deletePlayerFromSupabase(playerId: string): Promise<void> {

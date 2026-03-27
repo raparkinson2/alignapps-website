@@ -156,7 +156,18 @@ export default function AddEditPlayerModal({ isOpen, onClose, player }: AddEditP
       } else {
         addPlayer(updatedPlayer);
       }
-      await pushPlayerToSupabase(updatedPlayer, activeTeamId);
+      const result = await pushPlayerToSupabase(updatedPlayer, activeTeamId);
+      if (!result.success) {
+        // Roll back local store change on failure
+        if (player) {
+          updatePlayer(player.id, player);
+        } else {
+          useTeamStore.getState().removePlayer(updatedPlayer.id);
+        }
+        setError(`Failed to save player: ${result.error ?? 'Unknown error'}`);
+        setSaving(false);
+        return;
+      }
       onClose();
     } catch {
       setError('Failed to save player. Please try again.');
