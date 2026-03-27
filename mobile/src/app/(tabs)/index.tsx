@@ -1752,7 +1752,7 @@ export default function ScheduleScreen() {
                       setRecordType('game');
                     }}
                     className={cn(
-                      'flex-1 py-2 rounded-lg items-center',
+                      'flex-1 h-10 rounded-lg items-center justify-center',
                       recordType === 'game' && 'bg-cyan-500'
                     )}
                   >
@@ -1769,7 +1769,7 @@ export default function ScheduleScreen() {
                       setRecordType('practice');
                     }}
                     className={cn(
-                      'flex-1 py-2 rounded-lg items-center',
+                      'flex-1 h-10 rounded-lg items-center justify-center',
                       recordType === 'practice' && 'bg-orange-500'
                     )}
                   >
@@ -1786,7 +1786,7 @@ export default function ScheduleScreen() {
                       setRecordType('event');
                     }}
                     className={cn(
-                      'flex-1 py-2 rounded-lg items-center',
+                      'flex-1 h-10 rounded-lg items-center justify-center',
                       recordType === 'event' && 'bg-blue-500'
                     )}
                   >
