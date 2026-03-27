@@ -12,7 +12,7 @@ const DIFFERENTIATORS = [
   {
     icon: '🏆',
     title: 'Built for Recreational Athletes',
-    desc: 'We designed ALIGN Sports specifically for recreational and amateur sports — not elite clubs or pro franchises. The tools are powerful but never overcomplicated, because your team just wants to play.',
+    desc: 'We designed ALIGN Sports specifically for recreational sports teams. The tools are powerful but never overcomplicated, because your team just wants to play.',
     color: 'purple',
   },
   {
