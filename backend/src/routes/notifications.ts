@@ -476,6 +476,67 @@ notificationsRouter.get("/registration-diagnostics", async (c) => {
 });
 
 /**
+ * POST /api/notifications/schedule-beer-duty
+ * Schedules 24hr and 2hr reminder push notifications for the assigned refreshment/beer duty player.
+ * Uses in-memory setTimeout — best-effort; lost on server restart.
+ * Body: { playerId, gameId, opponent, gameDateTime (ISO string), is21Plus }
+ */
+notificationsRouter.post("/schedule-beer-duty", async (c) => {
+  let body: any = {};
+  try { body = await c.req.json(); } catch {
+    return c.json({ error: "Invalid request body" }, 400);
+  }
+
+  const { playerId, gameId, opponent, gameDateTime, is21Plus } = body;
+  if (!playerId || !gameId || !gameDateTime) {
+    return c.json({ error: "playerId, gameId, and gameDateTime are required" }, 400);
+  }
+
+  const gameTime = new Date(gameDateTime);
+  const now = new Date();
+
+  const title24hr = is21Plus ? '🍺 Beer Duty Tomorrow!' : '🥤 Refreshment Duty Tomorrow!';
+  const body24hr = is21Plus
+    ? `Reminder: You're on post-game beer duty for the game vs ${opponent} tomorrow. Time to grab a case!`
+    : `Reminder: You're bringing refreshments for the game vs ${opponent} tomorrow. Don't forget!`;
+
+  const title2hr = is21Plus ? '🍺 Beer Duty Tonight!' : '🥤 Refreshment Duty Today!';
+  const body2hr = is21Plus
+    ? `Game vs ${opponent} is in 2 hours — and you're on post-game beer duty. Cheers!`
+    : `Game vs ${opponent} is in 2 hours — and you're bringing refreshments. Get ready!`;
+
+  const ms24hr = gameTime.getTime() - 24 * 60 * 60 * 1000 - now.getTime();
+  const ms2hr  = gameTime.getTime() -  2 * 60 * 60 * 1000 - now.getTime();
+
+  let scheduled = 0;
+
+  if (ms24hr > 0) {
+    setTimeout(async () => {
+      console.log(`[beer-duty] Sending 24hr reminder to player ${playerId} for game ${gameId}`);
+      const { data: tokenRows } = await supabaseAdmin
+        .from("push_tokens").select("token, platform").eq("player_id", playerId);
+      const tokens = (tokenRows || []).map((r: any) => r.token).filter(Boolean);
+      if (tokens.length > 0) await sendAPNsNotifications(tokens, title24hr, body24hr, { type: 'refreshment_duty_reminder', gameId });
+    }, ms24hr);
+    scheduled++;
+  }
+
+  if (ms2hr > 0) {
+    setTimeout(async () => {
+      console.log(`[beer-duty] Sending 2hr reminder to player ${playerId} for game ${gameId}`);
+      const { data: tokenRows } = await supabaseAdmin
+        .from("push_tokens").select("token, platform").eq("player_id", playerId);
+      const tokens = (tokenRows || []).map((r: any) => r.token).filter(Boolean);
+      if (tokens.length > 0) await sendAPNsNotifications(tokens, title2hr, body2hr, { type: 'refreshment_duty_reminder', gameId });
+    }, ms2hr);
+    scheduled++;
+  }
+
+  console.log(`[beer-duty] Scheduled ${scheduled} reminder(s) for player ${playerId}, game ${gameId}`);
+  return c.json({ success: true, scheduled });
+});
+
+/**
  * DELETE /api/notifications/registration-diagnostics
  * Clears all diagnostic entries from the table.
  */

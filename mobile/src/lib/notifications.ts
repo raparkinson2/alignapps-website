@@ -443,8 +443,55 @@ export async function sendTestNotification(): Promise<void> {
 }
 
 /**
- * Set the badge count on the app icon
+ * Send an immediate push notification to a player assigned beer/refreshment duty.
+ * Routes through the backend so it reaches any player, not just the current device.
  */
+export async function sendRefreshmentDutyAssignedPush(
+  playerId: string,
+  opponent: string,
+  gameDate: string,
+  gameTime: string,
+  is21Plus: boolean
+): Promise<void> {
+  const title = is21Plus ? '🍺 Beer Duty Assigned!' : '🥤 Refreshment Duty Assigned!';
+  const body = is21Plus
+    ? `You're on post-game beer duty for the game vs ${opponent} on ${gameDate} at ${gameTime}. Don't forget to stock up!`
+    : `You've been assigned refreshment duty for the game vs ${opponent} on ${gameDate} at ${gameTime}. Please bring snacks/drinks!`;
+
+  await sendPushToPlayers([playerId], title, body, { type: 'refreshment_duty_assigned' });
+}
+
+/**
+ * Schedule 24-hour and 2-hour reminder push notifications for a beer/refreshment duty player
+ * via the backend (in-memory scheduling). Falls back gracefully if backend is unavailable.
+ */
+export async function scheduleRefreshmentDutyReminders(
+  playerId: string,
+  gameId: string,
+  opponent: string,
+  gameDateTime: Date,
+  is21Plus: boolean
+): Promise<void> {
+  const backendUrl = BACKEND_URL;
+  if (!backendUrl) return;
+
+  try {
+    await fetch(`${backendUrl}/api/notifications/schedule-beer-duty`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        playerId,
+        gameId,
+        opponent,
+        gameDateTime: gameDateTime.toISOString(),
+        is21Plus,
+      }),
+    });
+  } catch (err) {
+    console.log('scheduleRefreshmentDutyReminders error:', err);
+  }
+}
+
 export async function setBadgeCount(count: number): Promise<void> {
   await Notifications.setBadgeCountAsync(count);
 }

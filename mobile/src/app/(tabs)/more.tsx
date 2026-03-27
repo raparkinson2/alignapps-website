@@ -568,6 +568,18 @@ function NotificationPreferencesModal({ visible, onClose, preferences, onSave, c
               onToggle={(v) => handleToggle('paymentReminders', v)}
             />
 
+            {/* Refreshment Duty Section */}
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-6 mb-2">
+              Refreshment Duty
+            </Text>
+
+            <PreferenceToggle
+              label="Beer / Refreshment Duty"
+              description="Get notified when assigned duty, and reminded 24h & 2h before the game"
+              value={prefs.refreshmentDutyReminders ?? true}
+              onToggle={(v) => handleToggle('refreshmentDutyReminders', v)}
+            />
+
             {/* Test Notification Button */}
             <Pressable
               onPress={handleTestNotification}

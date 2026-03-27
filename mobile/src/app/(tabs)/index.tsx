@@ -52,7 +52,7 @@ import { hasAssignedSoccerDiamondPlayers } from '@/components/SoccerDiamondLineu
 import { LacrosseLineupViewer } from '@/components/LacrosseLineupViewer';
 import { hasAssignedBattingOrder } from '@/components/BattingOrderLineupEditor';
 import { hasAssignedLacrossePlayers } from '@/components/LacrosseLineupEditor';
-import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore, sendPushToPlayers } from '@/lib/notifications';
+import { sendGameInviteNotification, scheduleGameInviteNotification, sendEventInviteNotification, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore, sendPushToPlayers, sendRefreshmentDutyAssignedPush, scheduleRefreshmentDutyReminders } from '@/lib/notifications';
 import { pushGameToSupabase, pushEventToSupabase, deleteGameFromSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
 
 const getDateLabel = (dateString: string): string => {
@@ -1217,6 +1217,27 @@ export default function ScheduleScreen() {
       scheduleGameReminderHoursBefore(newGame.id, opponent.trim(), gameDateTime, fullGameTime);
     }
 
+    // Beer/refreshment duty notifications
+    if (showBeerDuty && selectedBeerDutyPlayer && notificationPrefs?.refreshmentDutyReminders !== false) {
+      const is21Plus = teamSettings.refreshmentDutyIs21Plus !== false;
+      // Immediate assignment push (goes to the assigned player regardless of who they are)
+      sendRefreshmentDutyAssignedPush(
+        selectedBeerDutyPlayer,
+        opponent.trim(),
+        formattedDate,
+        fullGameTime,
+        is21Plus
+      ).catch(console.error);
+      // Schedule 24hr + 2hr reminders via backend
+      scheduleRefreshmentDutyReminders(
+        selectedBeerDutyPlayer,
+        newGame.id,
+        opponent.trim(),
+        gameDateTime,
+        is21Plus
+      ).catch(console.error);
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsModalVisible(false);
     resetForm();
@@ -2295,17 +2316,17 @@ export default function ScheduleScreen() {
 
                 {showBeerDuty && (
                   <View className="mt-1.5">
-                    <Text className="text-slate-400 text-[10px] mb-1">Assign Player</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                    <Text className="text-slate-400 text-[10px] mb-1.5">Assign Player</Text>
+                    {/* None option row */}
+                    <View className="flex-row mb-1.5">
                       <Pressable
                         onPress={() => setSelectedBeerDutyPlayer(null)}
                         className={cn(
-                          'px-3 py-1.5 rounded-lg mr-1.5 items-center justify-center border',
+                          'flex-1 py-1.5 rounded-lg mx-0.5 items-center justify-center border',
                           selectedBeerDutyPlayer === null
                             ? 'bg-amber-500 border-amber-500'
                             : 'bg-slate-800 border-slate-700'
                         )}
-                        style={{ height: 32 }}
                       >
                         <Text className={cn(
                           'font-medium text-sm',
@@ -2314,30 +2335,43 @@ export default function ScheduleScreen() {
                           None
                         </Text>
                       </Pressable>
-                      {activePlayers.map((player) => (
-                        <Pressable
-                          key={player.id}
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            setSelectedBeerDutyPlayer(player.id);
-                          }}
-                          className={cn(
-                            'flex-row items-center px-2 py-1.5 rounded-lg mr-1.5 border',
-                            selectedBeerDutyPlayer === player.id
-                              ? 'bg-amber-500 border-amber-500'
-                              : 'bg-slate-800 border-slate-700'
-                          )}
-                        >
-                          <PlayerAvatar player={player} size={20} />
-                          <Text className={cn(
-                            'font-medium ml-1.5 text-sm',
-                            selectedBeerDutyPlayer === player.id ? 'text-slate-900' : 'text-slate-400'
-                          )}>
-                            {player.firstName}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
+                      {/* fill remaining 3 slots */}
+                      <View className="flex-1 mx-0.5" /><View className="flex-1 mx-0.5" /><View className="flex-1 mx-0.5" />
+                    </View>
+                    {/* Players grid — 4 per row */}
+                    {Array.from({ length: Math.ceil(activePlayers.length / 4) }, (_, rowIdx) => {
+                      const row = activePlayers.slice(rowIdx * 4, rowIdx * 4 + 4);
+                      return (
+                        <View key={rowIdx} className="flex-row mb-1.5">
+                          {row.map((player) => (
+                            <Pressable
+                              key={player.id}
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setSelectedBeerDutyPlayer(player.id);
+                              }}
+                              className={cn(
+                                'flex-1 flex-row items-center justify-center px-1 py-1.5 rounded-lg mx-0.5 border',
+                                selectedBeerDutyPlayer === player.id
+                                  ? 'bg-amber-500 border-amber-500'
+                                  : 'bg-slate-800 border-slate-700'
+                              )}
+                            >
+                              <PlayerAvatar player={player} size={20} />
+                              <Text className={cn(
+                                'font-medium ml-1 text-xs',
+                                selectedBeerDutyPlayer === player.id ? 'text-slate-900' : 'text-slate-400'
+                              )} numberOfLines={1}>
+                                {player.firstName}
+                              </Text>
+                            </Pressable>
+                          ))}
+                          {row.length < 4 && Array.from({ length: 4 - row.length }).map((_, i) => (
+                            <View key={`empty-${i}`} className="flex-1 mx-0.5" />
+                          ))}
+                        </View>
+                      );
+                    })}
                   </View>
                 )}
               </View>

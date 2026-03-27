@@ -173,6 +173,7 @@ export interface NotificationPreferences {
   chatMessages: boolean;
   chatMentions: boolean; // Get notified when @mentioned in chat
   paymentReminders: boolean;
+  refreshmentDutyReminders: boolean; // Beer/refreshment duty assignment + reminders
   pushToken?: string; // For future push notification implementation
 }
 
@@ -183,6 +184,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
   chatMessages: true,
   chatMentions: true,
   paymentReminders: true,
+  refreshmentDutyReminders: true,
 };
 
 // Sport-specific player stats
