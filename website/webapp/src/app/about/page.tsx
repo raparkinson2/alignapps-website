@@ -200,7 +200,7 @@ export default function AboutPage() {
             },
             {
               title: 'Accessible to everyone',
-              desc: 'Recreational sports belong to everyone. ALIGN Sports is priced fairly and built to work for every level, from youth leagues to adult rec.',
+              desc: 'Recreational sports belong to everyone. ALIGN Sports is built to work for every level, from youth leagues to adult rec leagues.',
               color: '#22c55e',
             },
           ].map((v, i) => (
