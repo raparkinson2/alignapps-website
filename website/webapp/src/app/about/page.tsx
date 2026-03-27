@@ -24,7 +24,7 @@ const DIFFERENTIATORS = [
   {
     icon: '🎯',
     title: 'Sport-Specific Features',
-    desc: 'Generic sports apps treat every sport the same. ALIGN Sports has sport-specific lineup builders for hockey, baseball, softball, basketball, soccer, and lacrosse — built by people who know how each game actually works.',
+    desc: 'Other sports apps treat every sport the same. ALIGN Sports has sport-specific lineup builders for baseball, softball, basketball, hockey, soccer, and lacrosse built by people who know how each game actually works.',
     color: 'cyan',
   },
 ];
