@@ -1775,9 +1775,7 @@ function GameDetailScreenInner() {
                   )}
                   <View className="flex-1 ml-2.5">
                     <Text className="text-white font-medium text-sm">
-                      {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
-                        ? 'Refreshment Duty'
-                        : 'Refreshment Duty'}
+                      {teamSettings.refreshmentDutyIs21Plus !== false ? 'Beer Duty' : 'Refreshment Duty'}
                     </Text>
                     <Text className="text-slate-400 text-xs">
                       {beerDutyPlayer ? getPlayerName(beerDutyPlayer) : (canManageTeam() ? 'Tap to assign' : 'Not assigned')}

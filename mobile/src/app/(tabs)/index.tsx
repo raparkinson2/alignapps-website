@@ -2300,9 +2300,7 @@ export default function ScheduleScreen() {
                       <JuiceBoxIcon size={14} color="#a855f7" />
                     )}
                     <Text className="text-white font-medium ml-2 text-sm">
-                      {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
-                        ? 'Post Game Beer Duty'
-                        : 'Refreshment Duty'}
+                      {teamSettings.refreshmentDutyIs21Plus !== false ? 'Beer Duty' : 'Refreshment Duty'}
                     </Text>
                   </View>
                   <Switch
