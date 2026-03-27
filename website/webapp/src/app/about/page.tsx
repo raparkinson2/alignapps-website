@@ -195,7 +195,7 @@ export default function AboutPage() {
             },
             {
               title: 'Athletes know best',
-              desc: 'Every feature we ship is built around how real players and coaches actually think — not how product managers think they do.',
+              desc: 'Every feature is thoughtfully designed around how real players and coaches actually think.',
               color: '#a78bfa',
             },
             {
