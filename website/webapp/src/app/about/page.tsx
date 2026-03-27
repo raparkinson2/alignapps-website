@@ -6,7 +6,7 @@ const DIFFERENTIATORS = [
   {
     icon: '📱',
     title: 'Mobile App + Web Platform',
-    desc: 'Most team apps are stuck on one platform. ALIGN Sports works seamlessly as a native iOS app and a full web dashboard — so your team can manage everything from their phone on the sideline or from a laptop at home.',
+    desc: 'Most team apps are stuck on one platform. ALIGN Sports works seamlessly as a native iOS and Android app with a full web dashboard so your team can manage everything the way they choose.',
     color: 'cyan',
   },
   {
