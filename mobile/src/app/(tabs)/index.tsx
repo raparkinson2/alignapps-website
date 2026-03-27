@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform, Switch, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Platform, Switch, Alert, KeyboardAvoidingView } from 'react-native';
 import * as Device from 'expo-device';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -1715,7 +1715,11 @@ export default function ScheduleScreen() {
               </Pressable>
             </View>
 
-            <ScrollView className="flex-1 px-5 pt-4">
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={{ flex: 1 }}
+            >
+            <ScrollView className="flex-1 px-5 pt-4" keyboardShouldPersistTaps="handled">
               {/* Game/Practice/Event Toggle */}
               <View className="mb-2">
                 <View className="flex-row bg-slate-800/80 rounded-xl p-1">
@@ -2026,29 +2030,39 @@ export default function ScheduleScreen() {
                     <Text className="text-green-400 text-[10px] font-semibold uppercase tracking-wider mb-1.5">
                       Active Players
                     </Text>
-                    <View className="flex-row flex-wrap mb-3">
-                      {activePlayers.map((player) => {
-                        const isSelected = selectedPlayerIds.includes(player.id);
+                    <View className="mb-3">
+                      {Array.from({ length: Math.ceil(activePlayers.length / 4) }, (_, rowIdx) => {
+                        const row = activePlayers.slice(rowIdx * 4, rowIdx * 4 + 4);
                         return (
-                          <Pressable
-                            key={player.id}
-                            onPress={() => togglePlayer(player.id)}
-                            className={cn(
-                              'flex-row items-center px-2 py-1.5 rounded-lg mr-1.5 mb-1.5 border',
-                              isSelected
-                                ? 'bg-green-500/20 border-green-500/50'
-                                : 'bg-slate-700/50 border-slate-600'
-                            )}
-                          >
-                            <PlayerAvatar player={player} size={20} />
-                            <Text className={cn(
-                              'font-medium ml-1.5 text-xs',
-                              isSelected ? 'text-green-400' : 'text-slate-400'
-                            )}>
-                              {player.firstName}
-                            </Text>
-                            {isSelected && <Check size={12} color="#22c55e" style={{ marginLeft: 3 }} />}
-                          </Pressable>
+                          <View key={rowIdx} className="flex-row mb-1.5">
+                            {row.map((player) => {
+                              const isSelected = selectedPlayerIds.includes(player.id);
+                              return (
+                                <Pressable
+                                  key={player.id}
+                                  onPress={() => togglePlayer(player.id)}
+                                  className={cn(
+                                    'flex-1 flex-row items-center justify-center px-1 py-1.5 rounded-lg border mx-0.5',
+                                    isSelected
+                                      ? 'bg-green-500/20 border-green-500/50'
+                                      : 'bg-slate-700/50 border-slate-600'
+                                  )}
+                                >
+                                  <PlayerAvatar player={player} size={20} />
+                                  <Text className={cn(
+                                    'font-medium ml-1 text-xs',
+                                    isSelected ? 'text-green-400' : 'text-slate-400'
+                                  )} numberOfLines={1}>
+                                    {player.firstName}
+                                  </Text>
+                                  {isSelected && <Check size={11} color="#22c55e" style={{ marginLeft: 2 }} />}
+                                </Pressable>
+                              );
+                            })}
+                            {row.length < 4 && Array.from({ length: 4 - row.length }).map((_, i) => (
+                              <View key={`empty-${i}`} className="flex-1 mx-0.5" />
+                            ))}
+                          </View>
                         );
                       })}
                     </View>
@@ -2059,29 +2073,39 @@ export default function ScheduleScreen() {
                         <Text className="text-amber-400 text-[10px] font-semibold uppercase tracking-wider mb-1.5">
                           Reserve Players
                         </Text>
-                        <View className="flex-row flex-wrap">
-                          {reservePlayers.map((player) => {
-                            const isSelected = selectedPlayerIds.includes(player.id);
+                        <View>
+                          {Array.from({ length: Math.ceil(reservePlayers.length / 4) }, (_, rowIdx) => {
+                            const row = reservePlayers.slice(rowIdx * 4, rowIdx * 4 + 4);
                             return (
-                              <Pressable
-                                key={player.id}
-                                onPress={() => togglePlayer(player.id)}
-                                className={cn(
-                                  'flex-row items-center px-2 py-1.5 rounded-lg mr-1.5 mb-1.5 border',
-                                  isSelected
-                                    ? 'bg-amber-500/20 border-amber-500/50'
-                                    : 'bg-slate-700/50 border-slate-600'
-                                )}
-                              >
-                                <PlayerAvatar player={player} size={20} />
-                                <Text className={cn(
-                                  'font-medium ml-1.5 text-xs',
-                                  isSelected ? 'text-amber-400' : 'text-slate-400'
-                                )}>
-                                  {player.firstName}
-                                </Text>
-                                {isSelected && <Check size={12} color="#f59e0b" style={{ marginLeft: 3 }} />}
-                              </Pressable>
+                              <View key={rowIdx} className="flex-row mb-1.5">
+                                {row.map((player) => {
+                                  const isSelected = selectedPlayerIds.includes(player.id);
+                                  return (
+                                    <Pressable
+                                      key={player.id}
+                                      onPress={() => togglePlayer(player.id)}
+                                      className={cn(
+                                        'flex-1 flex-row items-center justify-center px-1 py-1.5 rounded-lg border mx-0.5',
+                                        isSelected
+                                          ? 'bg-amber-500/20 border-amber-500/50'
+                                          : 'bg-slate-700/50 border-slate-600'
+                                      )}
+                                    >
+                                      <PlayerAvatar player={player} size={20} />
+                                      <Text className={cn(
+                                        'font-medium ml-1 text-xs',
+                                        isSelected ? 'text-amber-400' : 'text-slate-400'
+                                      )} numberOfLines={1}>
+                                        {player.firstName}
+                                      </Text>
+                                      {isSelected && <Check size={11} color="#f59e0b" style={{ marginLeft: 2 }} />}
+                                    </Pressable>
+                                  );
+                                })}
+                                {row.length < 4 && Array.from({ length: 4 - row.length }).map((_, i) => (
+                                  <View key={`empty-${i}`} className="flex-1 mx-0.5" />
+                                ))}
+                              </View>
                             );
                           })}
                         </View>
@@ -2335,7 +2359,9 @@ export default function ScheduleScreen() {
                   style={{ minHeight: 80, textAlignVertical: 'top' }}
                 />
               </View>
+              <View className="h-8" />
             </ScrollView>
+            </KeyboardAvoidingView>
           </SafeAreaView>
         </View>
       </Modal>
