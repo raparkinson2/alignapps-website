@@ -1288,12 +1288,11 @@ export default function MoreScreen() {
             </Animated.View>
           )}
 
-          {/* Teams Section */}
+          {/* MY TEAM Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-2">
-            Teams
+            My Team
           </Text>
 
-          {/* Switch Team */}
           <MenuItem
             icon={<ArrowLeftRight size={20} color="#67e8f9" />}
             title="Switch Team"
@@ -1311,35 +1310,32 @@ export default function MoreScreen() {
           />
 
           <MenuItem
-            icon={<Link size={20} color="#67e8f9" />}
-            title="Team Links"
-            subtitle={teamLinks.length > 0 ? `${teamLinks.length} link${teamLinks.length !== 1 ? 's' : ''}` : 'Add useful links for your team'}
-            onPress={() => setLinksModalVisible(true)}
-            index={2}
-          />
-
-          <MenuItem
             icon={<BarChart3 size={20} color="#67e8f9" />}
             title="Team Polls"
             subtitle="Create and vote on polls"
             onPress={() => router.push('/polls')}
+            index={2}
+          />
+
+          <MenuItem
+            icon={<Link size={20} color="#67e8f9" />}
+            title="Team Links"
+            subtitle={teamLinks.length > 0 ? `${teamLinks.length} link${teamLinks.length !== 1 ? 's' : ''}` : 'Add useful links for your team'}
+            onPress={() => setLinksModalVisible(true)}
             index={3}
           />
 
-          <MenuItem
-            icon={<FolderOpen size={20} color="#67e8f9" />}
-            title="File Storage"
-            subtitle="Upload and share team documents"
-            onPress={() => router.push('/file-storage')}
-            index={4}
-          />
+          {/* Stats Section */}
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
+            Stats
+          </Text>
 
           <MenuItem
             icon={<TrendingUp size={20} color="#67e8f9" />}
-            title="Stats and Analytics"
+            title="Stats & Analytics"
             subtitle="Attendance and team statistics"
             onPress={() => router.push('/stats-analytics')}
-            index={5}
+            index={4}
           />
 
           <MenuItem
@@ -1347,20 +1343,12 @@ export default function MoreScreen() {
             title="Season Summary"
             subtitle="Record, results, and highlights"
             onPress={() => router.push('/season-summary')}
-            index={6}
+            index={5}
           />
 
-          <MenuItem
-            icon={<Plus size={20} color="#67e8f9" />}
-            title="Create New Team"
-            subtitle="Start a new team"
-            onPress={() => router.push('/create-new-team')}
-            index={4}
-          />
-
-          {/* Communication & Alerts Section */}
+          {/* Alerts Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-            Communication & Alerts
+            Alerts
           </Text>
 
           {/* Notifications with badge */}
@@ -1390,28 +1378,8 @@ export default function MoreScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Notification Settings */}
-          <Animated.View entering={FadeInDown.delay(112).springify()}>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setNotifPrefsVisible(true);
-              }}
-              className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
-            >
-              <View className="w-10 h-10 rounded-full items-center justify-center bg-cyan-500/20">
-                <BellRing size={20} color="#67e8f9" />
-              </View>
-              <View className="flex-1 ml-3">
-                <Text className="font-semibold text-white">Notification Settings</Text>
-                <Text className="text-slate-400 text-sm">Manage push notification preferences</Text>
-              </View>
-              <ChevronRight size={20} color="#64748b" />
-            </Pressable>
-          </Animated.View>
-
           {/* Messages */}
-          <Animated.View entering={FadeInDown.delay(125).springify()}>
+          <Animated.View entering={FadeInDown.delay(112).springify()}>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1437,27 +1405,53 @@ export default function MoreScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Email Team - commented out, keeping code for future use
-          <MenuItem
-            icon={<Mail size={20} color="#67e8f9" />}
-            title="Email Team"
-            subtitle="Send an email to all players"
-            onPress={handleEmailTeam}
-            index={4}
-          />
-          */}
+          {/* Notification Settings */}
+          <Animated.View entering={FadeInDown.delay(124).springify()}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setNotifPrefsVisible(true);
+              }}
+              className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
+            >
+              <View className="w-10 h-10 rounded-full items-center justify-center bg-cyan-500/20">
+                <BellRing size={20} color="#67e8f9" />
+              </View>
+              <View className="flex-1 ml-3">
+                <Text className="font-semibold text-white">Notification Settings</Text>
+                <Text className="text-slate-400 text-sm">Manage push notification preferences</Text>
+              </View>
+              <ChevronRight size={20} color="#64748b" />
+            </Pressable>
+          </Animated.View>
 
-          {/* Support Section */}
+          {/* App Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-            Support
+            App
           </Text>
+
+          <MenuItem
+            icon={<FolderOpen size={20} color="#67e8f9" />}
+            title="File Storage"
+            subtitle="Upload and share team documents"
+            onPress={() => router.push('/file-storage')}
+            index={6}
+          />
+
+          <MenuItem
+            icon={<Plus size={20} color="#67e8f9" />}
+            title="Create New Team"
+            subtitle="Start a new team"
+            onPress={() => router.push('/create-new-team')}
+            index={7}
+          />
 
           <MenuItem
             icon={<HelpCircle size={20} color="#67e8f9" />}
             title="Support"
             subtitle="FAQs, feature requests & bug reports"
             onPress={() => router.push('/support')}
-            index={10}
+            index={8}
           />
 
           <MenuItem
@@ -1465,7 +1459,7 @@ export default function MoreScreen() {
             title="Notices"
             subtitle="Policies and additional information"
             onPress={() => router.push('/notices')}
-            index={11}
+            index={9}
           />
 
           {/* Log Out */}
