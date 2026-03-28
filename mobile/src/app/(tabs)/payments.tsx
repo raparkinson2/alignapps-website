@@ -8,6 +8,7 @@ import {
   X,
   Check,
   ChevronRight,
+  Bell,
   CreditCard,
   Users,
   CheckCircle2,
@@ -846,6 +847,7 @@ export default function PaymentsScreen() {
 
   // Add player to period modal
   const [isAddPlayerModalVisible, setIsAddPlayerModalVisible] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
 
   // Payment info modal
   const [isPaymentInfoModalVisible, setIsPaymentInfoModalVisible] = useState(false);
@@ -926,6 +928,22 @@ export default function PaymentsScreen() {
     // Sync to Supabase for other team members
     if (activeTeamId) {
       pushPaymentPeriodToSupabase(newPeriod, activeTeamId).catch(console.error);
+    }
+
+    // Send creation notification to all assigned players via backend
+    if (activeTeamId && selectedPlayerIds.length > 0) {
+      fetch(`${BACKEND_URL}/api/payments/reminders/on-create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          periodId: newPeriod.id,
+          teamId: activeTeamId,
+          playerIds: selectedPlayerIds,
+          title: newPeriod.title,
+          amount: newPeriod.amount,
+          dueDate: newPeriod.dueDate || null,
+        }),
+      }).catch(console.error);
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1103,6 +1121,32 @@ export default function PaymentsScreen() {
     const newPeriods = [...paymentPeriods];
     [newPeriods[index], newPeriods[index + 1]] = [newPeriods[index + 1], newPeriods[index]];
     reorderPaymentPeriods(newPeriods);
+  };
+
+  const handleSendManualReminder = async (period: PaymentPeriod) => {
+    if (!activeTeamId) return;
+    setIsSendingReminder(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/payments/reminders/send-manual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ periodId: period.id, teamId: activeTeamId }),
+      });
+      const data = await res.json() as { message?: string; sent?: number };
+      Alert.alert(
+        'Reminder Sent',
+        data.sent === 0
+          ? 'All players have already paid — no reminders were sent.'
+          : `Reminder sent to ${data.sent} unpaid player${data.sent !== 1 ? 's' : ''}.`,
+      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert('Error', 'Failed to send reminder. Please try again.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsSendingReminder(false);
+    }
   };
 
   const selectedPeriod = paymentPeriods.find((p) => p.id === selectedPeriodId);
@@ -2269,6 +2313,28 @@ export default function PaymentsScreen() {
                           </View>
                         )}
                       </View>
+                    )}
+
+                    {/* Send Reminder Button - Admin only */}
+                    {isAdmin() && (
+                      <Pressable
+                        onPress={() => handleSendManualReminder(selectedPeriod)}
+                        disabled={isSendingReminder}
+                        className="bg-amber-500/10 rounded-xl p-3.5 mb-4 flex-row items-center justify-between border border-amber-500/20 active:bg-amber-500/20"
+                      >
+                        <View className="flex-row items-center">
+                          <Bell size={16} color="#f59e0b" />
+                          <View className="ml-2.5">
+                            <Text className="text-amber-400 font-semibold text-sm">Send Reminder</Text>
+                            <Text className="text-amber-300/60 text-xs">Notify all unpaid players</Text>
+                          </View>
+                        </View>
+                        {isSendingReminder ? (
+                          <ActivityIndicator color="#f59e0b" size="small" />
+                        ) : (
+                          <ChevronRight size={16} color="#f59e0b" />
+                        )}
+                      </Pressable>
                     )}
 
                     <View className="flex-row items-center justify-between mb-3 mt-4">

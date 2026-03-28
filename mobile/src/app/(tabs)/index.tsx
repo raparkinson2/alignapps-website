@@ -25,6 +25,7 @@ import {
   List,
   CalendarDays,
   ChevronLeft,
+  BarChart3,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, useSharedValue, withSpring, withRepeat, withTiming, cancelAnimation } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -32,7 +33,7 @@ import { Trash2 } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useTeamStore, Game, Event, TeamRecord, Sport, getPlayerName, InviteReleaseOption, UpcomingGamesViewMode, AppNotification } from '@/lib/store';
+import { useTeamStore, Game, Event, TeamRecord, Sport, getPlayerName, InviteReleaseOption, UpcomingGamesViewMode, AppNotification, Poll } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { JerseyIcon } from '@/components/JerseyIcon';
@@ -1011,6 +1012,7 @@ export default function ScheduleScreen() {
   const releaseScheduledGameInvites = useTeamStore((s) => s.releaseScheduledGameInvites);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
+  const polls = useTeamStore((s) => s.polls);
 
   // Get current player's notification preferences
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
@@ -1100,6 +1102,26 @@ export default function ScheduleScreen() {
   const [recordTeamGoals, setRecordTeamGoals] = useState(teamSettings?.record?.teamGoals?.toString() ?? '0');
 
   const sport = teamSettings?.sport ?? 'hockey';
+
+  // Active polls the current player hasn't voted on yet
+  const unansweredPolls = polls.filter((poll) => {
+    if (!poll.isActive) return false;
+    if (poll.expiresAt && new Date(poll.expiresAt) < new Date()) return false;
+    if (!currentPlayerId) return false;
+    // Check if player has voted on any option in this poll
+    const hasVoted = poll.options.some((opt) => opt.votes.includes(currentPlayerId));
+    return !hasVoted;
+  });
+
+  // Group by groupId for deduplication (grouped polls count as 1)
+  const uniqueUnansweredPolls = unansweredPolls.reduce<Poll[]>((acc, poll) => {
+    if (poll.groupId) {
+      if (!acc.some((p) => p.groupId === poll.groupId)) acc.push(poll);
+    } else {
+      acc.push(poll);
+    }
+    return acc;
+  }, []);
 
   const activePlayers = players.filter((p) => p.status === 'active');
   const reservePlayers = players.filter((p) => p.status === 'reserve');
@@ -1561,6 +1583,44 @@ export default function ScheduleScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
+          {/* Active Poll Banner */}
+          {uniqueUnansweredPolls.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(30).springify()} className="mb-4">
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push('/polls');
+                }}
+                className="rounded-2xl overflow-hidden active:opacity-80"
+                style={{ borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}
+              >
+                <LinearGradient
+                  colors={['rgba(245,158,11,0.18)', 'rgba(245,158,11,0.08)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ padding: 14, flexDirection: 'row', alignItems: 'center' }}
+                >
+                  <View className="w-9 h-9 rounded-full bg-amber-500/20 items-center justify-center mr-3">
+                    <BarChart3 size={18} color="#f59e0b" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-amber-300 font-bold text-sm">
+                      {uniqueUnansweredPolls.length === 1 ? 'Vote Now' : `${uniqueUnansweredPolls.length} Polls Need Your Vote`}
+                    </Text>
+                    <Text className="text-amber-300/60 text-xs mt-0.5">
+                      {uniqueUnansweredPolls.length === 1
+                        ? uniqueUnansweredPolls[0]?.groupName || uniqueUnansweredPolls[0]?.question || 'Tap to vote'
+                        : 'Tap to see all active polls'}
+                    </Text>
+                  </View>
+                  <View className="bg-amber-500 rounded-full w-6 h-6 items-center justify-center ml-2">
+                    <Text className="text-white text-xs font-bold">{uniqueUnansweredPolls.length}</Text>
+                  </View>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+          )}
+
           <View className="flex-row items-center justify-between mb-4">
             <View className="flex-row items-center">
               <Calendar size={18} color="#67e8f9" />

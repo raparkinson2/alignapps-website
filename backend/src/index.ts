@@ -8,6 +8,7 @@ import { notificationsRouter } from "./routes/notifications";
 import { paymentsRouter } from "./routes/payments";
 import { connectRouter } from "./routes/connect";
 import { filesRouter } from "./routes/files";
+import { paymentRemindersRouter, startPaymentReminderScheduler } from "./routes/payment-reminders";
 import { logger } from "hono/logger";
 
 const app = new Hono();
@@ -48,7 +49,11 @@ app.route("/api/auth", authRouter);
 app.route("/api/notifications", notificationsRouter);
 app.route("/api/payments", paymentsRouter);
 app.route("/api/payments/connect", connectRouter);
+app.route("/api/payments/reminders", paymentRemindersRouter);
 app.route("/api/team-files", filesRouter);
+
+// Start background scheduler for payment reminders
+startPaymentReminderScheduler();
 
 const port = Number(process.env.PORT) || 3000;
 

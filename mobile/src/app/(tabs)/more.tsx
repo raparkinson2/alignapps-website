@@ -35,6 +35,7 @@ import {
   HelpCircle,
   TrendingUp,
   Inbox,
+  Trophy,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -1339,6 +1340,14 @@ export default function MoreScreen() {
             subtitle="Attendance and team statistics"
             onPress={() => router.push('/stats-analytics')}
             index={5}
+          />
+
+          <MenuItem
+            icon={<Trophy size={20} color="#f59e0b" />}
+            title="Season Summary"
+            subtitle="Record, results, and highlights"
+            onPress={() => router.push('/season-summary')}
+            index={6}
           />
 
           <MenuItem

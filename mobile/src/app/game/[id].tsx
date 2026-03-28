@@ -2099,6 +2099,42 @@ function GameDetailScreenInner() {
               )}
             </Animated.View>
 
+          {/* View Game Recap - shown when result has been recorded */}
+          {game.gameResult && (
+            <Animated.View entering={FadeInUp.delay(118).springify()} className="mx-4 mb-3">
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/game-recap/${game.id}`);
+                }}
+                className="rounded-xl py-2.5 px-3 active:opacity-80 flex-row items-center"
+                style={{
+                  backgroundColor: game.gameResult === 'win' ? 'rgba(34,197,94,0.15)' :
+                    game.gameResult === 'loss' ? 'rgba(239,68,68,0.15)' :
+                    game.gameResult === 'otLoss' ? 'rgba(249,115,22,0.15)' :
+                    'rgba(148,163,184,0.12)',
+                  borderWidth: 1,
+                  borderColor: game.gameResult === 'win' ? 'rgba(34,197,94,0.3)' :
+                    game.gameResult === 'loss' ? 'rgba(239,68,68,0.3)' :
+                    game.gameResult === 'otLoss' ? 'rgba(249,115,22,0.3)' :
+                    'rgba(148,163,184,0.2)',
+                }}
+              >
+                <Trophy size={18} color={
+                  game.gameResult === 'win' ? '#22c55e' :
+                  game.gameResult === 'loss' ? '#ef4444' :
+                  game.gameResult === 'otLoss' ? '#f97316' :
+                  '#94a3b8'
+                } />
+                <View className="flex-1 ml-2.5">
+                  <Text className="text-white font-medium text-sm">Game Recap</Text>
+                  <Text className="text-slate-400 text-xs">View full game summary</Text>
+                </View>
+                <ChevronRight size={16} color="#64748b" />
+              </Pressable>
+            </Animated.View>
+          )}
+
           {/* Game Stats Section - Only when team stats is enabled */}
           {teamSettings.showTeamStats && (canManageStats || teamSettings.allowPlayerSelfStats) && (
             <Animated.View
