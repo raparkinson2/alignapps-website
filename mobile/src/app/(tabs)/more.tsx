@@ -1454,27 +1454,10 @@ export default function MoreScreen() {
 
           <MenuItem
             icon={<HelpCircle size={20} color="#67e8f9" />}
-            title="FAQs"
-            subtitle="Frequently asked questions"
-            onPress={() => router.push('/faqs')}
+            title="Support"
+            subtitle="FAQs, feature requests & bug reports"
+            onPress={() => router.push('/support')}
             index={10}
-          />
-
-          <MenuItem
-            icon={<Lightbulb size={20} color="#67e8f9" />}
-            title="Feature Request"
-            subtitle="Suggest a new feature"
-            onPress={() => router.push('/feature-request')}
-            index={11}
-          />
-
-          <MenuItem
-            icon={<Bug size={20} color="#f87171" />}
-            title="Report Bug"
-            subtitle="Let us know about issues"
-            onPress={() => router.push('/report-bug')}
-            index={12}
-            variant="danger"
           />
 
           <MenuItem
@@ -1482,7 +1465,7 @@ export default function MoreScreen() {
             title="Notices"
             subtitle="Policies and additional information"
             onPress={() => router.push('/notices')}
-            index={13}
+            index={11}
           />
 
           {/* Log Out */}
