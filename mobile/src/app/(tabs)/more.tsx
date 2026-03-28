@@ -1343,7 +1343,7 @@ export default function MoreScreen() {
           />
 
           <MenuItem
-            icon={<Trophy size={20} color="#f59e0b" />}
+            icon={<Trophy size={20} color="#67e8f9" />}
             title="Season Summary"
             subtitle="Record, results, and highlights"
             onPress={() => router.push('/season-summary')}
