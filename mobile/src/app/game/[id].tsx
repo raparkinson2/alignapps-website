@@ -40,7 +40,6 @@ import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { GameLineupDisplay } from '@/components/game/GameLineupDisplay';
-import { GameLineupDisplay } from '@/components/game/GameLineupDisplay';
 import { GameInlineEditModals } from '@/components/game/GameInlineEditModals';
 import { GameSettingsModal } from '@/components/game/GameSettingsModal';
 import { BeerDutyModal } from '@/components/game/BeerDutyModal';
