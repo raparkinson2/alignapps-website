@@ -596,28 +596,7 @@ function AuthNavigator() {
           presentation: 'card',
         }}
       />
-      <Stack.Screen
-        name="admin-team-settings"
-        options={{
-          headerShown: false,
-          presentation: 'card',
-        }}
-      />
-      <Stack.Screen
-        name="admin-players"
-        options={{
-          headerShown: false,
-          presentation: 'card',
-        }}
-      />
-      <Stack.Screen
-        name="admin-features"
-        options={{
-          headerShown: false,
-          presentation: 'card',
-        }}
-      />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+<Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }
