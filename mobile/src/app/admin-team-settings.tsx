@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -13,7 +13,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ImageIcon,
-  RefreshCw,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -22,9 +21,9 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import {
   useTeamStore,
-  Sport,
-  SPORT_NAMES,
-  getSportName,
+  // Sport,       // Sport selection restricted to create-team flow only
+  // SPORT_NAMES, // Sport selection restricted to create-team flow only
+  // getSportName,// Sport selection restricted to create-team flow only
 } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
@@ -36,7 +35,8 @@ const COLOR_PRESETS = [
   '#7c3aed', '#ea580c', '#ca8a04', '#0891b2', '#db2777',
 ];
 
-const ALL_SPORTS: Sport[] = ['hockey', 'basketball', 'baseball', 'softball', 'soccer', 'lacrosse'];
+// Sport selection restricted to create-team flow only — not available in admin
+// const ALL_SPORTS: Sport[] = ['hockey', 'basketball', 'baseball', 'softball', 'soccer', 'lacrosse'];
 
 export default function AdminTeamSettingsScreen() {
   const router = useRouter();
@@ -81,9 +81,9 @@ export default function AdminTeamSettingsScreen() {
   const [editColorName, setEditColorName] = useState('');
   const [editColorHex, setEditColorHex] = useState('#ffffff');
 
-  // Sport change modal state
-  const [isSportChangeModalVisible, setIsSportChangeModalVisible] = useState(false);
-  const [pendingSport, setPendingSport] = useState<Sport | null>(null);
+  // Sport change modal state — commented out; sport selection restricted to create-team flow only
+  // const [isSportChangeModalVisible, setIsSportChangeModalVisible] = useState(false);
+  // const [pendingSport, setPendingSport] = useState<Sport | null>(null);
 
   const handleSaveTeamName = () => {
     if (!editTeamName.trim()) return;
@@ -142,25 +142,26 @@ export default function AdminTeamSettingsScreen() {
     );
   };
 
-  const handleChangeSport = (sport: Sport) => {
-    if (sport === teamSettings.sport) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setPendingSport(sport);
-    setIsSportChangeModalVisible(true);
-  };
+  // Sport handlers — commented out; sport selection restricted to create-team flow only
+  // const handleChangeSport = (sport: Sport) => {
+  //   if (sport === teamSettings.sport) return;
+  //   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  //   setPendingSport(sport);
+  //   setIsSportChangeModalVisible(true);
+  // };
 
-  const confirmChangeSport = () => {
-    if (!pendingSport) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTeamSettingsAndSync({ sport: pendingSport });
-    setIsSportChangeModalVisible(false);
-    setPendingSport(null);
-  };
+  // const confirmChangeSport = () => {
+  //   if (!pendingSport) return;
+  //   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  //   setTeamSettingsAndSync({ sport: pendingSport });
+  //   setIsSportChangeModalVisible(false);
+  //   setPendingSport(null);
+  // };
 
-  const cancelChangeSport = () => {
-    setIsSportChangeModalVisible(false);
-    setPendingSport(null);
-  };
+  // const cancelChangeSport = () => {
+  //   setIsSportChangeModalVisible(false);
+  //   setPendingSport(null);
+  // };
 
   const handleAddJerseyColor = () => {
     if (!newColorName.trim()) return;
@@ -367,8 +368,8 @@ export default function AdminTeamSettingsScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Sport Type Section */}
-          <Animated.View entering={FadeInDown.delay(150).springify()}>
+          {/* Sport Type Section — commented out; sport selection restricted to create-team flow only */}
+          {/* <Animated.View entering={FadeInDown.delay(150).springify()}>
             <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4 mt-2">
               Sport
             </Text>
@@ -392,7 +393,7 @@ export default function AdminTeamSettingsScreen() {
                 );
               })}
             </View>
-          </Animated.View>
+          </Animated.View> */}
         </ScrollView>
       </SafeAreaView>
 
@@ -595,43 +596,6 @@ export default function AdminTeamSettingsScreen() {
         </View>
       </Modal>
 
-      {/* Sport Change Confirmation Modal */}
-      <Modal
-        visible={isSportChangeModalVisible}
-        animationType="fade"
-        transparent
-        onRequestClose={cancelChangeSport}
-      >
-        <View className="flex-1 bg-black/60 justify-center items-center px-6">
-          <View className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-700">
-            <View className="items-center mb-6">
-              <View className="w-16 h-16 rounded-full bg-amber-500/20 items-center justify-center mb-4">
-                <RefreshCw size={32} color="#f59e0b" />
-              </View>
-              <Text className="text-white text-xl font-bold text-center">
-                Change Sport?
-              </Text>
-              <Text className="text-slate-400 text-center mt-2">
-                Switching to {pendingSport ? getSportName(pendingSport) : ''} will reset all player positions and clear their statistics.
-              </Text>
-            </View>
-            <View>
-              <Pressable
-                onPress={confirmChangeSport}
-                className="flex-row items-center justify-center bg-amber-600 rounded-xl py-4 mb-3 active:bg-amber-700"
-              >
-                <Text className="text-white font-semibold">Change Sport</Text>
-              </Pressable>
-              <Pressable
-                onPress={cancelChangeSport}
-                className="flex-row items-center justify-center bg-slate-700 rounded-xl py-4 active:bg-slate-600"
-              >
-                <Text className="text-slate-300 font-semibold">Cancel</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
