@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Platform, Alert, Modal, TextInput, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, Platform, Alert, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -7,67 +7,56 @@ import { useState, useEffect, Component } from 'react';
 import type { ReactNode } from 'react';
 import {
   MapPin,
-  Clock,
   Users,
   ChevronLeft,
   CheckCircle2,
   XCircle,
   Circle,
   Navigation,
-  Shirt,
   Bell,
-  BellRing,
-  BellOff,
   Beer,
-  X,
   ChevronDown,
   ChevronUp,
   ChevronRight,
-  Pencil,
-  Check,
   Trash2,
-  Plus,
   UserPlus,
   ListOrdered,
   Send,
   Calendar,
-  StickyNote,
   FileText,
   Trophy,
   Minus,
   BarChart3,
-  Save,
+  Check,
   Eye,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
-import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, HockeyLineup, BasketballLineup, BaseballLineup, BattingOrderLineup, SoccerLineup, SoccerDiamondLineup, LacrosseLineup, getPlayerName, InviteReleaseOption, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, PlayerStats, GameLogEntry, getPlayerPositions } from '@/lib/store';
+import { useTeamStore, Player, SPORT_POSITION_NAMES, AppNotification, getPlayerName, Sport, HockeyGoalieStats, BaseballPitcherStats, PlayerStats, GameLogEntry, getPlayerPositions } from '@/lib/store';
 import { cn } from '@/lib/cn';
-import { supabase } from '@/lib/supabase';
 import { pushGameToSupabase, pushGameResponseToSupabase, pushNotificationToSupabase, pushPlayerToSupabase, deleteGameFromSupabase, pushTeamToSupabase, pushGameViewedToSupabase } from '@/lib/realtime-sync';
 import { sendPushToPlayers, scheduleGameReminderDayBefore, scheduleGameReminderHoursBefore } from '@/lib/notifications';
-import { AddressSearch } from '@/components/AddressSearch';
 import { JerseyIcon } from '@/components/JerseyIcon';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { LineupEditor } from '@/components/LineupEditor';
 import { hasAssignedPlayers } from '@/components/LineupViewer';
-import { BasketballLineupEditor, hasAssignedBasketballPlayers } from '@/components/BasketballLineupEditor';
-import { BasketballLineupViewer } from '@/components/BasketballLineupViewer';
-import { BaseballLineupEditor, hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
-import { BaseballLineupViewer } from '@/components/BaseballLineupViewer';
-import { BattingOrderLineupEditor, hasAssignedBattingOrder } from '@/components/BattingOrderLineupEditor';
-import { BattingOrderLineupViewer } from '@/components/BattingOrderLineupViewer';
-import { SoccerLineupEditor, hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
-import { SoccerLineupViewer } from '@/components/SoccerLineupViewer';
-import { SoccerDiamondLineupEditor, hasAssignedSoccerDiamondPlayers } from '@/components/SoccerDiamondLineupEditor';
-import { SoccerDiamondLineupViewer } from '@/components/SoccerDiamondLineupViewer';
-import { LacrosseLineupEditor, hasAssignedLacrossePlayers } from '@/components/LacrosseLineupEditor';
-import { LacrosseLineupViewer } from '@/components/LacrosseLineupViewer';
+import { hasAssignedBasketballPlayers } from '@/components/BasketballLineupEditor';
+import { hasAssignedBaseballPlayers } from '@/components/BaseballLineupEditor';
+import { hasAssignedBattingOrder } from '@/components/BattingOrderLineupEditor';
+import { hasAssignedSoccerPlayers } from '@/components/SoccerLineupEditor';
+import { hasAssignedSoccerDiamondPlayers } from '@/components/SoccerDiamondLineupEditor';
+import { hasAssignedLacrossePlayers } from '@/components/LacrosseLineupEditor';
+import { GameInlineEditModals } from '@/components/game/GameInlineEditModals';
+import { GameSettingsModal } from '@/components/game/GameSettingsModal';
+import { BeerDutyModal } from '@/components/game/BeerDutyModal';
+import { EditGameModal } from '@/components/game/EditGameModal';
+import { ReleaseInvitesModal } from '@/components/game/ReleaseInvitesModal';
+import { InvitePlayersModal } from '@/components/game/InvitePlayersModal';
+import { GameStatsModal, GameStatEditMode } from '@/components/game/GameStatsModal';
+import { SoccerFormationModal } from '@/components/game/SoccerFormationModal';
+import { LineupModals } from '@/components/game/LineupModals';
 
 // Error boundary to catch render crashes and show a useful error instead of black screen
 class GameScreenErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
@@ -170,9 +159,6 @@ const colorNameToHex = (name: string): string => {
   };
   return nameMap[name.toLowerCase()] || name;
 };
-
-// Edit mode type for game stats - determines which stats to show/edit
-type GameStatEditMode = 'batter' | 'pitcher' | 'skater' | 'goalie' | 'lacrosse' | 'lacrosse_goalie';
 
 // Check if player is a goalie (checks all positions)
 function isGoalie(position: string): boolean {
@@ -654,21 +640,6 @@ function GameDetailScreenInner() {
   const [isSoccerLineupExpanded, setIsSoccerLineupExpanded] = useState(false);
   const [isSoccerDiamondLineupExpanded, setIsSoccerDiamondLineupExpanded] = useState(false);
   const [isLacrosseLineupExpanded, setIsLacrosseLineupExpanded] = useState(false);
-
-  // Edit form state
-  const [editOpponent, setEditOpponent] = useState('');
-  const [editLocation, setEditLocation] = useState('');
-  const [editDate, setEditDate] = useState(new Date());
-  const [editTime, setEditTime] = useState(new Date());
-  const [editJersey, setEditJersey] = useState('');
-  const [editNotes, setEditNotes] = useState('');
-  const [editShowBeerDuty, setEditShowBeerDuty] = useState(true);
-  const [showEditDatePicker, setShowEditDatePicker] = useState(false);
-  const [showEditTimePicker, setShowEditTimePicker] = useState(false);
-  // Invite release edit state
-  const [editInviteReleaseOption, setEditInviteReleaseOption] = useState<InviteReleaseOption>('now');
-  const [editInviteReleaseDate, setEditInviteReleaseDate] = useState(new Date());
-  const [showEditInviteReleaseDatePicker, setShowEditInviteReleaseDatePicker] = useState(false);
 
   // Final score state
   const [scoreUs, setScoreUs] = useState('');
@@ -3364,1287 +3335,140 @@ function GameDetailScreenInner() {
         </ScrollView>
       </SafeAreaView>
 
-      {/* Game Settings Modal (Admin only) */}
-      <Modal
+      {/* ── Extracted modal components ── */}
+      <GameSettingsModal
         visible={isSettingsModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsSettingsModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsSettingsModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Game Settings</Text>
-              <View style={{ width: 24 }} />
-            </View>
+        onClose={() => setIsSettingsModalVisible(false)}
+        gameId={game.id}
+        onOpenEditModal={openEditModal}
+        onDeleteGame={handleDeleteGame}
+      />
 
-            <ScrollView className="flex-1 px-5 pt-6">
-              {/* Tip for inline editing */}
-              <View className="bg-slate-800/50 rounded-xl p-4 mb-4 border border-slate-700/50">
-                <Text className="text-slate-400 text-sm">
-                  Tap any field on the game screen to edit it directly.
-                </Text>
-              </View>
-
-              {/* Advanced Edit Button */}
-              <Pressable
-                onPress={openEditModal}
-                className="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/60"
-              >
-                <View className="flex-row items-center">
-                  <Pencil size={20} color="#67e8f9" />
-                  <View className="ml-3">
-                    <Text className="text-white font-semibold">Advanced Settings</Text>
-                    <Text className="text-slate-400 text-sm">Invite release, notes, refreshment duty</Text>
-                  </View>
-                </View>
-              </Pressable>
-
-              {/* Delete Game Button */}
-              {isAdmin() && (
-                <Pressable
-                  onPress={handleDeleteGame}
-                  className="bg-red-500/20 rounded-xl p-4 mb-4 border border-red-500/30 active:bg-red-500/30"
-                >
-                  <View className="flex-row items-center">
-                    <Trash2 size={20} color="#ef4444" />
-                    <View className="ml-3">
-                      <Text className="text-red-400 font-semibold">Delete Game</Text>
-                      <Text className="text-slate-400 text-sm">Permanently remove this game</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              )}
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Beer Duty Player Selection Modal */}
-      <Modal
+      <BeerDutyModal
         visible={isBeerDutyModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsBeerDutyModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsBeerDutyModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">
-                {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
-                  ? 'Assign Post Game Beer Duty'
-                  : 'Assign Refreshment Duty'}
-              </Text>
-              <View style={{ width: 24 }} />
-            </View>
+        onClose={() => setIsBeerDutyModalVisible(false)}
+        gameId={game.id}
+        onSelectPlayer={handleSelectBeerDutyPlayer}
+      />
 
-            <ScrollView className="flex-1 px-5 pt-4">
-              {/* None option to clear selection */}
-              <Pressable
-                onPress={() => handleSelectBeerDutyPlayer(undefined)}
-                className={cn(
-                  'flex-row items-center p-4 rounded-xl mb-2 border',
-                  !game.beerDutyPlayerId
-                    ? 'bg-slate-600/30 border-slate-500/50'
-                    : 'bg-slate-800/60 border-slate-700/50'
-                )}
-              >
-                <View className="w-11 h-11 rounded-full bg-slate-700 items-center justify-center">
-                  <X size={20} color="#94a3b8" />
-                </View>
-                <Text className="text-slate-300 font-semibold ml-3 flex-1">None</Text>
-                {!game.beerDutyPlayerId && (
-                  <CheckCircle2 size={24} color="#94a3b8" />
-                )}
-              </Pressable>
-
-              {allRosterPlayers.map((player) => (
-                <Pressable
-                  key={player.id}
-                  onPress={() => handleSelectBeerDutyPlayer(player.id)}
-                  className={cn(
-                    'flex-row items-center p-4 rounded-xl mb-2 border',
-                    game.beerDutyPlayerId === player.id
-                      ? 'bg-amber-500/20 border-amber-500/50'
-                      : 'bg-slate-800/60 border-slate-700/50'
-                  )}
-                >
-                  <PlayerAvatar player={player} size={44} />
-                  <View className="flex-1 ml-3">
-                    <Text className="text-white font-semibold">{getPlayerName(player)}</Text>
-                    {player.status === 'reserve' && (
-                      <Text className="text-slate-400 text-xs">Reserve</Text>
-                    )}
-                  </View>
-                  {game.beerDutyPlayerId === player.id && (
-                    <CheckCircle2 size={24} color="#f59e0b" />
-                  )}
-                </Pressable>
-              ))}
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Edit Game Modal */}
-      <Modal
+      <EditGameModal
         visible={isEditModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsEditModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEditModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Edit Game</Text>
-              <Pressable onPress={handleSaveEdit}>
-                <Text className="text-cyan-400 font-semibold">Save</Text>
-              </Pressable>
-            </View>
+        onClose={() => setIsEditModalVisible(false)}
+        gameId={game.id}
+      />
 
-            <ScrollView className="flex-1 px-5 pt-6">
-              {/* Opponent */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Opponent</Text>
-                <TextInput
-                  value={editOpponent}
-                  onChangeText={setEditOpponent}
-                  placeholder="e.g., Ice Wolves"
-                  placeholderTextColor="#64748b"
-                  autoCapitalize="words"
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                />
-              </View>
-
-              {/* Date */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Date</Text>
-                <Pressable
-                  onPress={() => setShowEditDatePicker(!showEditDatePicker)}
-                  className="bg-slate-800 rounded-xl px-4 py-3"
-                >
-                  <Text className="text-white text-lg">
-                    {format(editDate, 'EEEE, MMMM d, yyyy')}
-                  </Text>
-                </Pressable>
-                {showEditDatePicker && (
-                  <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
-                    <DateTimePicker
-                      value={editDate}
-                      mode="date"
-                      display="inline"
-                      onChange={(event, date) => {
-                        if (date) setEditDate(date);
-                        if (Platform.OS === 'android') setShowEditDatePicker(false);
-                      }}
-                      themeVariant="dark"
-                      accentColor="#67e8f9"
-                    />
-                  </View>
-                )}
-              </View>
-
-              {/* Time */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Time</Text>
-                <Pressable
-                  onPress={() => setShowEditTimePicker(!showEditTimePicker)}
-                  className="bg-slate-800 rounded-xl px-4 py-3"
-                >
-                  <Text className="text-white text-lg">
-                    {format(editTime, 'h:mm a')}
-                  </Text>
-                </Pressable>
-                {showEditTimePicker && (
-                  <View className="bg-slate-800 rounded-xl mt-2 overflow-hidden items-center">
-                    <DateTimePicker
-                      value={editTime}
-                      mode="time"
-                      display="spinner"
-                      onChange={(event, time) => {
-                        if (time) setEditTime(time);
-                        if (Platform.OS === 'android') setShowEditTimePicker(false);
-                      }}
-                      themeVariant="dark"
-                      accentColor="#67e8f9"
-                    />
-                  </View>
-                )}
-              </View>
-
-              {/* Location */}
-              <View className="mb-5" style={{ zIndex: 50 }}>
-                <Text className="text-slate-400 text-sm mb-2">Location</Text>
-                <AddressSearch
-                  value={editLocation}
-                  onChangeText={setEditLocation}
-                  placeholder="Search for a venue or address..."
-                />
-              </View>
-
-              {/* Jersey Color */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Jersey Color</Text>
-                <View className="flex-row flex-wrap">
-                  {teamSettings.jerseyColors.map((color) => (
-                    <Pressable
-                      key={color.name}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setEditJersey(color.name);
-                      }}
-                      className={cn(
-                        'flex-row items-center px-4 py-3 rounded-xl mr-2 mb-2 border',
-                        editJersey === color.name
-                          ? 'bg-cyan-500/20 border-cyan-500/50'
-                          : 'bg-slate-800 border-slate-700'
-                      )}
-                    >
-                      <View
-                        className="w-5 h-5 rounded-full mr-2 border border-white/30"
-                        style={{ backgroundColor: color.color }}
-                      />
-                      <Text
-                        className={cn(
-                          'font-medium',
-                          editJersey === color.name ? 'text-cyan-400' : 'text-slate-400'
-                        )}
-                      >
-                        {color.name}
-                      </Text>
-                      {editJersey === color.name && (
-                        <Check size={16} color="#67e8f9" style={{ marginLeft: 8 }} />
-                      )}
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
-              {/* Notes */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Notes (Optional)</Text>
-                <TextInput
-                  value={editNotes}
-                  onChangeText={setEditNotes}
-                  placeholder="Any additional info..."
-                  placeholderTextColor="#64748b"
-                  autoCapitalize="sentences"
-                  multiline
-                  numberOfLines={3}
-                  className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-                  style={{ minHeight: 80, textAlignVertical: 'top' }}
-                />
-              </View>
-
-              {/* Refreshment Duty Toggle - Only show if team setting is enabled */}
-              {teamSettings.showRefreshmentDuty !== false && (
-                <View className="mb-5">
-                  <View className="flex-row items-center justify-between bg-slate-800 rounded-xl p-4">
-                    <View className="flex-row items-center">
-                      {teamSettings.refreshmentDutyIs21Plus !== false ? (
-                        <Beer size={20} color="#f59e0b" />
-                      ) : (
-                        <JuiceBoxIcon size={20} color="#a855f7" />
-                      )}
-                      <Text className="text-white font-medium ml-3">
-                        {teamSettings.sport === 'hockey' && teamSettings.refreshmentDutyIs21Plus !== false
-                          ? 'Post Game Beer Duty'
-                          : 'Refreshment Duty'}
-                      </Text>
-                    </View>
-                    <Switch
-                      value={editShowBeerDuty}
-                      onValueChange={setEditShowBeerDuty}
-                      trackColor={{ false: '#334155', true: teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b40' : '#a855f740' }}
-                      thumbColor={editShowBeerDuty ? (teamSettings.refreshmentDutyIs21Plus !== false ? '#f59e0b' : '#a855f7') : '#64748b'}
-                    />
-                  </View>
-                </View>
-              )}
-
-              {/* Invite Release Options */}
-              <View className="mb-5">
-                <Text className="text-slate-400 text-sm mb-2">Invite Release</Text>
-                {game.invitesSent ? (
-                  <View className="bg-green-500/20 rounded-xl p-4 border border-green-500/30">
-                    <View className="flex-row items-center">
-                      <Check size={20} color="#22c55e" />
-                      <Text className="text-green-400 font-medium ml-2">Invites already sent</Text>
-                    </View>
-                    <Text className="text-slate-400 text-sm mt-1">
-                      Players have been notified about this game
-                    </Text>
-                  </View>
-                ) : (
-                  <View className="bg-slate-800/50 rounded-xl p-3">
-                    {/* Release Now Option */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setEditInviteReleaseOption('now');
-                        setShowEditInviteReleaseDatePicker(false);
-                      }}
-                      className={cn(
-                        'flex-row items-center p-3 rounded-xl mb-2 border',
-                        editInviteReleaseOption === 'now'
-                          ? 'bg-green-500/20 border-green-500/50'
-                          : 'bg-slate-700/50 border-slate-600'
-                      )}
-                    >
-                      <Send size={18} color={editInviteReleaseOption === 'now' ? '#22c55e' : '#64748b'} />
-                      <View className="ml-3 flex-1">
-                        <Text className={cn(
-                          'font-medium',
-                          editInviteReleaseOption === 'now' ? 'text-green-400' : 'text-slate-400'
-                        )}>
-                          Release invites now
-                        </Text>
-                        <Text className="text-slate-500 text-xs mt-0.5">
-                          Players will be notified on save
-                        </Text>
-                      </View>
-                      {editInviteReleaseOption === 'now' && <Check size={18} color="#22c55e" />}
-                    </Pressable>
-
-                    {/* Schedule Release Option */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setEditInviteReleaseOption('scheduled');
-                        setShowEditInviteReleaseDatePicker(true);
-                      }}
-                      className={cn(
-                        'flex-row items-center p-3 rounded-xl mb-2 border',
-                        editInviteReleaseOption === 'scheduled'
-                          ? 'bg-cyan-500/20 border-cyan-500/50'
-                          : 'bg-slate-700/50 border-slate-600'
-                      )}
-                    >
-                      <Bell size={18} color={editInviteReleaseOption === 'scheduled' ? '#22d3ee' : '#64748b'} />
-                      <View className="ml-3 flex-1">
-                        <Text className={cn(
-                          'font-medium',
-                          editInviteReleaseOption === 'scheduled' ? 'text-cyan-400' : 'text-slate-400'
-                        )}>
-                          Schedule release
-                        </Text>
-                        <Text className="text-slate-500 text-xs mt-0.5">
-                          Choose when to notify players
-                        </Text>
-                      </View>
-                      {editInviteReleaseOption === 'scheduled' && <Check size={18} color="#22d3ee" />}
-                    </Pressable>
-
-                    {/* Schedule Date/Time Picker */}
-                    {editInviteReleaseOption === 'scheduled' && (
-                      <View className="mt-2">
-                        <Pressable
-                          onPress={() => setShowEditInviteReleaseDatePicker(!showEditInviteReleaseDatePicker)}
-                          className="bg-slate-700/80 rounded-xl px-4 py-3"
-                        >
-                          <Text className="text-cyan-400 text-base">
-                            {format(editInviteReleaseDate, 'EEE, MMM d, yyyy h:mm a')}
-                          </Text>
-                        </Pressable>
-                        {showEditInviteReleaseDatePicker && (
-                          <View className="bg-slate-700/80 rounded-xl mt-2 overflow-hidden items-center">
-                            <DateTimePicker
-                              value={editInviteReleaseDate}
-                              mode="datetime"
-                              display="inline"
-                              onChange={(event, date) => {
-                                if (date) setEditInviteReleaseDate(date);
-                                if (Platform.OS === 'android') setShowEditInviteReleaseDatePicker(false);
-                              }}
-                              minimumDate={new Date()}
-                              themeVariant="dark"
-                              accentColor="#22d3ee"
-                            />
-                          </View>
-                        )}
-                      </View>
-                    )}
-
-                    {/* Don't Send Option */}
-                    <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setEditInviteReleaseOption('none');
-                        setShowEditInviteReleaseDatePicker(false);
-                      }}
-                      className={cn(
-                        'flex-row items-center p-3 rounded-xl border',
-                        editInviteReleaseOption === 'none'
-                          ? 'bg-slate-600/50 border-slate-500'
-                          : 'bg-slate-800/50 border-transparent'
-                      )}
-                    >
-                      <BellOff size={18} color={editInviteReleaseOption === 'none' ? '#94a3b8' : '#64748b'} />
-                      <View className="ml-3 flex-1">
-                        <Text className={cn(
-                          'font-medium',
-                          editInviteReleaseOption === 'none' ? 'text-slate-300' : 'text-slate-400'
-                        )}>
-                          Don't send invites
-                        </Text>
-                        <Text className="text-slate-500 text-xs mt-0.5">
-                          Send manually later
-                        </Text>
-                      </View>
-                      {editInviteReleaseOption === 'none' && <Check size={18} color="#94a3b8" />}
-                    </Pressable>
-                  </View>
-                )}
-              </View>
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Release Invites Modal */}
-      <Modal
+      <ReleaseInvitesModal
         visible={isReleaseInvitesModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsReleaseInvitesModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsReleaseInvitesModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Release Invites</Text>
-              <Pressable onPress={handleSaveReleaseInvites}>
-                <Check size={24} color="#22c55e" />
-              </Pressable>
-            </View>
+        onClose={() => setIsReleaseInvitesModalVisible(false)}
+        gameId={game.id}
+      />
 
-            <ScrollView className="flex-1 px-5 pt-6">
-              <View className="bg-slate-800/50 rounded-xl p-3">
-                {/* Release Now Option */}
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setEditInviteReleaseOption('now');
-                    setShowEditInviteReleaseDatePicker(false);
-                  }}
-                  className={cn(
-                    'flex-row items-center p-3 rounded-xl mb-2 border',
-                    editInviteReleaseOption === 'now'
-                      ? 'bg-green-500/20 border-green-500/50'
-                      : 'bg-slate-700/50 border-slate-600'
-                  )}
-                >
-                  <Send size={18} color={editInviteReleaseOption === 'now' ? '#22c55e' : '#64748b'} />
-                  <View className="ml-3 flex-1">
-                    <Text className={cn(
-                      'font-medium',
-                      editInviteReleaseOption === 'now' ? 'text-green-400' : 'text-slate-400'
-                    )}>
-                      Release invites now
-                    </Text>
-                    <Text className="text-slate-500 text-xs mt-0.5">
-                      Players will be notified immediately
-                    </Text>
-                  </View>
-                  {editInviteReleaseOption === 'now' && <Check size={18} color="#22c55e" />}
-                </Pressable>
-
-                {/* Schedule Release Option */}
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setEditInviteReleaseOption('scheduled');
-                    setShowEditInviteReleaseDatePicker(true);
-                  }}
-                  className={cn(
-                    'flex-row items-center p-3 rounded-xl mb-2 border',
-                    editInviteReleaseOption === 'scheduled'
-                      ? 'bg-cyan-500/20 border-cyan-500/50'
-                      : 'bg-slate-700/50 border-slate-600'
-                  )}
-                >
-                  <Bell size={18} color={editInviteReleaseOption === 'scheduled' ? '#22d3ee' : '#64748b'} />
-                  <View className="ml-3 flex-1">
-                    <Text className={cn(
-                      'font-medium',
-                      editInviteReleaseOption === 'scheduled' ? 'text-cyan-400' : 'text-slate-400'
-                    )}>
-                      Schedule release
-                    </Text>
-                    <Text className="text-slate-500 text-xs mt-0.5">
-                      Choose when to notify players
-                    </Text>
-                  </View>
-                  {editInviteReleaseOption === 'scheduled' && <Check size={18} color="#22d3ee" />}
-                </Pressable>
-
-                {/* Schedule Date/Time Picker */}
-                {editInviteReleaseOption === 'scheduled' && (
-                  <View className="mt-2 mb-2">
-                    <Pressable
-                      onPress={() => setShowEditInviteReleaseDatePicker(!showEditInviteReleaseDatePicker)}
-                      className="bg-slate-700/80 rounded-xl px-4 py-3"
-                    >
-                      <Text className="text-cyan-400 text-base">
-                        {format(editInviteReleaseDate, 'EEE, MMM d, yyyy h:mm a')}
-                      </Text>
-                    </Pressable>
-                    {showEditInviteReleaseDatePicker && (
-                      <View className="bg-slate-700/80 rounded-xl mt-2 overflow-hidden items-center">
-                        <DateTimePicker
-                          value={editInviteReleaseDate}
-                          mode="datetime"
-                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                          onChange={(evt, date) => {
-                            if (date) setEditInviteReleaseDate(date);
-                            if (Platform.OS === 'android') setShowEditInviteReleaseDatePicker(false);
-                          }}
-                          minimumDate={new Date()}
-                          themeVariant="dark"
-                          accentColor="#22d3ee"
-                        />
-                      </View>
-                    )}
-                  </View>
-                )}
-
-                {/* Don't Send Option */}
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setEditInviteReleaseOption('none');
-                    setShowEditInviteReleaseDatePicker(false);
-                  }}
-                  className={cn(
-                    'flex-row items-center p-3 rounded-xl border',
-                    editInviteReleaseOption === 'none'
-                      ? 'bg-slate-600/50 border-slate-500'
-                      : 'bg-slate-700/50 border-slate-600'
-                  )}
-                >
-                  <BellOff size={18} color={editInviteReleaseOption === 'none' ? '#94a3b8' : '#64748b'} />
-                  <View className="ml-3 flex-1">
-                    <Text className={cn(
-                      'font-medium',
-                      editInviteReleaseOption === 'none' ? 'text-slate-300' : 'text-slate-400'
-                    )}>
-                      Don't send invites
-                    </Text>
-                    <Text className="text-slate-500 text-xs mt-0.5">
-                      Send manually later
-                    </Text>
-                  </View>
-                  {editInviteReleaseOption === 'none' && <Check size={18} color="#94a3b8" />}
-                </Pressable>
-              </View>
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Invite More Players Modal */}
-      <Modal
+      <InvitePlayersModal
         visible={isInviteModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsInviteModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsInviteModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Invite Players</Text>
-              <View style={{ width: 24 }} />
-            </View>
-
-            <ScrollView className="flex-1 px-5 pt-6">
-              {uninvitedPlayers.length === 0 ? (
-                <View className="items-center py-8">
-                  <Users size={48} color="#64748b" />
-                  <Text className="text-slate-400 text-center mt-4">
-                    All players have been invited
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  {/* Quick Actions */}
-                  <View className="flex-row mb-4">
-                    {uninvitedActive.length > 0 && (
-                      <Pressable
-                        onPress={() => handleInviteMultiplePlayers(uninvitedActive.map((p) => p.id))}
-                        className="flex-1 py-3 rounded-xl mr-2 bg-green-500/20 border border-green-500/50 items-center"
-                      >
-                        <Text className="text-green-400 font-medium">
-                          Invite All Active ({uninvitedActive.length})
-                        </Text>
-                      </Pressable>
-                    )}
-                    {uninvitedReserve.length > 0 && (
-                      <Pressable
-                        onPress={() => handleInviteMultiplePlayers(uninvitedReserve.map((p) => p.id))}
-                        className="flex-1 py-3 rounded-xl bg-amber-500/20 border border-amber-500/50 items-center"
-                      >
-                        <Text className="text-amber-400 font-medium">
-                          Invite All Reserve ({uninvitedReserve.length})
-                        </Text>
-                      </Pressable>
-                    )}
-                  </View>
-
-                  {/* Uninvited Active Players */}
-                  {uninvitedActive.length > 0 && (
-                    <>
-                      <Text className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                        Active Players
-                      </Text>
-                      {uninvitedActive.map((player) => (
-                        <Pressable
-                          key={player.id}
-                          onPress={() => handleInvitePlayer(player.id)}
-                          className="flex-row items-center bg-slate-800/60 rounded-xl p-3 mb-2 border border-slate-700/50 active:bg-slate-700/80"
-                        >
-                          <PlayerAvatar player={player} size={44} />
-                          <View className="flex-1 ml-3">
-                            <Text className="text-white font-medium">{getPlayerName(player)}</Text>
-                            <Text className="text-slate-400 text-sm">#{player.number}</Text>
-                          </View>
-                          <View className="bg-cyan-500 rounded-lg px-3 py-1.5">
-                            <Text className="text-white font-medium text-sm">Invite</Text>
-                          </View>
-                        </Pressable>
-                      ))}
-                    </>
-                  )}
-
-                  {/* Uninvited Reserve Players */}
-                  {uninvitedReserve.length > 0 && (
-                    <>
-                      <Text className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-4">
-                        Reserve Players
-                      </Text>
-                      {uninvitedReserve.map((player) => (
-                        <Pressable
-                          key={player.id}
-                          onPress={() => handleInvitePlayer(player.id)}
-                          className="flex-row items-center bg-slate-800/60 rounded-xl p-3 mb-2 border border-slate-700/50 active:bg-slate-700/80"
-                        >
-                          <PlayerAvatar player={player} size={44} />
-                          <View className="flex-1 ml-3">
-                            <Text className="text-white font-medium">{getPlayerName(player)}</Text>
-                            <Text className="text-slate-400 text-sm">#{player.number}</Text>
-                          </View>
-                          <View className="bg-cyan-500 rounded-lg px-3 py-1.5">
-                            <Text className="text-white font-medium text-sm">Invite</Text>
-                          </View>
-                        </Pressable>
-                      ))}
-                    </>
-                  )}
-                </>
-              )}
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Lineup Editor Modal */}
-      <LineupEditor
-        visible={isLineupModalVisible}
-        onClose={() => setIsLineupModalVisible(false)}
-        onSave={handleSaveLineup}
-        initialLineup={game.lineup}
-        availablePlayers={checkedInPlayers}
+        onClose={() => setIsInviteModalVisible(false)}
+        gameId={game.id}
       />
 
-      {/* Basketball Lineup Editor Modal */}
-      <BasketballLineupEditor
-        visible={isBasketballLineupModalVisible}
-        onClose={() => setIsBasketballLineupModalVisible(false)}
-        onSave={handleSaveBasketballLineup}
-        initialLineup={game.basketballLineup}
-        availablePlayers={checkedInPlayers}
-      />
-
-      {/* Baseball Lineup Editor Modal */}
-      <BaseballLineupEditor
-        visible={isBaseballLineupModalVisible}
-        onClose={() => setIsBaseballLineupModalVisible(false)}
-        onSave={handleSaveBaseballLineup}
-        initialLineup={game.baseballLineup}
-        players={checkedInPlayers}
-        isSoftball={teamSettings.isSoftball}
-      />
-
-      {/* Soccer Lineup Editor Modal */}
-      <SoccerLineupEditor
-        visible={isSoccerLineupModalVisible}
-        onClose={() => setIsSoccerLineupModalVisible(false)}
-        onSave={handleSaveSoccerLineup}
-        initialLineup={game.soccerLineup}
-        players={checkedInPlayers}
-      />
-
-      {/* Soccer Diamond Lineup Editor Modal */}
-      <SoccerDiamondLineupEditor
-        visible={isSoccerDiamondLineupModalVisible}
-        onClose={() => setIsSoccerDiamondLineupModalVisible(false)}
-        onSave={handleSaveSoccerDiamondLineup}
-        initialLineup={game.soccerDiamondLineup}
-        players={checkedInPlayers}
-      />
-
-      {/* Lacrosse Lineup Editor Modal */}
-      <LacrosseLineupEditor
-        visible={isLacrosseLineupModalVisible}
-        onClose={() => setIsLacrosseLineupModalVisible(false)}
-        onSave={handleSaveLacrosseLineup}
-        initialLineup={game.lacrosseLineup}
-        availablePlayers={checkedInPlayers}
-      />
-
-      {/* Batting Order Lineup Editor Modal */}
-      {(teamSettings.sport === 'baseball' || teamSettings.sport === 'softball') && (
-        <BattingOrderLineupEditor
-          visible={isBattingOrderModalVisible}
-          onClose={() => setIsBattingOrderModalVisible(false)}
-          onSave={handleSaveBattingOrderLineup}
-          initialLineup={game.battingOrderLineup}
-          availablePlayers={checkedInPlayers}
-          sport={teamSettings.sport}
-        />
-      )}
-
-      {/* Soccer Formation Selector Modal */}
-      <Modal
-        visible={isSoccerFormationModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsSoccerFormationModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsSoccerFormationModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Choose Formation</Text>
-              <View style={{ width: 24 }} />
-            </View>
-
-            <ScrollView className="flex-1 px-5 pt-6">
-              {/* 4-4-2 Formation */}
-              <Pressable
-                onPress={() => handleSelectSoccerFormation('442')}
-                className={cn(
-                  'rounded-2xl p-5 mb-4 border',
-                  hasAssignedSoccerPlayers(game.soccerLineup)
-                    ? 'bg-emerald-500/20 border-emerald-500/50'
-                    : 'bg-slate-800/60 border-slate-700/50'
-                )}
-              >
-                <Text className="text-white text-lg font-semibold mb-2">4-4-2</Text>
-                <Text className="text-slate-400 text-sm mb-4">
-                  Classic formation with 4 defenders, 4 midfielders, and 2 strikers
-                </Text>
-                {/* Visual representation */}
-                <View className="bg-slate-700/30 rounded-xl p-4">
-                  {/* Strikers */}
-                  <View className="flex-row justify-center gap-6 mb-3">
-                    <View className="w-8 h-8 rounded-full bg-emerald-500/40 items-center justify-center">
-                      <Text className="text-emerald-400 text-[10px]">ST</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-emerald-500/40 items-center justify-center">
-                      <Text className="text-emerald-400 text-[10px]">ST</Text>
-                    </View>
-                  </View>
-                  {/* Midfield */}
-                  <View className="flex-row justify-around mb-3">
-                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
-                      <Text className="text-cyan-400 text-[10px]">LM</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
-                      <Text className="text-cyan-400 text-[10px]">CM</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
-                      <Text className="text-cyan-400 text-[10px]">CM</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
-                      <Text className="text-cyan-400 text-[10px]">RM</Text>
-                    </View>
-                  </View>
-                  {/* Defense */}
-                  <View className="flex-row justify-around mb-3">
-                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
-                      <Text className="text-amber-400 text-[10px]">LB</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
-                      <Text className="text-amber-400 text-[10px]">CB</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
-                      <Text className="text-amber-400 text-[10px]">CB</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
-                      <Text className="text-amber-400 text-[10px]">RB</Text>
-                    </View>
-                  </View>
-                  {/* GK */}
-                  <View className="items-center">
-                    <View className="w-10 h-10 rounded-full bg-purple-500/40 items-center justify-center">
-                      <Text className="text-purple-400 text-[10px]">GK</Text>
-                    </View>
-                  </View>
-                </View>
-                {hasAssignedSoccerPlayers(game.soccerLineup) && (
-                  <Text className="text-emerald-400 text-sm mt-3 text-center">Currently configured</Text>
-                )}
-              </Pressable>
-
-              {/* Diamond 4-1-2-1-2 Formation */}
-              <Pressable
-                onPress={() => handleSelectSoccerFormation('diamond')}
-                className={cn(
-                  'rounded-2xl p-5 mb-4 border',
-                  hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup)
-                    ? 'bg-emerald-500/20 border-emerald-500/50'
-                    : 'bg-slate-800/60 border-slate-700/50'
-                )}
-              >
-                <Text className="text-white text-lg font-semibold mb-2">Diamond 4-1-2-1-2</Text>
-                <Text className="text-slate-400 text-sm mb-4">
-                  Diamond midfield with CDM, LM, RM, and CAM
-                </Text>
-                {/* Visual representation */}
-                <View className="bg-slate-700/30 rounded-xl p-4">
-                  {/* Strikers */}
-                  <View className="flex-row justify-center gap-6 mb-3">
-                    <View className="w-8 h-8 rounded-full bg-emerald-500/40 items-center justify-center">
-                      <Text className="text-emerald-400 text-[10px]">ST</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-emerald-500/40 items-center justify-center">
-                      <Text className="text-emerald-400 text-[10px]">ST</Text>
-                    </View>
-                  </View>
-                  {/* CAM */}
-                  <View className="items-center mb-3">
-                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
-                      <Text className="text-cyan-400 text-[8px]">CAM</Text>
-                    </View>
-                  </View>
-                  {/* LM / RM */}
-                  <View className="flex-row justify-around mb-3">
-                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
-                      <Text className="text-cyan-400 text-[10px]">LM</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
-                      <Text className="text-cyan-400 text-[10px]">RM</Text>
-                    </View>
-                  </View>
-                  {/* CDM */}
-                  <View className="items-center mb-3">
-                    <View className="w-8 h-8 rounded-full bg-cyan-500/40 items-center justify-center">
-                      <Text className="text-cyan-400 text-[8px]">CDM</Text>
-                    </View>
-                  </View>
-                  {/* Defense */}
-                  <View className="flex-row justify-around mb-3">
-                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
-                      <Text className="text-amber-400 text-[10px]">LB</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
-                      <Text className="text-amber-400 text-[10px]">CB</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
-                      <Text className="text-amber-400 text-[10px]">CB</Text>
-                    </View>
-                    <View className="w-8 h-8 rounded-full bg-amber-500/40 items-center justify-center">
-                      <Text className="text-amber-400 text-[10px]">RB</Text>
-                    </View>
-                  </View>
-                  {/* GK */}
-                  <View className="items-center">
-                    <View className="w-10 h-10 rounded-full bg-purple-500/40 items-center justify-center">
-                      <Text className="text-purple-400 text-[10px]">GK</Text>
-                    </View>
-                  </View>
-                </View>
-                {hasAssignedSoccerDiamondPlayers(game.soccerDiamondLineup) && (
-                  <Text className="text-emerald-400 text-sm mt-3 text-center">Currently configured</Text>
-                )}
-              </Pressable>
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Inline Edit Opponent Modal */}
-      <Modal
-        visible={isEditOpponentModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsEditOpponentModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEditOpponentModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Edit Opponent</Text>
-              <Pressable onPress={handleSaveOpponent}>
-                <Check size={24} color="#22c55e" />
-              </Pressable>
-            </View>
-            <View className="flex-1 px-5 pt-6">
-              <Text className="text-slate-400 text-sm mb-2">Opponent Name</Text>
-              <TextInput
-                value={editOpponent}
-                onChangeText={setEditOpponent}
-                placeholder="e.g., Ice Wolves"
-                placeholderTextColor="#64748b"
-                autoCapitalize="words"
-                autoFocus
-                className="bg-slate-800 rounded-xl px-4 py-3 text-white text-lg"
-              />
-            </View>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Inline Edit Date Modal */}
-      <Modal
-        visible={isEditDateModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsEditDateModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEditDateModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Edit Date</Text>
-              <Pressable onPress={handleSaveDate}>
-                <Check size={24} color="#22c55e" />
-              </Pressable>
-            </View>
-            <View className="flex-1 px-5 pt-6 items-center">
-              <DateTimePicker
-                value={editDate}
-                mode="date"
-                display="inline"
-                onChange={(event, date) => {
-                  if (date) setEditDate(date);
-                }}
-                themeVariant="dark"
-                accentColor="#67e8f9"
-              />
-            </View>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Inline Edit Time Modal */}
-      <Modal
-        visible={isEditTimeModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsEditTimeModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEditTimeModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Edit Time</Text>
-              <Pressable onPress={handleSaveTime}>
-                <Check size={24} color="#22c55e" />
-              </Pressable>
-            </View>
-            <View className="flex-1 px-5 pt-6 items-center">
-              <DateTimePicker
-                value={editTime}
-                mode="time"
-                display="spinner"
-                onChange={(event, time) => {
-                  if (time) setEditTime(time);
-                }}
-                themeVariant="dark"
-                accentColor="#67e8f9"
-              />
-            </View>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Inline Edit Jersey Modal */}
-      <Modal
-        visible={isEditJerseyModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsEditJerseyModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEditJerseyModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Select Jersey</Text>
-              <View style={{ width: 24 }} />
-            </View>
-            <ScrollView className="flex-1 px-5 pt-4">
-              {teamSettings.jerseyColors.map((color) => (
-                <Pressable
-                  key={color.name}
-                  onPress={() => handleSaveJersey(color.name)}
-                  className={cn(
-                    'flex-row items-center p-4 rounded-xl mb-2 border',
-                    game.jerseyColor === color.name
-                      ? 'bg-cyan-500/20 border-cyan-500/50'
-                      : 'bg-slate-800/60 border-slate-700/50'
-                  )}
-                >
-                  <View
-                    className="w-10 h-10 rounded-full mr-3 border-2 border-white/30"
-                    style={{ backgroundColor: color.color }}
-                  />
-                  <Text
-                    className={cn(
-                      'font-semibold flex-1',
-                      game.jerseyColor === color.name ? 'text-cyan-400' : 'text-white'
-                    )}
-                  >
-                    {color.name}
-                  </Text>
-                  {game.jerseyColor === color.name && (
-                    <CheckCircle2 size={24} color="#67e8f9" />
-                  )}
-                </Pressable>
-              ))}
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Inline Edit Location Modal */}
-      <Modal
-        visible={isEditLocationModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsEditLocationModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEditLocationModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Edit Location</Text>
-              <Pressable onPress={handleSaveLocation}>
-                <Check size={24} color="#22c55e" />
-              </Pressable>
-            </View>
-            <View className="flex-1 px-5 pt-6" style={{ zIndex: 50 }}>
-              <Text className="text-slate-400 text-sm mb-2">Venue or Address</Text>
-              <AddressSearch
-                value={editLocation}
-                onChangeText={setEditLocation}
-                placeholder="Search for a venue or address..."
-              />
-            </View>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Inline Edit Notes Modal */}
-      <Modal
-        visible={isEditNotesModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsEditNotesModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1">
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable onPress={() => setIsEditNotesModalVisible(false)}>
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Edit Notes</Text>
-              <Pressable onPress={() => {
-                updateGameAndSync(game.id, { notes: editNotes.trim() });
-                setIsEditNotesModalVisible(false);
-              }}>
-                <Check size={24} color="#22c55e" />
-              </Pressable>
-            </View>
-            <View className="flex-1 px-5 pt-6">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-slate-400 text-sm">Notes</Text>
-                <Text className={cn(
-                  "text-sm",
-                  editNotes.length > 30 ? "text-red-500" : "text-slate-500"
-                )}>{editNotes.length}/30</Text>
-              </View>
-              <TextInput
-                value={editNotes}
-                onChangeText={(text) => {
-                  if (text.length <= 30) {
-                    setEditNotes(text);
-                  }
-                }}
-                placeholder="Add a short note..."
-                placeholderTextColor="#64748b"
-                maxLength={30}
-                className="bg-slate-800 rounded-xl p-4 text-white text-base"
-                autoFocus
-              />
-            </View>
-          </SafeAreaView>
-        </View>
-      </Modal>
-
-      {/* Game Stats Modal */}
-      <Modal
+      <GameStatsModal
         visible={isGameStatsModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsGameStatsModalVisible(false)}
-      >
-        <View className="flex-1 bg-slate-900">
-          <SafeAreaView className="flex-1" edges={['top']}>
-            {/* Header */}
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-              <Pressable
-                onPress={() => setIsGameStatsModalVisible(false)}
-                className="w-10 h-10 rounded-full bg-slate-800 items-center justify-center"
-              >
-                <X size={24} color="#64748b" />
-              </Pressable>
-              <Text className="text-white text-lg font-semibold">Game Stats</Text>
-              <Pressable
-                onPress={saveGameStats}
-                className="w-10 h-10 rounded-full bg-violet-500 items-center justify-center"
-              >
-                <Check size={24} color="#fff" />
-              </Pressable>
-            </View>
+        onClose={() => setIsGameStatsModalVisible(false)}
+        gameId={game.id}
+        selectedStatsPlayer={selectedStatsPlayer}
+        gameStatsEditMode={gameStatsEditMode}
+        editGameStats={editGameStats}
+        setEditGameStats={setEditGameStats}
+        onSaved={() => {
+          setIsGameStatsModalVisible(false);
+          setSelectedStatsPlayer(null);
+        }}
+      />
 
-            <ScrollView className="flex-1 px-5 pt-4" keyboardShouldPersistTaps="handled">
-              {/* Player Info */}
-              {selectedStatsPlayer && (
-                <View className="flex-row items-center bg-slate-800/60 rounded-xl p-3 mb-4">
-                  <PlayerAvatar player={selectedStatsPlayer} size={48} borderWidth={2} borderColor="#8b5cf6" />
-                  <View className="flex-1 ml-3">
-                    <Text className="text-white text-base font-semibold">
-                      {selectedStatsPlayer.firstName} {selectedStatsPlayer.lastName}
-                    </Text>
-                    <Text className="text-slate-400 text-sm">#{selectedStatsPlayer.number}</Text>
-                  </View>
-                  <View className="bg-violet-500/20 px-3 py-1.5 rounded-lg">
-                    <Text className="text-violet-400 text-xs font-medium">
-                      {gameStatsEditMode === 'skater'
-                        ? (teamSettings.sport === 'hockey' ? 'Skater' : 'Player')
-                        : gameStatsEditMode === 'lacrosse_goalie'
-                          ? 'Goalie'
-                          : gameStatsEditMode === 'lacrosse'
-                            ? 'Player'
-                            : gameStatsEditMode === 'batter'
-                              ? (teamSettings.sport === 'basketball' ? 'Player' : 'Batter')
-                              : gameStatsEditMode.charAt(0).toUpperCase() + gameStatsEditMode.slice(1)}
-                    </Text>
-                  </View>
-                </View>
-              )}
+      <SoccerFormationModal
+        visible={isSoccerFormationModalVisible}
+        onClose={() => setIsSoccerFormationModalVisible(false)}
+        gameId={game.id}
+        onSelectFormation={handleSelectSoccerFormation}
+      />
 
-              {/* Game Info */}
-              <View className="bg-slate-800/40 rounded-xl p-3 mb-4">
-                <View className="flex-row items-center">
-                  <Calendar size={16} color="#64748b" />
-                  <Text className="text-slate-400 text-sm ml-2">
-                    vs {game.opponent} • {format(parseISO(game.date), 'MMM d, yyyy')}
-                  </Text>
-                </View>
-              </View>
+      <GameInlineEditModals
+        isEditOpponentModalVisible={isEditOpponentModalVisible}
+        isEditDateModalVisible={isEditDateModalVisible}
+        isEditTimeModalVisible={isEditTimeModalVisible}
+        isEditJerseyModalVisible={isEditJerseyModalVisible}
+        isEditLocationModalVisible={isEditLocationModalVisible}
+        isEditNotesModalVisible={isEditNotesModalVisible}
+        onCloseOpponent={() => setIsEditOpponentModalVisible(false)}
+        onCloseDate={() => setIsEditDateModalVisible(false)}
+        onCloseTime={() => setIsEditTimeModalVisible(false)}
+        onCloseJersey={() => setIsEditJerseyModalVisible(false)}
+        onCloseLocation={() => setIsEditLocationModalVisible(false)}
+        onCloseNotes={() => setIsEditNotesModalVisible(false)}
+        gameId={game.id}
+        initialOpponent={game.opponent}
+        initialDate={parseISO(game.date)}
+        initialTime={(() => {
+          const [time, period] = game.time.split(' ');
+          const [hours, minutes] = time.split(':').map(Number);
+          const d = new Date();
+          let hour = hours;
+          if (period === 'PM' && hours !== 12) hour += 12;
+          if (period === 'AM' && hours === 12) hour = 0;
+          d.setHours(hour, minutes, 0, 0);
+          return d;
+        })()}
+        currentJerseyColor={game.jerseyColor}
+        initialLocation={game.address ? `${game.location}, ${game.address}` : game.location}
+        initialNotes={game.notes || ''}
+        onSaveOpponent={(opponent) => {
+          updateGameAndSync(game.id, { opponent });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setIsEditOpponentModalVisible(false);
+        }}
+        onSaveDate={(date) => {
+          updateGameAndSync(game.id, { date: date.toISOString() });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setIsEditDateModalVisible(false);
+        }}
+        onSaveTime={(time) => {
+          updateGameAndSync(game.id, { time: format(time, 'h:mm a') });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setIsEditTimeModalVisible(false);
+        }}
+        onSaveJersey={(color) => {
+          updateGameAndSync(game.id, { jerseyColor: color });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setIsEditJerseyModalVisible(false);
+        }}
+        onSaveLocation={(location) => {
+          updateGameAndSync(game.id, { location, address: '' });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setIsEditLocationModalVisible(false);
+        }}
+        onSaveNotes={(notes) => {
+          updateGameAndSync(game.id, { notes });
+          setIsEditNotesModalVisible(false);
+        }}
+      />
 
-              {/* Stat Fields */}
-              <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-                Enter Stats
-              </Text>
+      <LineupModals
+        gameId={game.id}
+        isLineupModalVisible={isLineupModalVisible}
+        onCloseLineup={() => setIsLineupModalVisible(false)}
+        isBasketballLineupModalVisible={isBasketballLineupModalVisible}
+        onCloseBasketballLineup={() => setIsBasketballLineupModalVisible(false)}
+        isBaseballLineupModalVisible={isBaseballLineupModalVisible}
+        onCloseBaseballLineup={() => setIsBaseballLineupModalVisible(false)}
+        isSoccerLineupModalVisible={isSoccerLineupModalVisible}
+        onCloseSoccerLineup={() => setIsSoccerLineupModalVisible(false)}
+        isSoccerDiamondLineupModalVisible={isSoccerDiamondLineupModalVisible}
+        onCloseSoccerDiamondLineup={() => setIsSoccerDiamondLineupModalVisible(false)}
+        isLacrosseLineupModalVisible={isLacrosseLineupModalVisible}
+        onCloseLacrosseLineup={() => setIsLacrosseLineupModalVisible(false)}
+        isBattingOrderModalVisible={isBattingOrderModalVisible}
+        onCloseBattingOrder={() => setIsBattingOrderModalVisible(false)}
+      />
 
-              {currentGameStatFields.map((field) => (
-                <View key={field.key} className="mb-3">
-                  <Text className="text-slate-400 text-xs mb-1.5">{field.label}</Text>
-                  {field.key === 'plusMinus' ? (
-                    // Special +/- control with increment/decrement buttons
-                    <View className="flex-row items-center">
-                      <Pressable
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          const current = parseInt(editGameStats[field.key] || '0', 10) || 0;
-                          setEditGameStats({ ...editGameStats, [field.key]: String(current - 1) });
-                        }}
-                        className="bg-red-500/20 border border-red-500/50 rounded-lg w-14 h-11 items-center justify-center active:bg-red-500/40"
-                      >
-                        <Text className="text-red-400 text-xl font-bold">−</Text>
-                      </Pressable>
-                      <View className="flex-1 mx-2 bg-slate-800 rounded-lg px-3 py-2 border border-slate-700 items-center">
-                        <Text className="text-white text-lg font-semibold">
-                          {(() => {
-                            const val = parseInt(editGameStats[field.key] || '0', 10) || 0;
-                            return val > 0 ? `+${val}` : String(val);
-                          })()}
-                        </Text>
-                      </View>
-                      <Pressable
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          const current = parseInt(editGameStats[field.key] || '0', 10) || 0;
-                          setEditGameStats({ ...editGameStats, [field.key]: String(current + 1) });
-                        }}
-                        className="bg-green-500/20 border border-green-500/50 rounded-lg w-14 h-11 items-center justify-center active:bg-green-500/40"
-                      >
-                        <Text className="text-green-400 text-xl font-bold">+</Text>
-                      </Pressable>
-                    </View>
-                  ) : (
-                    <TextInput
-                      className="bg-slate-800 rounded-lg px-3 py-2.5 text-white text-base border border-slate-700"
-                      value={editGameStats[field.key] === '0' ? '' : editGameStats[field.key]}
-                      onChangeText={(text) => setEditGameStats({ ...editGameStats, [field.key]: text.replace(/[^0-9-]/g, '') || '0' })}
-                      keyboardType="number-pad"
-                      placeholder="0"
-                      placeholderTextColor="#64748b"
-                    />
-                  )}
-                </View>
-              ))}
-
-              {/* Save Button */}
-              <Pressable
-                onPress={saveGameStats}
-                className="bg-violet-500 rounded-xl py-3.5 items-center mt-4 mb-8 active:bg-violet-600"
-              >
-                <Text className="text-white text-base font-semibold">Save Stats</Text>
-              </Pressable>
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </Modal>
+      {/* SENTINEL — end of extracted modals */}
     </View>
   );
 }
