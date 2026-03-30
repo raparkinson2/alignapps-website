@@ -46,6 +46,7 @@ import * as Notifications from 'expo-notifications';
 import * as Clipboard from 'expo-clipboard';
 import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials, TeamLink } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { toast } from '@/lib/toast';
 import { secureResetPassword } from '@/lib/secure-auth';
@@ -1040,7 +1041,7 @@ export default function MoreScreen() {
   const removeTeamLink = useTeamStore((s) => s.removeTeamLink);
 
   // Multi-team support
-  const teams = useTeamStore((s) => s.teams);
+  const teams = useTeamStore(useShallow((s) => s.teams));
   const userEmail = useTeamStore((s) => s.userEmail);
   const userPhone = useTeamStore((s) => s.userPhone);
   const setPendingTeamSelection = useTeamStore((s) => s.setPendingTeamSelection);

@@ -10,6 +10,7 @@ import { useEffect, useState, useRef } from 'react';
 import { AppState, AppStateStatus, Platform, Linking, Modal, View, Text, Pressable } from 'react-native';
 import { Bell } from 'lucide-react-native';
 import { AppToast } from '@/components/ui/AppToast';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
@@ -678,16 +679,18 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <KeyboardProvider>
-            <StatusBar style="light" translucent backgroundColor="transparent" />
-            <RootLayoutNav />
-            <AppToast />
-          </KeyboardProvider>
-        </GestureHandlerRootView>
-      </SafeAreaProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <KeyboardProvider>
+              <StatusBar style="light" translucent backgroundColor="transparent" />
+              <RootLayoutNav />
+              <AppToast />
+            </KeyboardProvider>
+          </GestureHandlerRootView>
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

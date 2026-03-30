@@ -15,6 +15,7 @@ import {
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { pushPaymentPeriodToSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
@@ -36,7 +37,7 @@ import { StripeDisclosureModal } from '@/components/payments/StripeModals';
 
 export default function PaymentsScreen() {
   const players = useTeamStore((s) => s.players);
-  const teamSettings = useTeamStore((s) => s.teamSettings);
+  const teamSettings = useTeamStore(useShallow((s) => s.teamSettings));
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const paymentPeriods = useTeamStore((s) => s.paymentPeriods);
   const removePaymentPeriod = useTeamStore((s) => s.removePaymentPeriod);

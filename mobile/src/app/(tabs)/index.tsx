@@ -1,10 +1,10 @@
-import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, FlatList } from 'react-native';
 import * as Device from 'expo-device';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Calendar,
   Plus,
@@ -17,6 +17,7 @@ import {
 import Animated, { FadeInDown, FadeInRight, useAnimatedStyle, useSharedValue, withRepeat, withTiming, cancelAnimation } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Game, TeamRecord, Sport, UpcomingGamesViewMode, Poll } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { deleteGameFromSupabase } from '@/lib/realtime-sync';
@@ -30,6 +31,8 @@ import { CalendarView } from '@/components/home/CalendarView';
 import { CreateGameEventModal } from '@/components/home/CreateGameEventModal';
 import { EditRecordModal } from '@/components/home/EditRecordModal';
 import { LineupViewerModals } from '@/components/home/LineupViewerModals';
+
+import type { Event } from '@/lib/store';
 
 // Format team record based on sport
 const formatTeamRecord = (record: TeamRecord | undefined, sport: Sport): string => {
@@ -68,13 +71,20 @@ const getRecordLabel = (sport: Sport): string => {
   }
 };
 
+// Typed union for FlatList items
+type ListItem =
+  | { kind: 'loading'; id: string }
+  | { kind: 'empty' }
+  | { kind: 'game'; game: Game; gameIndex: number }
+  | { kind: 'event'; event: Event; eventIndex: number };
+
 export default function ScheduleScreen() {
   const router = useRouter();
   const teamName = useTeamStore((s) => s.teamName);
   const games = useTeamStore((s) => s.games);
   const events = useTeamStore((s) => s.events);
   const players = useTeamStore((s) => s.players);
-  const teamSettings = useTeamStore((s) => s.teamSettings);
+  const teamSettings = useTeamStore(useShallow((s) => s.teamSettings));
   const isSyncing = useTeamStore((s) => s.isSyncing);
   const removeGame = useTeamStore((s) => s.removeGame);
   const removeEvent = useTeamStore((s) => s.removeEvent);
@@ -186,6 +196,226 @@ export default function ScheduleScreen() {
     return eventDate >= today;
   });
 
+  // Build FlatList data from games + events (or loading/empty states)
+  const listData = useMemo<ListItem[]>(() => {
+    if (upcomingGames.length === 0 && upcomingEvents.length === 0) {
+      if (isSyncing) {
+        return [
+          { kind: 'loading', id: 'skeleton-0' },
+          { kind: 'loading', id: 'skeleton-1' },
+          { kind: 'loading', id: 'skeleton-2' },
+        ];
+      }
+      return [{ kind: 'empty' }];
+    }
+    const items: ListItem[] = [];
+    upcomingGames.forEach((game, gameIndex) => {
+      items.push({ kind: 'game', game, gameIndex });
+    });
+    upcomingEvents.forEach((event, eventIndex) => {
+      items.push({ kind: 'event', event, eventIndex });
+    });
+    return items;
+  }, [upcomingGames, upcomingEvents, isSyncing]);
+
+  const keyExtractor = useCallback((item: ListItem) => {
+    if (item.kind === 'loading') return item.id;
+    if (item.kind === 'empty') return 'empty';
+    if (item.kind === 'game') return `game-${item.game.id}`;
+    return `event-${item.event.id}`;
+  }, []);
+
+  const renderItem = useCallback(({ item }: { item: ListItem }) => {
+    if (item.kind === 'loading') {
+      return (
+        <Animated.View style={[skeletonStyle, { height: 100, borderRadius: 16, backgroundColor: '#1e293b', marginBottom: 12 }]} />
+      );
+    }
+
+    if (item.kind === 'empty') {
+      return (
+        <View className="bg-slate-800/50 rounded-2xl p-8 items-center">
+          <Calendar size={48} color="#475569" />
+          <Text className="text-slate-400 text-center mt-4">
+            Nothing scheduled
+          </Text>
+          {canManageTeam() && (
+            <Pressable
+              onPress={() => {
+                setModalInitialDate(undefined);
+                setIsModalVisible(true);
+              }}
+              className="mt-4 bg-cyan-500 rounded-xl px-6 py-3"
+            >
+              <Text className="text-white font-semibold">Add Game or Event</Text>
+            </Pressable>
+          )}
+        </View>
+      );
+    }
+
+    if (item.kind === 'game') {
+      const { game, gameIndex } = item;
+      return (
+        <View
+          style={isTablet && columns >= 2 ? {
+            width: columns >= 3 ? '33.33%' : '50%',
+            paddingHorizontal: 6,
+            marginBottom: 12,
+          } : undefined}
+        >
+          <SwipeableGameRow
+            game={game}
+            index={gameIndex}
+            onPress={() => router.push(`/game/${game.id}`)}
+            onViewLines={() => setLineupViewerGame(game)}
+            canDelete={canManageTeam()}
+            onDelete={() => {
+              Alert.alert(
+                'Delete Game',
+                `Are you sure you want to delete the game vs ${game.opponent}?`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                      removeGame(game.id);
+                      deleteGameFromSupabase(game.id);
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    },
+                  },
+                ]
+              );
+            }}
+          />
+        </View>
+      );
+    }
+
+    // kind === 'event'
+    const { event, eventIndex } = item;
+    return (
+      <View
+        style={isTablet && columns >= 2 ? {
+          width: columns >= 3 ? '33.33%' : '50%',
+          paddingHorizontal: 6,
+          marginBottom: 12,
+        } : undefined}
+      >
+        <SwipeableEventRow
+          event={event}
+          index={eventIndex}
+          onPress={() => router.push(`/event/${event.id}`)}
+          canDelete={canManageTeam()}
+          onDelete={() => {
+            Alert.alert(
+              'Delete Event',
+              `Are you sure you want to delete "${event.title}"?`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: () => {
+                    removeEvent(event.id);
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  },
+                },
+              ]
+            );
+          }}
+        />
+      </View>
+    );
+  }, [isTablet, columns, canManageTeam, removeGame, removeEvent, router, skeletonStyle, setLineupViewerGame]);
+
+  // Poll banner + view toggle — used as ListHeaderComponent and in calendar scroll header
+  const listHeader = (
+    <>
+      {/* Active Poll Banner */}
+      {uniqueUnansweredPolls.length > 0 && (
+        <Animated.View entering={FadeInDown.delay(30).springify()} className="mb-4">
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/polls');
+            }}
+            className="rounded-2xl overflow-hidden active:opacity-80"
+            style={{ borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}
+          >
+            <LinearGradient
+              colors={['rgba(245,158,11,0.18)', 'rgba(245,158,11,0.08)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: 14, flexDirection: 'row', alignItems: 'center' }}
+            >
+              <View className="w-9 h-9 rounded-full bg-amber-500/20 items-center justify-center mr-3">
+                <BarChart3 size={18} color="#f59e0b" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-amber-300 font-bold text-sm">
+                  {uniqueUnansweredPolls.length === 1 ? 'Vote Now' : `${uniqueUnansweredPolls.length} Polls Need Your Vote`}
+                </Text>
+                <Text className="text-amber-300/60 text-xs mt-0.5">
+                  {uniqueUnansweredPolls.length === 1
+                    ? uniqueUnansweredPolls[0]?.groupName || uniqueUnansweredPolls[0]?.question || 'Tap to vote'
+                    : 'Tap to see all active polls'}
+                </Text>
+              </View>
+              <View className="bg-amber-500 rounded-full w-6 h-6 items-center justify-center ml-2">
+                <Text className="text-white text-xs font-bold">{uniqueUnansweredPolls.length}</Text>
+              </View>
+            </LinearGradient>
+          </Pressable>
+        </Animated.View>
+      )}
+
+      <View className="flex-row items-center justify-between mb-4">
+        <View className="flex-row items-center">
+          <Calendar size={18} color="#67e8f9" />
+          <Text className="text-cyan-400 text-lg font-semibold ml-2">
+            Upcoming
+          </Text>
+        </View>
+
+        {/* View Toggle — hidden on tablet (always Month view) */}
+        {!isTablet && (
+          <View className="flex-row bg-slate-800/80 rounded-xl p-1">
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setViewMode('list');
+                setTeamSettings({ upcomingGamesViewMode: 'list' });
+              }}
+              className={cn(
+                'flex-row items-center px-3 py-1.5 rounded-lg',
+                effectiveViewMode === 'list' && 'bg-cyan-500/30'
+              )}
+            >
+              <List size={16} color={effectiveViewMode === 'list' ? '#67e8f9' : '#64748b'} strokeWidth={effectiveViewMode === 'list' ? 2.5 : 2} />
+              <Text className={cn('text-xs font-medium ml-1.5', effectiveViewMode === 'list' ? 'text-cyan-300' : 'text-slate-500')}>List</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setViewMode('calendar');
+                setTeamSettings({ upcomingGamesViewMode: 'calendar' });
+              }}
+              className={cn(
+                'flex-row items-center px-3 py-1.5 rounded-lg',
+                effectiveViewMode === 'calendar' && 'bg-cyan-500/30'
+              )}
+            >
+              <CalendarDays size={16} color={effectiveViewMode === 'calendar' ? '#67e8f9' : '#64748b'} strokeWidth={effectiveViewMode === 'calendar' ? 2.5 : 2} />
+              <Text className={cn('text-xs font-medium ml-1.5', effectiveViewMode === 'calendar' ? 'text-cyan-300' : 'text-slate-500')}>Month</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+    </>
+  );
+
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
@@ -245,202 +475,25 @@ export default function ScheduleScreen() {
         </Animated.View>
 
         {/* Schedule Section */}
-        <ScrollView
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
-        >
-          {/* Active Poll Banner */}
-          {uniqueUnansweredPolls.length > 0 && (
-            <Animated.View entering={FadeInDown.delay(30).springify()} className="mb-4">
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  router.push('/polls');
-                }}
-                className="rounded-2xl overflow-hidden active:opacity-80"
-                style={{ borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}
-              >
-                <LinearGradient
-                  colors={['rgba(245,158,11,0.18)', 'rgba(245,158,11,0.08)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{ padding: 14, flexDirection: 'row', alignItems: 'center' }}
-                >
-                  <View className="w-9 h-9 rounded-full bg-amber-500/20 items-center justify-center mr-3">
-                    <BarChart3 size={18} color="#f59e0b" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-amber-300 font-bold text-sm">
-                      {uniqueUnansweredPolls.length === 1 ? 'Vote Now' : `${uniqueUnansweredPolls.length} Polls Need Your Vote`}
-                    </Text>
-                    <Text className="text-amber-300/60 text-xs mt-0.5">
-                      {uniqueUnansweredPolls.length === 1
-                        ? uniqueUnansweredPolls[0]?.groupName || uniqueUnansweredPolls[0]?.question || 'Tap to vote'
-                        : 'Tap to see all active polls'}
-                    </Text>
-                  </View>
-                  <View className="bg-amber-500 rounded-full w-6 h-6 items-center justify-center ml-2">
-                    <Text className="text-white text-xs font-bold">{uniqueUnansweredPolls.length}</Text>
-                  </View>
-                </LinearGradient>
-              </Pressable>
-            </Animated.View>
-          )}
-
-          <View className="flex-row items-center justify-between mb-4">
-            <View className="flex-row items-center">
-              <Calendar size={18} color="#67e8f9" />
-              <Text className="text-cyan-400 text-lg font-semibold ml-2">
-                Upcoming
-              </Text>
-            </View>
-
-            {/* View Toggle — hidden on tablet (always Month view) */}
-            {!isTablet && (
-            <View className="flex-row bg-slate-800/80 rounded-xl p-1">
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setViewMode('list');
-                  setTeamSettings({ upcomingGamesViewMode: 'list' });
-                }}
-                className={cn(
-                  'flex-row items-center px-3 py-1.5 rounded-lg',
-                  effectiveViewMode === 'list' && 'bg-cyan-500/30'
-                )}
-              >
-                <List size={16} color={effectiveViewMode === 'list' ? '#67e8f9' : '#64748b'} strokeWidth={effectiveViewMode === 'list' ? 2.5 : 2} />
-                <Text className={cn('text-xs font-medium ml-1.5', effectiveViewMode === 'list' ? 'text-cyan-300' : 'text-slate-500')}>List</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setViewMode('calendar');
-                  setTeamSettings({ upcomingGamesViewMode: 'calendar' });
-                }}
-                className={cn(
-                  'flex-row items-center px-3 py-1.5 rounded-lg',
-                  effectiveViewMode === 'calendar' && 'bg-cyan-500/30'
-                )}
-              >
-                <CalendarDays size={16} color={effectiveViewMode === 'calendar' ? '#67e8f9' : '#64748b'} strokeWidth={effectiveViewMode === 'calendar' ? 2.5 : 2} />
-                <Text className={cn('text-xs font-medium ml-1.5', effectiveViewMode === 'calendar' ? 'text-cyan-300' : 'text-slate-500')}>Month</Text>
-              </Pressable>
-            </View>
-            )}
-          </View>
-
-          {effectiveViewMode === 'list' ? (
-            <>
-              {upcomingGames.length === 0 && upcomingEvents.length === 0 ? (
-                isSyncing ? (
-                  <View className="gap-3">
-                    {[0, 1, 2].map((i) => (
-                      <Animated.View key={i} style={[skeletonStyle, { height: 100, borderRadius: 16, backgroundColor: '#1e293b' }]} />
-                    ))}
-                  </View>
-                ) : (
-                <View className="bg-slate-800/50 rounded-2xl p-8 items-center">
-                  <Calendar size={48} color="#475569" />
-                  <Text className="text-slate-400 text-center mt-4">
-                    Nothing scheduled
-                  </Text>
-                  {canManageTeam() && (
-                    <Pressable
-                      onPress={() => {
-                        setModalInitialDate(undefined);
-                        setIsModalVisible(true);
-                      }}
-                      className="mt-4 bg-cyan-500 rounded-xl px-6 py-3"
-                    >
-                      <Text className="text-white font-semibold">Add Game or Event</Text>
-                    </Pressable>
-                  )}
-                </View>
-                )
-              ) : (
-                <>
-                  {/* Games - Grid on iPad */}
-                  <View className={isTablet && columns >= 2 ? 'flex-row flex-wrap' : ''} style={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}>
-                    {upcomingGames.map((game, index) => (
-                      <View
-                        key={game.id}
-                        style={isTablet && columns >= 2 ? {
-                          width: columns >= 3 ? '33.33%' : '50%',
-                          paddingHorizontal: 6,
-                          marginBottom: 12
-                        } : undefined}
-                      >
-                        <SwipeableGameRow
-                          game={game}
-                          index={index}
-                          onPress={() => router.push(`/game/${game.id}`)}
-                          onViewLines={() => setLineupViewerGame(game)}
-                          canDelete={canManageTeam()}
-                          onDelete={() => {
-                            Alert.alert(
-                              'Delete Game',
-                              `Are you sure you want to delete the game vs ${game.opponent}?`,
-                              [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                  text: 'Delete',
-                                  style: 'destructive',
-                                  onPress: () => {
-                                    removeGame(game.id);
-                                    deleteGameFromSupabase(game.id);
-                                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                                  },
-                                },
-                              ]
-                            );
-                          }}
-                        />
-                      </View>
-                    ))}
-                  </View>
-                  {/* Events - Grid on iPad */}
-                  <View className={isTablet && columns >= 2 ? 'flex-row flex-wrap' : ''} style={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}>
-                    {upcomingEvents.map((event, index) => (
-                      <View
-                        key={event.id}
-                        style={isTablet && columns >= 2 ? {
-                          width: columns >= 3 ? '33.33%' : '50%',
-                          paddingHorizontal: 6,
-                          marginBottom: 12
-                        } : undefined}
-                      >
-                        <SwipeableEventRow
-                          event={event}
-                          index={index}
-                          onPress={() => router.push(`/event/${event.id}`)}
-                          canDelete={canManageTeam()}
-                          onDelete={() => {
-                            Alert.alert(
-                              'Delete Event',
-                              `Are you sure you want to delete "${event.title}"?`,
-                              [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                  text: 'Delete',
-                                  style: 'destructive',
-                                  onPress: () => {
-                                    removeEvent(event.id);
-                                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                                  },
-                                },
-                              ]
-                            );
-                          }}
-                        />
-                      </View>
-                    ))}
-                  </View>
-                </>
-              )}
-            </>
-          ) : (
+        {effectiveViewMode === 'list' ? (
+          <FlatList
+            data={listData}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
+            ListHeaderComponent={() => listHeader}
+            columnWrapperStyle={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}
+            numColumns={isTablet && columns >= 2 ? (columns >= 3 ? 3 : 2) : 1}
+            key={isTablet && columns >= 2 ? `grid-${columns >= 3 ? 3 : 2}` : 'list'}
+          />
+        ) : (
+          <ScrollView
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
+          >
+            {listHeader}
             <CalendarView
               games={sortedGames}
               events={upcomingEvents}
@@ -453,8 +506,8 @@ export default function ScheduleScreen() {
                 setIsModalVisible(true);
               }}
             />
-          )}
-        </ScrollView>
+          </ScrollView>
+        )}
       </SafeAreaView>
 
       {/* Create Game/Event Modal */}
