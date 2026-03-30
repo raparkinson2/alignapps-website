@@ -337,8 +337,8 @@ export default function LoginPage() {
       <div className="max-w-md w-full bg-[#0f1a2e] border border-white/10 rounded-2xl p-8">
         {/* Logo / branding */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 mb-4">
-            <span className="text-2xl">🏆</span>
+          <div className="flex justify-center mb-4">
+            <img src="/align-logo.png" alt="ALIGN Sports" className="w-28 h-28 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-slate-100">ALIGN Sports</h1>
           <p className="text-slate-400 mt-1 text-sm">Team management portal</p>
