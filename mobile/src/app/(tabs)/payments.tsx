@@ -246,7 +246,7 @@ export default function PaymentsScreen() {
                   <View className="bg-slate-800/50 rounded-2xl p-5 items-center border border-slate-700/40">
                     <ExternalLink size={28} color="#334155" />
                     <Text className="text-slate-500 text-sm text-center mt-2">
-                      {isAdmin() ? 'Add Venmo, PayPal, Zelle, etc. with the + button' : 'No payment apps configured'}
+                      {isAdmin() ? 'Add Peer to Peer Payment Apps with the + button' : 'No payment apps configured'}
                     </Text>
                   </View>
                 ) : (
