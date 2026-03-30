@@ -3,6 +3,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Trash2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { memo } from 'react';
 import { PaymentPeriod } from '@/lib/store';
 import { PaymentCardRow } from './PaymentCardRow';
 
@@ -21,7 +22,7 @@ interface SwipeablePeriodRowProps {
   isAdmin: boolean;
 }
 
-export function SwipeablePeriodRow({
+export const SwipeablePeriodRow = memo(function SwipeablePeriodRow({
   period,
   index,
   isReorderMode,
@@ -114,4 +115,4 @@ export function SwipeablePeriodRow({
       </GestureDetector>
     </View>
   );
-}
+});

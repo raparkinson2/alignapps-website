@@ -47,6 +47,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials, TeamLink } from '@/lib/store';
 import { pushPlayerToSupabase } from '@/lib/realtime-sync';
+import { toast } from '@/lib/toast';
 import { secureResetPassword } from '@/lib/secure-auth';
 import { supabase } from '@/lib/supabase';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
@@ -1096,7 +1097,10 @@ export default function MoreScreen() {
       // Sync to Supabase so changes appear on all devices
       if (activeTeamId) {
         const updated = { ...useTeamStore.getState().players.find(p => p.id === playerToEdit.id), ...updates };
-        pushPlayerToSupabase(updated as Player, activeTeamId).catch(console.error);
+        pushPlayerToSupabase(updated as Player, activeTeamId).catch((err) => {
+          console.error(err);
+          toast.error('Sync failed. Changes saved locally.');
+        });
       }
     }
   };
@@ -1518,7 +1522,10 @@ export default function MoreScreen() {
             const updatedPlayer = useTeamStore.getState().players.find(p => p.id === currentPlayerId)
               ?? useTeamStore.getState().teams.find(t => t.id === activeTeamId)?.players.find(p => p.id === currentPlayerId);
             if (updatedPlayer) {
-              await pushPlayerToSupabase(updatedPlayer, activeTeamId).catch(console.error);
+              await pushPlayerToSupabase(updatedPlayer, activeTeamId).catch((err) => {
+                console.error(err);
+                toast.error('Sync failed. Changes saved locally.');
+              });
             }
           }
           // Also update Supabase auth password if the user has a session
@@ -1535,19 +1542,28 @@ export default function MoreScreen() {
         onAdd={(link) => {
           addTeamLink(link);
           const teamId = useTeamStore.getState().activeTeamId;
-          if (teamId) pushTeamLinkToSupabase(link, teamId).catch(console.error);
+          if (teamId) pushTeamLinkToSupabase(link, teamId).catch((err) => {
+            console.error(err);
+            toast.error('Sync failed. Changes saved locally.');
+          });
         }}
         onUpdate={(id, updates) => {
           updateTeamLink(id, updates);
           const s = useTeamStore.getState();
           if (s.activeTeamId) {
             const updated = s.teamLinks.find(l => l.id === id);
-            if (updated) pushTeamLinkToSupabase({ ...updated, ...updates }, s.activeTeamId).catch(console.error);
+            if (updated) pushTeamLinkToSupabase({ ...updated, ...updates }, s.activeTeamId).catch((err) => {
+              console.error(err);
+              toast.error('Sync failed. Changes saved locally.');
+            });
           }
         }}
         onRemove={(id) => {
           removeTeamLink(id);
-          deleteTeamLinkFromSupabase(id).catch(console.error);
+          deleteTeamLinkFromSupabase(id).catch((err) => {
+            console.error(err);
+            toast.error('Sync failed. Changes saved locally.');
+          });
         }}
         canManage={canManageTeam || false}
         currentPlayerId={effectivePlayerId}

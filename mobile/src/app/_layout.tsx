@@ -9,6 +9,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useEffect, useState, useRef } from 'react';
 import { AppState, AppStateStatus, Platform, Linking, Modal, View, Text, Pressable } from 'react-native';
 import { Bell } from 'lucide-react-native';
+import { AppToast } from '@/components/ui/AppToast';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
@@ -683,6 +684,7 @@ export default function RootLayout() {
           <KeyboardProvider>
             <StatusBar style="light" translucent backgroundColor="transparent" />
             <RootLayoutNav />
+            <AppToast />
           </KeyboardProvider>
         </GestureHandlerRootView>
       </SafeAreaProvider>

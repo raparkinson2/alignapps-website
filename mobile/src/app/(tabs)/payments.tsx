@@ -1,7 +1,7 @@
 import { View, Text, FlatList, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   DollarSign,
   Plus,
@@ -18,6 +18,7 @@ import { useTeamStore } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { pushPaymentPeriodToSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
+import { toast } from '@/lib/toast';
 
 // Extracted components
 import { SwipeablePeriodRow } from '@/components/payments/SwipeablePeriodRow';
@@ -45,27 +46,37 @@ export default function PaymentsScreen() {
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
 
-  // Wrapper: updates teamSettings locally AND pushes to Supabase
-  const setTeamSettingsAndSync = (updates: Parameters<typeof setTeamSettings>[0]) => {
+  // Debounce ref: prevents rapid taps from firing multiple concurrent Supabase writes
+  const syncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Wrapper: updates teamSettings locally AND pushes to Supabase (debounced)
+  const setTeamSettingsAndSync = useCallback((updates: Parameters<typeof setTeamSettings>[0]) => {
     setTeamSettings(updates);
     if (activeTeamId) {
-      setTimeout(() => {
+      if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+      syncDebounceRef.current = setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
-      }, 50);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch((err) => {
+          console.error(err);
+          toast.error('Sync failed. Changes saved locally.');
+        });
+      }, 400);
     }
-  };
+  }, [activeTeamId, setTeamSettings]);
 
   // Wrapper: updates locally AND pushes to Supabase
-  const updatePaymentPeriodAndSync = (periodId: string, updates: Parameters<typeof updatePaymentPeriod>[1]) => {
+  const updatePaymentPeriodAndSync = useCallback((periodId: string, updates: Parameters<typeof updatePaymentPeriod>[1]) => {
     updatePaymentPeriod(periodId, updates);
     if (activeTeamId) {
       const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === periodId);
       if (updated) {
-        pushPaymentPeriodToSupabase({ ...updated, ...updates }, activeTeamId).catch(console.error);
+        pushPaymentPeriodToSupabase({ ...updated, ...updates }, activeTeamId).catch((err) => {
+          console.error(err);
+          toast.error('Sync failed. Changes saved locally.');
+        });
       }
     }
-  };
+  }, [activeTeamId, updatePaymentPeriod]);
 
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [isPaymentMethodModalVisible, setIsPaymentMethodModalVisible] = useState(false);
