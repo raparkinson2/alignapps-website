@@ -1071,6 +1071,7 @@ export default function MoreScreen() {
   const [linksModalVisible, setLinksModalVisible] = useState(false);
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Email Team modal state
   const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
@@ -1221,13 +1222,19 @@ export default function MoreScreen() {
     setDeleteConfirmText('');
   };
 
-  const confirmDeleteAccount = () => {
+  const confirmDeleteAccount = async () => {
     if (deleteConfirmText !== 'DELETE') {
       Alert.alert('Error', 'Please type DELETE to confirm');
       return;
     }
+    setIsDeletingAccount(true);
+    const success = await deleteAccount();
+    setIsDeletingAccount(false);
+    if (!success) {
+      Alert.alert('Error', 'Could not delete your account. Please check your connection and try again.');
+      return;
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    deleteAccount();
     setDeleteAccountModalVisible(false);
     // AuthNavigator in _layout.tsx handles redirect to /login when isLoggedIn becomes false
   };
@@ -1780,17 +1787,17 @@ export default function MoreScreen() {
                 {/* Delete Button */}
                 <Pressable
                   onPress={confirmDeleteAccount}
-                  disabled={deleteConfirmText !== 'DELETE'}
+                  disabled={deleteConfirmText !== 'DELETE' || isDeletingAccount}
                   className={`rounded-xl py-4 items-center ${
-                    deleteConfirmText === 'DELETE'
+                    deleteConfirmText === 'DELETE' && !isDeletingAccount
                       ? 'bg-red-500 active:bg-red-600'
                       : 'bg-slate-700'
                   }`}
                 >
                   <Text className={`font-semibold text-base ${
-                    deleteConfirmText === 'DELETE' ? 'text-white' : 'text-slate-500'
+                    deleteConfirmText === 'DELETE' && !isDeletingAccount ? 'text-white' : 'text-slate-500'
                   }`}>
-                    Delete My Account
+                    {isDeletingAccount ? 'Deleting...' : 'Delete My Account'}
                   </Text>
                 </Pressable>
 

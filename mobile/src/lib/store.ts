@@ -897,7 +897,7 @@ interface TeamStore {
   isSyncing: boolean;
   setIsSyncing: (syncing: boolean) => void;
   logout: () => void;
-  deleteAccount: () => void;
+  deleteAccount: () => Promise<boolean>;
 
   // Authentication
   loginWithEmail: (email: string, password: string) => { success: boolean; error?: string; playerId?: string; multipleTeams?: boolean; teamCount?: number };
@@ -2072,18 +2072,27 @@ export const useTeamStore = create<TeamStore>()(
         });
       },
 
-      deleteAccount: () => {
+      deleteAccount: async () => {
         const state = get();
         const { userEmail, userPhone, currentPlayerId } = state;
 
-        // Fire-and-forget: backend handles deleting the player row + auth account from Supabase
+        // Await the backend call so we know the Supabase record was actually deleted
         const backendUrl = BACKEND_URL;
         if (backendUrl && (currentPlayerId || userEmail)) {
-          fetch(`${backendUrl}/api/auth/delete-account`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ playerId: currentPlayerId, email: userEmail }),
-          }).catch(err => console.error('deleteAccount backend call failed:', err));
+          try {
+            const res = await fetch(`${backendUrl}/api/auth/delete-account`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ playerId: currentPlayerId, email: userEmail }),
+            });
+            if (!res.ok) {
+              console.error('deleteAccount backend returned', res.status);
+              return false;
+            }
+          } catch (err) {
+            console.error('deleteAccount backend call failed:', err);
+            return false;
+          }
         }
 
         // Remove the current player from all teams they belong to
@@ -2136,6 +2145,7 @@ export const useTeamStore = create<TeamStore>()(
           pendingTeamIds: null,
           activeTeamId: null,
         });
+        return true;
       },
 
       // Authentication

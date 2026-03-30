@@ -7,7 +7,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useEffect, useState, useRef } from 'react';
-import { AppState, AppStateStatus, Platform, Linking } from 'react-native';
+import { AppState, AppStateStatus, Platform, Linking, Modal, View, Text, Pressable } from 'react-native';
+import { Bell } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
@@ -56,6 +57,8 @@ function AuthNavigator() {
   const didFetchAllTeams = useRef(false);
   const pushTokenRegistered = useRef<string | null>(null); // tracks which playerId has registered
   const pendingNotificationData = useRef<Record<string, any> | null>(null); // notification tap data waiting for isReady
+  const [showNotifRamp, setShowNotifRamp] = useState(false);
+  const notifRampShownRef = useRef(false); // prevent showing more than once per session
 
   // On startup, ensure all teams the user belongs to are loaded from Supabase.
   // This fixes cases where the race condition caused only 1 team to be persisted locally.
@@ -253,28 +256,14 @@ function AuthNavigator() {
   }, [isLoggedIn]);
 
   // Register for push notifications when logged in
+  const doRegisterTokenRef = useRef<(() => Promise<void>) | null>(null);
+
   useEffect(() => {
     if (!isLoggedIn || !currentPlayerId) return;
     // Only register once per player session to avoid duplicate APNs calls
     if (pushTokenRegistered.current === currentPlayerId) return;
 
-    const registerToken = async () => {
-      // Post a "started" diagnostic immediately so we know the effect fired
-      try {
-        await fetch(`${BACKEND_URL}/api/notifications/registration-diagnostic`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            playerId: currentPlayerId,
-            permissionStatus: 'starting',
-            tokenObtained: false,
-            errorMessage: 'Registration started',
-            backendUrlSeen: BACKEND_URL,
-            platform: Platform.OS,
-          }),
-        });
-      } catch (_) { /* best effort */ }
-
+    const doRegisterToken = async () => {
       const token = await registerForPushNotificationsAsync(currentPlayerId);
       if (token && currentPlayerId) {
         // Mark as registered only after successfully obtaining a token
@@ -308,6 +297,40 @@ function AuthNavigator() {
       } else {
         console.log('Push token: failed to get token (permissions denied or simulator)');
       }
+    };
+
+    // Keep a ref so the notification ramp modal can trigger registration
+    doRegisterTokenRef.current = doRegisterToken;
+
+    const registerToken = async () => {
+      // Post a "started" diagnostic immediately so we know the effect fired
+      try {
+        await fetch(`${BACKEND_URL}/api/notifications/registration-diagnostic`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            playerId: currentPlayerId,
+            permissionStatus: 'starting',
+            tokenObtained: false,
+            errorMessage: 'Registration started',
+            backendUrlSeen: BACKEND_URL,
+            platform: Platform.OS,
+          }),
+        });
+      } catch (_) { /* best effort */ }
+
+      // On iOS, check if we already have permission before prompting.
+      // If not, show a contextual ramp explaining the value before the OS prompt.
+      if (Platform.OS === 'ios' && !notifRampShownRef.current) {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status !== 'granted') {
+          notifRampShownRef.current = true;
+          setShowNotifRamp(true);
+          return; // ramp "Allow" button calls doRegisterToken directly
+        }
+      }
+
+      await doRegisterToken();
     };
 
     // Register immediately
@@ -491,7 +514,8 @@ function AuthNavigator() {
   }, [router]);
 
   return (
-    <Stack>
+    <>
+      <Stack>
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="create-team" options={{ headerShown: false }} />
       <Stack.Screen name="create-new-team" options={{ headerShown: false }} />
@@ -598,6 +622,48 @@ function AuthNavigator() {
       />
 <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
+
+    {/* Push Notification Contextual Ramp — shown before the iOS system prompt */}
+    <Modal
+      visible={showNotifRamp}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowNotifRamp(false)}
+    >
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <View style={{ backgroundColor: '#1e293b', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 28, paddingBottom: 44 }}>
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: '#0ea5e9', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Bell color="#fff" size={28} />
+            </View>
+            <Text style={{ color: '#f8fafc', fontSize: 22, fontWeight: '700', marginBottom: 10, textAlign: 'center' }}>
+              Stay in the Loop
+            </Text>
+            <Text style={{ color: '#94a3b8', fontSize: 15, textAlign: 'center', lineHeight: 22 }}>
+              Get instant alerts for game rainouts, schedule changes, payment reminders, and messages from your team.
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={async () => {
+              setShowNotifRamp(false);
+              await doRegisterTokenRef.current?.();
+            }}
+            style={{ backgroundColor: '#0ea5e9', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 12 }}
+          >
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Allow Notifications</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setShowNotifRamp(false)}
+            style={{ paddingVertical: 14, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#64748b', fontSize: 15 }}>Maybe Later</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
