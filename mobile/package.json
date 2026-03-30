@@ -8,6 +8,7 @@
     "ios": "expo start --ios",
     "web": "DARK_MODE=class expo start --web",
     "lint": "expo lint",
+    "test": "bun test src/__tests__",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

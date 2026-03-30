@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { createClient } from "@supabase/supabase-js";
+import { getMilestonesToFire, buildReminderMessage } from "../lib/payment-logic";
 
 const paymentRemindersRouter = new Hono();
 
@@ -7,22 +8,6 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-// ─── Milestone definitions ────────────────────────────────────────────────────
-// Each milestone fires at most once per payment period per player.
-// Key = milestone name, value = days before due date (negative = past due)
-const MILESTONES: Record<string, number> = {
-  created: Infinity,  // Fires immediately on creation
-  "60d": 60,
-  "45d": 45,
-  "30d": 30,
-  "15d": 15,
-  "due": 0,
-  "1w_late": -7,
-  "2w_late": -14,
-  "3w_late": -21,
-  "4w_late": -28,
-};
 
 // In-memory tracking: periodId -> Set of milestones already sent
 // This persists across scheduler runs within a server session.
@@ -38,10 +23,6 @@ function getSentForPeriod(periodId: string): Set<string> {
 
 function markSent(periodId: string, milestone: string) {
   getSentForPeriod(periodId).add(milestone);
-}
-
-function isSent(periodId: string, milestone: string): boolean {
-  return getSentForPeriod(periodId).has(milestone);
 }
 
 // ─── Push notification helper ─────────────────────────────────────────────────
@@ -97,18 +78,7 @@ export async function checkAndSendPaymentReminders() {
       const daysUntilDue = Math.round((dueDateMidnight.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
       // Determine which milestone(s) to fire based on current days until due
-      const milestonesToFire: string[] = [];
-
-      for (const [name, daysBefore] of Object.entries(MILESTONES)) {
-        if (name === "created") continue; // "created" is only sent manually at creation time
-        const fireAtDays = daysBefore; // positive = before due, negative = past due
-        const targetDaysUntilDue = fireAtDays;
-
-        // Fire if we're at or past the threshold and haven't sent yet
-        if (daysUntilDue <= targetDaysUntilDue && !isSent(period.id, name)) {
-          milestonesToFire.push(name);
-        }
-      }
+      const milestonesToFire = getMilestonesToFire(daysUntilDue, getSentForPeriod(period.id));
 
       if (milestonesToFire.length === 0) continue;
 
@@ -138,22 +108,7 @@ export async function checkAndSendPaymentReminders() {
 
       // Build notification message
       for (const milestone of milestonesToFire) {
-        let title: string;
-        let body: string;
-
-        const dueDateStr = dueDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-
-        if (daysUntilDue > 0) {
-          title = `Payment Due in ${daysUntilDue} Day${daysUntilDue !== 1 ? "s" : ""}`;
-          body = `"${period.title}" — $${period.amount} is due on ${dueDateStr}. Don't forget to pay!`;
-        } else if (daysUntilDue === 0) {
-          title = "Payment Due Today";
-          body = `"${period.title}" — $${period.amount} is due today. Please pay as soon as possible.`;
-        } else {
-          const daysLate = Math.abs(daysUntilDue);
-          title = `Payment ${daysLate} Day${daysLate !== 1 ? "s" : ""} Overdue`;
-          body = `"${period.title}" — $${period.amount} was due ${dueDateStr}. Please pay to stay up to date.`;
-        }
+        const { title, body } = buildReminderMessage(daysUntilDue, period.title, period.amount, dueDate);
 
         console.log(`[payment-reminders] Firing milestone "${milestone}" for period "${period.title}" to ${unpaidPlayerIds.length} player(s)`);
 
