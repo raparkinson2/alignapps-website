@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, FlatList, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -139,199 +139,198 @@ export default function PaymentsScreen() {
           <Text className="text-white text-3xl font-bold">Team Finances</Text>
         </Animated.View>
 
-        <ScrollView
+        <FlatList
           className="flex-1"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
-        >
-          {/* Section 1: Pay with Stripe */}
-          <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-5">
-            <View className="flex-row items-center mb-3">
-              <CreditCard size={16} color="#635BFF" />
-              <Text className="text-indigo-400 font-semibold ml-2">Pay with Stripe</Text>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setIsStripeDisclosureVisible(true);
+          data={isAdmin() ? paymentPeriods : []}
+          keyExtractor={(period) => period.id}
+          renderItem={({ item: period, index }) => (
+            <Animated.View
+              key={period.id}
+              entering={FadeInDown.delay(200 + index * 50).springify()}
+              style={isTablet && columns >= 2 ? {
+                width: columns >= 3 ? '33.33%' : '50%',
+                paddingHorizontal: 6,
+              } : undefined}
+            >
+              <SwipeablePeriodRow
+                period={period}
+                index={index}
+                isReorderMode={isReorderMode}
+                onPress={() => setSelectedPeriodId(period.id)}
+                onDelete={() => {
+                  Alert.alert('Delete Period', 'Are you sure you want to delete this payment period?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Delete',
+                      style: 'destructive',
+                      onPress: () => removePaymentPeriod(period.id),
+                    },
+                  ]);
                 }}
-                className="ml-2 p-1.5"
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Info size={15} color="#475569" />
-              </Pressable>
-            </View>
-
-            <View className={stripeReady ? 'bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/40' : ''}>
-              <StripePayButton
-                myPaymentStatus={myPaymentStatus}
-                isSetupComplete={stripeReady}
+                onMoveUp={() => movePeriodUp(index)}
+                onMoveDown={() => movePeriodDown(index)}
+                onEditAmount={() => {
+                  setEditingPeriodId(period.id);
+                  setIsEditAmountModalVisible(true);
+                }}
+                onEditTeamTotal={() => {
+                  setEditingTeamTotalPeriodId(period.id);
+                  setIsEditTeamTotalModalVisible(true);
+                }}
+                onEditDueDate={() => {
+                  setEditingDueDatePeriodId(period.id);
+                  setIsEditDueDateVisible(true);
+                }}
+                totalPeriods={paymentPeriods.length}
                 isAdmin={isAdmin()}
               />
-              {stripeReady && (
-                <View className="flex-row items-center px-4 py-2.5 border-t border-slate-700/40">
-                  <Info size={12} color="#475569" />
-                  <Text className="text-slate-500 text-xs ml-2">
-                    Stripe processing fee applies · Card info never stored by Align Sports
-                  </Text>
-                </View>
-              )}
-            </View>
-          </Animated.View>
-
-          {/* Section 2: Payment Apps (Venmo, PayPal, etc.) */}
-          <Animated.View entering={FadeInDown.delay(130).springify()} className="mb-6">
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <ExternalLink size={16} color="#67e8f9" />
-                <Text className="text-cyan-400 font-semibold ml-2">Payment Apps</Text>
-              </View>
-              {isAdmin() && (
-                <Pressable
-                  onPress={() => setIsPaymentMethodModalVisible(true)}
-                  className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
-                >
-                  <Plus size={20} color="white" />
-                </Pressable>
-              )}
-            </View>
-
-            {paymentMethods.length === 0 ? (
-              <View className="bg-slate-800/50 rounded-2xl p-5 items-center border border-slate-700/40">
-                <ExternalLink size={28} color="#334155" />
-                <Text className="text-slate-500 text-sm text-center mt-2">
-                  {isAdmin() ? 'Add Venmo, PayPal, Zelle, etc. with the + button' : 'No payment apps configured'}
-                </Text>
-              </View>
-            ) : (
-              <View className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/40">
-                <Text className="text-slate-500 text-xs mb-3 uppercase tracking-wider font-medium">Tap to pay externally</Text>
-                <View className="flex-row" style={{ gap: 8 }}>
-                  {paymentMethods.map((method, index) => (
-                    <View key={index} className="relative flex-1" style={{ marginTop: 4 }}>
-                      <PaymentMethodButton method={method} />
-                      {isAdmin() && (
-                        <Pressable
-                          onPress={() => handleRemovePaymentMethod(index)}
-                          className="absolute -top-2 -right-1 bg-red-500 rounded-full p-1"
-                        >
-                          <X size={8} color="white" />
-                        </Pressable>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </Animated.View>
-
-          {/* Payment Tracking Section - Admin Only */}
-          {isAdmin() && (
-            <Animated.View entering={FadeInDown.delay(150).springify()}>
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="flex-row items-center">
-                  <Users size={16} color="#a78bfa" />
-                  <Text className="text-purple-400 font-semibold ml-2">Payment Tracking</Text>
+            </Animated.View>
+          )}
+          numColumns={isTablet && columns >= 3 ? 3 : isTablet && columns >= 2 ? 2 : 1}
+          key={isTablet && columns >= 3 ? 'grid3' : isTablet && columns >= 2 ? 'grid2' : 'list'}
+          columnWrapperStyle={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}
+          ListHeaderComponent={() => (
+            <>
+              {/* Section 1: Pay with Stripe */}
+              <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-5">
+                <View className="flex-row items-center mb-3">
+                  <CreditCard size={16} color="#635BFF" />
+                  <Text className="text-indigo-400 font-semibold ml-2">Pay with Stripe</Text>
                   <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setIsPaymentInfoModalVisible(true);
+                      setIsStripeDisclosureVisible(true);
                     }}
                     className="ml-2 p-1.5"
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Info size={16} color="#94a3b8" />
+                    <Info size={15} color="#475569" />
                   </Pressable>
                 </View>
-                <View className="flex-row items-center">
-                  {paymentPeriods.length > 1 && (
+                <View className={stripeReady ? 'bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/40' : ''}>
+                  <StripePayButton
+                    myPaymentStatus={myPaymentStatus}
+                    isSetupComplete={stripeReady}
+                    isAdmin={isAdmin()}
+                  />
+                  {stripeReady && (
+                    <View className="flex-row items-center px-4 py-2.5 border-t border-slate-700/40">
+                      <Info size={12} color="#475569" />
+                      <Text className="text-slate-500 text-xs ml-2">
+                        Stripe processing fee applies · Card info never stored by Align Sports
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </Animated.View>
+
+              {/* Section 2: Payment Apps */}
+              <Animated.View entering={FadeInDown.delay(130).springify()} className="mb-6">
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <ExternalLink size={16} color="#67e8f9" />
+                    <Text className="text-cyan-400 font-semibold ml-2">Payment Apps</Text>
+                  </View>
+                  {isAdmin() && (
                     <Pressable
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setIsReorderMode(!isReorderMode);
-                      }}
-                      className={cn(
-                        'rounded-full p-2 mr-2',
-                        isReorderMode ? 'bg-purple-500' : 'bg-purple-500/20'
-                      )}
+                      onPress={() => setIsPaymentMethodModalVisible(true)}
+                      className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
                     >
-                      <GripVertical size={16} color={isReorderMode ? 'white' : '#a78bfa'} />
+                      <Plus size={20} color="white" />
                     </Pressable>
                   )}
-                  <Pressable
-                    onPress={() => setIsNewPeriodModalVisible(true)}
-                    className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
-                  >
-                    <Plus size={20} color="white" />
-                  </Pressable>
                 </View>
-              </View>
+                {paymentMethods.length === 0 ? (
+                  <View className="bg-slate-800/50 rounded-2xl p-5 items-center border border-slate-700/40">
+                    <ExternalLink size={28} color="#334155" />
+                    <Text className="text-slate-500 text-sm text-center mt-2">
+                      {isAdmin() ? 'Add Venmo, PayPal, Zelle, etc. with the + button' : 'No payment apps configured'}
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/40">
+                    <Text className="text-slate-500 text-xs mb-3 uppercase tracking-wider font-medium">Tap to pay externally</Text>
+                    <View className="flex-row" style={{ gap: 8 }}>
+                      {paymentMethods.map((method, index) => (
+                        <View key={index} className="relative flex-1" style={{ marginTop: 4 }}>
+                          <PaymentMethodButton method={method} />
+                          {isAdmin() && (
+                            <Pressable
+                              onPress={() => handleRemovePaymentMethod(index)}
+                              className="absolute -top-2 -right-1 bg-red-500 rounded-full p-1"
+                            >
+                              <X size={8} color="white" />
+                            </Pressable>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </Animated.View>
 
-              {paymentPeriods.length === 0 ? (
-                <View className="bg-slate-800/50 rounded-xl p-6 items-center mb-6">
-                  <DollarSign size={32} color="#64748b" />
-                  <Text className="text-slate-400 text-center mt-2">Create a payment period to track dues</Text>
-                </View>
-              ) : (
-                <View
-                  className={cn('mb-6', isTablet && columns >= 2 && 'flex-row flex-wrap')}
-                  style={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}
-                >
-                  {paymentPeriods.map((period, index) => (
-                    <Animated.View
-                      key={period.id}
-                      entering={FadeInDown.delay(200 + index * 50).springify()}
-                      style={isTablet && columns >= 2 ? {
-                        width: columns >= 3 ? '33.33%' : '50%',
-                        paddingHorizontal: 6,
-                      } : undefined}
-                    >
-                      <SwipeablePeriodRow
-                        period={period}
-                        index={index}
-                        isReorderMode={isReorderMode}
-                        onPress={() => setSelectedPeriodId(period.id)}
-                        onDelete={() => {
-                          Alert.alert('Delete Period', 'Are you sure you want to delete this payment period?', [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                              text: 'Delete',
-                              style: 'destructive',
-                              onPress: () => removePaymentPeriod(period.id),
-                            },
-                          ]);
+              {/* Payment Tracking header — admin only */}
+              {isAdmin() && (
+                <Animated.View entering={FadeInDown.delay(150).springify()}>
+                  <View className="flex-row items-center justify-between mb-2">
+                    <View className="flex-row items-center">
+                      <Users size={16} color="#a78bfa" />
+                      <Text className="text-purple-400 font-semibold ml-2">Payment Tracking</Text>
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setIsPaymentInfoModalVisible(true);
                         }}
-                        onMoveUp={() => movePeriodUp(index)}
-                        onMoveDown={() => movePeriodDown(index)}
-                        onEditAmount={() => {
-                          setEditingPeriodId(period.id);
-                          setIsEditAmountModalVisible(true);
-                        }}
-                        onEditTeamTotal={() => {
-                          setEditingTeamTotalPeriodId(period.id);
-                          setIsEditTeamTotalModalVisible(true);
-                        }}
-                        onEditDueDate={() => {
-                          setEditingDueDatePeriodId(period.id);
-                          setIsEditDueDateVisible(true);
-                        }}
-                        totalPeriods={paymentPeriods.length}
-                        isAdmin={isAdmin()}
-                      />
-                    </Animated.View>
-                  ))}
-                </View>
+                        className="ml-2 p-1.5"
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Info size={16} color="#94a3b8" />
+                      </Pressable>
+                    </View>
+                    <View className="flex-row items-center">
+                      {paymentPeriods.length > 1 && (
+                        <Pressable
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setIsReorderMode(!isReorderMode);
+                          }}
+                          className={cn(
+                            'rounded-full p-2 mr-2',
+                            isReorderMode ? 'bg-purple-500' : 'bg-purple-500/20'
+                          )}
+                        >
+                          <GripVertical size={16} color={isReorderMode ? 'white' : '#a78bfa'} />
+                        </Pressable>
+                      )}
+                      <Pressable
+                        onPress={() => setIsNewPeriodModalVisible(true)}
+                        className="bg-green-500 w-10 h-10 rounded-full items-center justify-center active:bg-green-600"
+                      >
+                        <Plus size={20} color="white" />
+                      </Pressable>
+                    </View>
+                  </View>
+                  {paymentPeriods.length === 0 && (
+                    <View className="bg-slate-800/50 rounded-xl p-6 items-center mb-6">
+                      <DollarSign size={32} color="#64748b" />
+                      <Text className="text-slate-400 text-center mt-2">Create a payment period to track dues</Text>
+                    </View>
+                  )}
+                </Animated.View>
               )}
-            </Animated.View>
-          )}
 
-          {/* My Payment Status - For non-admin players */}
-          {!isAdmin() && myPaymentStatus.length > 0 && (
-            <PlayerPaymentStatus
-              myPaymentStatus={myPaymentStatus}
-              onSelectPeriod={(periodId) => setSelectedPeriodId(periodId)}
-            />
+              {/* Non-admin: My Payment Status */}
+              {!isAdmin() && myPaymentStatus.length > 0 && (
+                <PlayerPaymentStatus
+                  myPaymentStatus={myPaymentStatus}
+                  onSelectPeriod={(periodId) => setSelectedPeriodId(periodId)}
+                />
+              )}
+            </>
           )}
-        </ScrollView>
+        />
       </SafeAreaView>
 
       <AddPaymentMethodModal

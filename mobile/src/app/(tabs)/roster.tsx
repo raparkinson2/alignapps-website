@@ -1,7 +1,7 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, SectionList, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { UserPlus } from 'lucide-react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -141,6 +141,20 @@ export default function RosterScreen() {
 
   const positionGroups = getPositionGroups();
 
+  // Build SectionList sections — each "item" is a row of 1, 2, or 3 players (iPad grid support)
+  const sections = useMemo(() => {
+    const rowSize = isTablet && columns >= 3 ? 3 : isTablet && columns >= 2 ? 2 : 1;
+    return positionGroups
+      .filter((g) => g.players.length > 0)
+      .map((g) => {
+        const rows: Player[][] = [];
+        for (let i = 0; i < g.players.length; i += rowSize) {
+          rows.push(g.players.slice(i, i + rowSize));
+        }
+        return { title: g.title, count: g.players.length, data: rows };
+      });
+  }, [positionGroups, isTablet, columns]);
+
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
@@ -157,63 +171,61 @@ export default function RosterScreen() {
           <View className="flex-row items-center justify-between">
             <Text className="text-white text-3xl font-bold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{teamName} Roster</Text>
             {canEditPlayers() && (
-              <Pressable
-                onPress={openAddModal}
-              >
+              <Pressable onPress={openAddModal}>
                 <UserPlus size={24} color="#22c55e" />
               </Pressable>
             )}
           </View>
         </Animated.View>
 
-        <ScrollView
+        <SectionList
           className="flex-1"
+          sections={sections}
+          keyExtractor={(row) => row[0].id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
-        >
-          {positionGroups.map((group) => {
-            if (group.players.length === 0) return null;
-
-            return (
-              <View key={group.title} className="mb-3">
-                <View className="flex-row items-center mb-1.5">
-                  <Text className="text-cyan-300 font-bold text-base">
-                    {group.title} ({group.players.length})
-                  </Text>
+          renderSectionHeader={({ section }) => (
+            <View className="flex-row items-center mb-1.5 mt-1">
+              <Text className="text-cyan-300 font-bold text-base">
+                {section.title} ({section.count})
+              </Text>
+            </View>
+          )}
+          renderItem={({ item: row, index }) => (
+            <View
+              className={isTablet && columns >= 2 ? 'flex-row mb-0' : ''}
+              style={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}
+            >
+              {row.map((player, colIndex) => (
+                <View
+                  key={player.id}
+                  style={isTablet && columns >= 2 ? {
+                    width: columns >= 3 ? '33.33%' : '50%',
+                    paddingHorizontal: 6,
+                  } : undefined}
+                >
+                  <PlayerStatRow
+                    player={player}
+                    index={index * (isTablet ? columns : 1) + colIndex}
+                    onPress={() => handlePlayerPress(player)}
+                    showStats={showTeamStats}
+                    isCurrentUser={player.id === currentPlayerId}
+                    canEditOwnStats={allowPlayerSelfStats && !canEditPlayers()}
+                    associatedPlayerName={
+                      player.associatedPlayerId
+                        ? (() => {
+                            const linked = players.find((p) => p.id === player.associatedPlayerId);
+                            return linked ? getPlayerName(linked) : undefined;
+                          })()
+                        : undefined
+                    }
+                  />
                 </View>
-                {/* Use grid layout on iPad */}
-                <View className={isTablet && columns >= 2 ? 'flex-row flex-wrap' : ''} style={isTablet && columns >= 2 ? { marginHorizontal: -6 } : undefined}>
-                  {group.players.map((player, index) => (
-                    <View
-                      key={player.id}
-                      style={isTablet && columns >= 2 ? {
-                        width: columns >= 3 ? '33.33%' : '50%',
-                        paddingHorizontal: 6
-                      } : undefined}
-                    >
-                      <PlayerStatRow
-                        player={player}
-                        index={index}
-                        onPress={() => handlePlayerPress(player)}
-                        showStats={showTeamStats}
-                        isCurrentUser={player.id === currentPlayerId}
-                        canEditOwnStats={allowPlayerSelfStats && !canEditPlayers()}
-                        associatedPlayerName={
-                          player.associatedPlayerId
-                            ? (() => {
-                                const linked = players.find((p) => p.id === player.associatedPlayerId);
-                                return linked ? getPlayerName(linked) : undefined;
-                              })()
-                            : undefined
-                        }
-                      />
-                    </View>
-                  ))}
-                </View>
-              </View>
-            );
-          })}
-        </ScrollView>
+              ))}
+            </View>
+          )}
+          SectionSeparatorComponent={() => <View className="mb-2" />}
+        />
       </SafeAreaView>
 
       {/* Add/Edit Player Modal */}
