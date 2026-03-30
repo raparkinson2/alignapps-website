@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { createClient } from "@supabase/supabase-js";
 import { getMilestonesToFire, buildReminderMessage } from "../lib/payment-logic";
+import { readFileSync, writeFileSync } from "fs";
+import { join } from "path";
 
 const paymentRemindersRouter = new Hono();
 
@@ -9,21 +11,44 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// In-memory tracking: periodId -> Set of milestones already sent
-// This persists across scheduler runs within a server session.
-// On restart, the scheduler re-evaluates based on dates (may resend due/overdue milestones).
-const sentMilestones = new Map<string, Set<string>>();
+// ─── Persistent sent-milestone tracking ───────────────────────────────────────
+// Stored on disk so server restarts don't cause milestone re-fires.
+// Falls back to in-memory if the file can't be read/written.
+const LOG_PATH = join(import.meta.dir, "../../../data/payment-milestone-log.json");
+
+type MilestoneLog = Record<string, string[]>; // periodId → milestone keys[]
+
+function readLog(): MilestoneLog {
+  try {
+    const text = readFileSync(LOG_PATH, "utf-8");
+    return JSON.parse(text) as MilestoneLog;
+  } catch {
+    return {};
+  }
+}
+
+function writeLog(log: MilestoneLog): void {
+  try {
+    Bun.write(LOG_PATH, JSON.stringify(log, null, 2));
+  } catch (err) {
+    console.error("[payment-reminders] Failed to persist milestone log:", err);
+  }
+}
 
 function getSentForPeriod(periodId: string): Set<string> {
-  if (!sentMilestones.has(periodId)) {
-    sentMilestones.set(periodId, new Set());
-  }
-  return sentMilestones.get(periodId)!;
+  const log = readLog();
+  return new Set(log[periodId] ?? []);
 }
 
-function markSent(periodId: string, milestone: string) {
-  getSentForPeriod(periodId).add(milestone);
+function markSent(periodId: string, milestone: string): void {
+  const log = readLog();
+  if (!log[periodId]) log[periodId] = [];
+  if (!log[periodId].includes(milestone)) {
+    log[periodId].push(milestone);
+    writeLog(log);
+  }
 }
+
 
 // ─── Push notification helper ─────────────────────────────────────────────────
 async function sendReminderToPlayers(

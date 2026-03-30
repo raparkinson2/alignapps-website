@@ -5,25 +5,34 @@
 
 // ─── Milestone definitions ────────────────────────────────────────────────────
 // Each entry: name → days before due date (negative = days past due)
+// "created" is fired manually at creation and excluded from scheduled checks.
 export const MILESTONES: Record<string, number> = {
-  created: Infinity, // fired manually at creation
+  created: Infinity,
   "60d": 60,
   "45d": 45,
   "30d": 30,
   "15d": 15,
+  "7d": 7,
   due: 0,
-  "1w_late": -7,
-  "2w_late": -14,
-  "3w_late": -21,
-  "4w_late": -28,
 };
+
+// How many days past a threshold we still allow it to fire (scheduler catch-up grace window).
+// e.g., GRACE_DAYS=2 means the "30d" milestone fires when daysUntilDue is 28–30.
+// This intentionally does NOT fire old milestones after a restart when many days have passed.
+const GRACE_DAYS = 2;
 
 /**
  * Given how many days remain until a payment is due (negative = overdue),
- * return the list of milestone names that should fire.
+ * return the list of milestone keys that should fire.
+ *
+ * Pre-due milestones use an exact window (threshold to threshold - GRACE_DAYS)
+ * so they never fire retroactively after a server restart.
+ *
+ * Overdue milestones use a per-day key (overdue_YYYY-MM-DD) so they fire at
+ * most once per calendar day, regardless of how many times the scheduler runs.
  *
  * @param daysUntilDue   Positive = days left, 0 = due today, negative = days overdue
- * @param alreadySent    Set of milestone names already sent for this period
+ * @param alreadySent    Set of milestone keys already sent for this period
  */
 export function getMilestonesToFire(
   daysUntilDue: number,
@@ -31,11 +40,24 @@ export function getMilestonesToFire(
 ): string[] {
   const toFire: string[] = [];
 
-  for (const [name, daysBefore] of Object.entries(MILESTONES)) {
-    if (name === "created") continue; // only sent on creation
-    // Fire when we're at or past the threshold and haven't sent yet
-    if (daysUntilDue <= daysBefore && !alreadySent.has(name)) {
-      toFire.push(name);
+  if (daysUntilDue >= 0) {
+    // Pre-due and due: only fire within the grace window of each threshold
+    for (const [name, daysBefore] of Object.entries(MILESTONES)) {
+      if (name === "created") continue;
+      // Fire when daysUntilDue is within [daysBefore - GRACE_DAYS, daysBefore]
+      if (
+        daysUntilDue <= daysBefore &&
+        daysUntilDue >= daysBefore - GRACE_DAYS &&
+        !alreadySent.has(name)
+      ) {
+        toFire.push(name);
+      }
+    }
+  } else {
+    // Overdue: fire once per calendar day using the date as the dedup key
+    const todayKey = `overdue_${new Date().toISOString().slice(0, 10)}`;
+    if (!alreadySent.has(todayKey)) {
+      toFire.push(todayKey);
     }
   }
 
