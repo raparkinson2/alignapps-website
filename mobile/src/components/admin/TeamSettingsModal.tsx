@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { X } from 'lucide-react-native';
 import { useTeamStore } from '@/lib/store';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface TeamSettingsModalProps {
   visible: boolean;
@@ -33,7 +34,7 @@ export function TeamSettingsModal({ visible, onClose }: TeamSettingsModalProps) 
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, name, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, name, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };

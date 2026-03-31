@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { useTeamStore } from '@/lib/store';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
 import { BACKEND_URL } from '@/lib/config';
+import { syncError } from '@/lib/sync-error-handler';
 
 export default function StripeSetupScreen() {
   const router = useRouter();
@@ -49,7 +50,7 @@ export default function StripeSetupScreen() {
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };

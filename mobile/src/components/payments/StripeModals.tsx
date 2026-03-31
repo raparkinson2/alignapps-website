@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { WebView } from 'react-native-webview';
 import { useTeamStore, PaymentEntry } from '@/lib/store';
 import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 // ─── Stripe Checkout WebView Modal ───────────────────────────────────────────
 
@@ -76,7 +77,7 @@ export function StripeCheckoutModal({
                       setTimeout(() => {
                         const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === periodId);
                         if (updated) {
-                          pushPaymentPeriodToSupabase(updated, activeTeamId).catch(console.error);
+                          pushPaymentPeriodToSupabase(updated, activeTeamId).catch(syncError('sync'));
                         }
                       }, 50);
                     }

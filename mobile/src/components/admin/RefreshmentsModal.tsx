@@ -6,6 +6,7 @@ import { Beer } from 'lucide-react-native';
 import { useTeamStore } from '@/lib/store';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface RefreshmentsModalProps {
   visible: boolean;
@@ -22,7 +23,7 @@ export function RefreshmentsModal({ visible, onClose }: RefreshmentsModalProps) 
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };

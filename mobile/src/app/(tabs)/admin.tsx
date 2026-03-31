@@ -70,6 +70,7 @@ import { EmailTeamModal } from '@/components/admin/EmailTeamModal';
 import { TeamSettingsModal } from '@/components/admin/TeamSettingsModal';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
+import { syncError } from '@/lib/sync-error-handler';
 
 function AdminScreen() {
   const router = useRouter();
@@ -98,7 +99,7 @@ function AdminScreen() {
     const state = useTeamStore.getState();
     const p = state.players.find((pl) => pl.id === playerId)
       ?? state.teams.find(t => t.id === activeTeamId)?.players.find((pl) => pl.id === playerId);
-    if (p) pushPlayerToSupabase(p, activeTeamId).catch(console.error);
+    if (p) pushPlayerToSupabase(p, activeTeamId).catch(syncError('sync'));
   };
 
   // Wrapper around setTeamSettings that also syncs to Supabase
@@ -108,7 +109,7 @@ function AdminScreen() {
       // Use a small timeout so store has updated before we read it
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };
@@ -119,7 +120,7 @@ function AdminScreen() {
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, name, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, name, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };

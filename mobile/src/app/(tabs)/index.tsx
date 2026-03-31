@@ -34,6 +34,7 @@ import { EditRecordModal } from '@/components/home/EditRecordModal';
 import { LineupViewerModals } from '@/components/home/LineupViewerModals';
 
 import type { Event } from '@/lib/store';
+import { syncError } from '@/lib/sync-error-handler';
 
 // Format team record based on sport
 const formatTeamRecord = (record: TeamRecord | undefined, sport: Sport): string => {
@@ -117,7 +118,7 @@ function ScheduleScreen() {
             'New Game Added!',
             `You've been invited to play vs ${game.opponent} on ${formattedDate} at ${game.time}. Make sure to check in or out in the app.`,
             { gameId: game.id, type: 'game_invite' }
-          ).catch(console.error);
+          ).catch(syncError('sync'));
         }
       });
     }

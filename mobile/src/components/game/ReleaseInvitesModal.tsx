@@ -8,6 +8,7 @@ import { useTeamStore, InviteReleaseOption, AppNotification } from '@/lib/store'
 import { pushGameToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import * as Haptics from 'expo-haptics';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface ReleaseInvitesModalProps {
   visible: boolean;
@@ -44,7 +45,7 @@ export function ReleaseInvitesModal({ visible, onClose, gameId }: ReleaseInvites
     if (activeTeamId) {
       const currentGame = useTeamStore.getState().games.find((g) => g.id === gameId);
       if (currentGame) {
-        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(console.error);
+        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(syncError('sync'));
       }
     }
   };
@@ -85,7 +86,7 @@ export function ReleaseInvitesModal({ visible, onClose, gameId }: ReleaseInvites
           createdAt: new Date().toISOString(),
         };
         addNotification(notification);
-        if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
+        if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(syncError('sync'));
       });
     }
 

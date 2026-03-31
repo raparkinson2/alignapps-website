@@ -49,6 +49,7 @@ import { InvitePlayersModal } from '@/components/game/InvitePlayersModal';
 import { GameStatsModal, GameStatEditMode } from '@/components/game/GameStatsModal';
 import { SoccerFormationModal } from '@/components/game/SoccerFormationModal';
 import { LineupModals } from '@/components/game/LineupModals';
+import { syncError } from '@/lib/sync-error-handler';
 
 // Error boundary to catch render crashes and show a useful error instead of black screen
 class GameScreenErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
@@ -582,7 +583,7 @@ function GameDetailScreenInner() {
     if (activeTeamId) {
       const currentGame = useTeamStore.getState().games.find((g) => g.id === gameId);
       if (currentGame) {
-        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(console.error);
+        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(syncError('sync'));
       }
     }
   };
@@ -678,7 +679,7 @@ function GameDetailScreenInner() {
   useEffect(() => {
     if (!game || !currentPlayerId) return;
     markEventViewedLocally(game.id);
-    pushGameViewedToSupabase(game.id, currentPlayerId).catch(console.error);
+    pushGameViewedToSupabase(game.id, currentPlayerId).catch(syncError('sync'));
   }, [game?.id, currentPlayerId]);
 
   if (!game) {
@@ -776,14 +777,14 @@ function GameDetailScreenInner() {
           invitedPlayers: [...currentInvited, playerId],
         });
       }
-      pushGameResponseToSupabase(game.id, playerId, 'invited').catch(console.error);
+      pushGameResponseToSupabase(game.id, playerId, 'invited').catch(syncError('sync'));
     }
 
     // Cycle through: none -> in -> out -> none
     if (!isIn && !isOut) {
       // Currently no response, mark as IN
       checkInToGame(game.id, playerId);
-      if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'in').catch(console.error);
+      if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'in').catch(syncError('sync'));
 
       // Schedule local reminders on this device if it's the current player checking themselves in
       if (playerId === currentPlayerId) {
@@ -808,14 +809,14 @@ function GameDetailScreenInner() {
     } else if (isIn) {
       // Currently IN, mark as OUT - cancel any scheduled reminders on this device
       checkOutFromGame(game.id, playerId);
-      if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'out').catch(console.error);
+      if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'out').catch(syncError('sync'));
       if (playerId === currentPlayerId) {
-        Notifications.cancelAllScheduledNotificationsAsync().catch(console.error);
+        Notifications.cancelAllScheduledNotificationsAsync().catch(syncError('sync'));
       }
     } else {
       // Currently OUT, clear response (back to invited)
       clearPlayerResponse(game.id, playerId);
-      if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'invited').catch(console.error);
+      if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'invited').catch(syncError('sync'));
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -944,7 +945,7 @@ function GameDetailScreenInner() {
         gameId: game.id,
         type: type === 'invite' ? 'game_invite' : 'game_reminder',
       }
-    ).catch(console.error);
+    ).catch(syncError('sync'));
 
     // Add to in-app notifications for target players only
     targetPlayers.forEach((player) => {
@@ -960,7 +961,7 @@ function GameDetailScreenInner() {
         read: false,
       };
       addNotification(notification);
-      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(syncError('sync'));
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -1044,7 +1045,7 @@ function GameDetailScreenInner() {
       if (activeTeamId) {
         setTimeout(() => {
           const s = useTeamStore.getState();
-          pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+          pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
         }, 50);
       }
     }
@@ -1081,7 +1082,7 @@ function GameDetailScreenInner() {
               if (activeTeamId) {
                 setTimeout(() => {
                   const s = useTeamStore.getState();
-                  pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+                  pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
                 }, 50);
               }
             }

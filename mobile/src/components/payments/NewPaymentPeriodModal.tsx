@@ -11,6 +11,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { getPlayerName } from '@/lib/store';
 import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
 import { BACKEND_URL } from '@/lib/config';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface NewPaymentPeriodModalProps {
   visible: boolean;
@@ -55,7 +56,7 @@ export function NewPaymentPeriodModal({ visible, onClose }: NewPaymentPeriodModa
 
     // Sync to Supabase for other team members
     if (activeTeamId) {
-      pushPaymentPeriodToSupabase(newPeriod, activeTeamId).catch(console.error);
+      pushPaymentPeriodToSupabase(newPeriod, activeTeamId).catch(syncError('sync'));
     }
 
     // Send creation notification to all assigned players via backend
@@ -71,7 +72,7 @@ export function NewPaymentPeriodModal({ visible, onClose }: NewPaymentPeriodModa
           amount: newPeriod.amount,
           dueDate: newPeriod.dueDate || null,
         }),
-      }).catch(console.error);
+      }).catch(syncError('sync'));
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

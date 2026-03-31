@@ -5,6 +5,7 @@ import { X, Check, Plus, Edit3, Trash2 } from 'lucide-react-native';
 import { useTeamStore } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface JerseyColorsModalProps {
   visible: boolean;
@@ -35,7 +36,7 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };

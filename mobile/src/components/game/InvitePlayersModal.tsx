@@ -9,6 +9,7 @@ import { sendPushToPlayers } from '@/lib/notifications';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface InvitePlayersModalProps {
   visible: boolean;
@@ -43,7 +44,7 @@ export function InvitePlayersModal({ visible, onClose, gameId }: InvitePlayersMo
     if (activeTeamId) {
       const currentGame = useTeamStore.getState().games.find((g) => g.id === gameId);
       if (currentGame) {
-        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(console.error);
+        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(syncError('sync'));
       }
     }
   };
@@ -65,7 +66,7 @@ export function InvitePlayersModal({ visible, onClose, gameId }: InvitePlayersMo
       invitedPlayers: [...currentInvited, playerId],
     });
 
-    if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'invited').catch(console.error);
+    if (activeTeamId) pushGameResponseToSupabase(game.id, playerId, 'invited').catch(syncError('sync'));
 
     if (sendNotificationFlag) {
       const jerseyColorName = getJerseyColorName();
@@ -91,7 +92,7 @@ export function InvitePlayersModal({ visible, onClose, gameId }: InvitePlayersMo
         }
       }
 
-      sendPushToPlayers([playerId], title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
+      sendPushToPlayers([playerId], title, message, { gameId: game.id, type: 'game_invite' }).catch(syncError('sync'));
 
       const notification: AppNotification = {
         id: `${Date.now()}-${playerId}`,
@@ -105,7 +106,7 @@ export function InvitePlayersModal({ visible, onClose, gameId }: InvitePlayersMo
         read: false,
       };
       addNotification(notification);
-      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(syncError('sync'));
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -122,7 +123,7 @@ export function InvitePlayersModal({ visible, onClose, gameId }: InvitePlayersMo
     });
 
     if (activeTeamId) {
-      newInvites.forEach((id) => pushGameResponseToSupabase(game.id, id, 'invited').catch(console.error));
+      newInvites.forEach((id) => pushGameResponseToSupabase(game.id, id, 'invited').catch(syncError('sync')));
     }
 
     const jerseyColorName = getJerseyColorName();
@@ -148,7 +149,7 @@ export function InvitePlayersModal({ visible, onClose, gameId }: InvitePlayersMo
       }
     }
 
-    sendPushToPlayers(newInvites, title, message, { gameId: game.id, type: 'game_invite' }).catch(console.error);
+    sendPushToPlayers(newInvites, title, message, { gameId: game.id, type: 'game_invite' }).catch(syncError('sync'));
 
     newInvites.forEach((playerId) => {
       const notification: AppNotification = {
@@ -163,7 +164,7 @@ export function InvitePlayersModal({ visible, onClose, gameId }: InvitePlayersMo
         read: false,
       };
       addNotification(notification);
-      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(syncError('sync'));
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

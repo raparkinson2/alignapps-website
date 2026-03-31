@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { useTeamStore, Photo } from '@/lib/store';
 import { uploadSinglePhoto, deleteSinglePhoto, fetchTeamPhotos } from '@/lib/team-sync';
 import { useFocusEffect } from 'expo-router';
+import { syncError } from '@/lib/sync-error-handler';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -95,7 +96,7 @@ export default function PhotosScreen() {
       removePhoto(selectedPhoto.id);
       // Also delete from cloud
       if (teamId) {
-        deleteSinglePhoto(selectedPhoto.id, teamId).catch(console.error);
+        deleteSinglePhoto(selectedPhoto.id, teamId).catch(syncError('sync'));
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }

@@ -7,6 +7,7 @@ import { SoccerLineupEditor } from '@/components/SoccerLineupEditor';
 import { SoccerDiamondLineupEditor } from '@/components/SoccerDiamondLineupEditor';
 import { LacrosseLineupEditor } from '@/components/LacrosseLineupEditor';
 import { pushGameToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface LineupModalsProps {
   gameId: string;
@@ -74,7 +75,7 @@ export function LineupModals({
     if (activeTeamId) {
       const currentGame = useTeamStore.getState().games.find((g) => g.id === gameId);
       if (currentGame) {
-        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(console.error);
+        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(syncError('sync'));
       }
     }
   };

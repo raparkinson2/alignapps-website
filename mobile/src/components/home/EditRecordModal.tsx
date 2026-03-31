@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { useTeamStore, TeamRecord, Sport } from '@/lib/store';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 // Format team record based on sport
 const formatTeamRecord = (record: TeamRecord | undefined, sport: Sport): string => {
@@ -87,7 +88,7 @@ export function EditRecordModal({ visible, onClose }: EditRecordModalProps) {
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -99,7 +100,7 @@ export function EditRecordModal({ visible, onClose }: EditRecordModalProps) {
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

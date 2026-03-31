@@ -25,6 +25,7 @@ import { ParentChildIcon } from '@/components/ParentChildIcon';
 import { createTeamInvitation } from '@/lib/team-invitations';
 import { pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { SendInviteModal } from './SendInviteModal';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface AddPlayerModalProps {
   visible: boolean;
@@ -171,7 +172,7 @@ export function AddPlayerModal({ visible, onClose }: AddPlayerModalProps) {
 
     // Push new player to Supabase immediately
     if (activeTeamId) {
-      pushPlayerToSupabase(newPlayer, activeTeamId).catch(console.error);
+      pushPlayerToSupabase(newPlayer, activeTeamId).catch(syncError('sync'));
     }
 
     // Also create a Supabase invitation for cross-device joining

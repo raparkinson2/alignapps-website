@@ -29,6 +29,7 @@ import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
 import { uploadPhotoToStorage } from '@/lib/photo-storage';
+import { syncError } from '@/lib/sync-error-handler';
 
 const COLOR_PRESETS = [
   '#ffffff', '#1a1a1a', '#1e40af', '#dc2626', '#16a34a',
@@ -54,7 +55,7 @@ export default function AdminTeamSettingsScreen() {
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };
@@ -64,7 +65,7 @@ export default function AdminTeamSettingsScreen() {
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, name, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, name, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };

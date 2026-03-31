@@ -18,6 +18,7 @@ import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession, supabase } from '@/lib/supabase';
 import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
 import { BACKEND_URL } from '@/lib/config';
+import { syncError } from '@/lib/sync-error-handler';
 
 export const unstable_settings = {
   initialRouteName: 'login',
@@ -494,7 +495,7 @@ function AuthNavigator() {
           if (teamId) {
             setTimeout(() => {
               const state = useTeamStore.getState();
-              pushTeamToSupabase(teamId, state.teamName, state.teamSettings).catch(console.error);
+              pushTeamToSupabase(teamId, state.teamName, state.teamSettings).catch(syncError('sync'));
             }, 50);
           }
         }

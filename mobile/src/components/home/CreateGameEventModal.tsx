@@ -39,6 +39,7 @@ import {
   scheduleRefreshmentDutyReminders,
 } from '@/lib/notifications';
 import { pushGameToSupabase, pushEventToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 // Combine a date with a time string (e.g., "7:00 PM") into a single Date object
 const combineDateAndTime = (date: Date, timeString: string): Date => {
@@ -225,7 +226,7 @@ export function CreateGameEventModal({ visible, onClose, initialDate }: CreateGa
 
     // Sync to Supabase for other team members
     if (activeTeamId) {
-      pushGameToSupabase(newGame, activeTeamId).catch(console.error);
+      pushGameToSupabase(newGame, activeTeamId).catch(syncError('sync'));
     }
 
     // Handle notifications based on invite release option
@@ -242,7 +243,7 @@ export function CreateGameEventModal({ visible, onClose, initialDate }: CreateGa
           'New Game Added!',
           `You've been invited to play vs ${opponent.trim()} on ${formattedDate} at ${fullGameTime}. Make sure to check in or out in the app.`,
           { gameId: newGame.id, type: 'game_invite' }
-        ).catch(console.error);
+        ).catch(syncError('sync'));
       }
     } else if (inviteReleaseOption === 'scheduled') {
       // Schedule notifications for later
@@ -269,7 +270,7 @@ export function CreateGameEventModal({ visible, onClose, initialDate }: CreateGa
         formattedDate,
         fullGameTime,
         is21Plus
-      ).catch(console.error);
+      ).catch(syncError('sync'));
       // Schedule 24hr + 2hr reminders via backend
       scheduleRefreshmentDutyReminders(
         selectedBeerDutyPlayer,
@@ -277,7 +278,7 @@ export function CreateGameEventModal({ visible, onClose, initialDate }: CreateGa
         opponent.trim(),
         gameDateTime,
         is21Plus
-      ).catch(console.error);
+      ).catch(syncError('sync'));
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -319,7 +320,7 @@ export function CreateGameEventModal({ visible, onClose, initialDate }: CreateGa
 
     // Sync to Supabase for other team members
     if (activeTeamId) {
-      pushEventToSupabase(newEvent, activeTeamId).catch(console.error);
+      pushEventToSupabase(newEvent, activeTeamId).catch(syncError('sync'));
     }
 
     // Send notifications to invited players
@@ -337,7 +338,7 @@ export function CreateGameEventModal({ visible, onClose, initialDate }: CreateGa
           'New Event Added!',
           `You've been invited to "${eventName.trim()}" on ${formattedDate} at ${fullEventTime}. Tap to RSVP.`,
           { eventId: newEvent.id, type: 'event_invite' }
-        ).catch(console.error);
+        ).catch(syncError('sync'));
       }
 
       // Create in-app notifications for each invited player
@@ -406,7 +407,7 @@ export function CreateGameEventModal({ visible, onClose, initialDate }: CreateGa
 
     // Sync to Supabase for other team members
     if (activeTeamId) {
-      pushEventToSupabase(newPractice, activeTeamId).catch(console.error);
+      pushEventToSupabase(newPractice, activeTeamId).catch(syncError('sync'));
     }
 
     // Send notifications to invited players
@@ -424,7 +425,7 @@ export function CreateGameEventModal({ visible, onClose, initialDate }: CreateGa
           'Practice Scheduled!',
           `Practice on ${formattedDate} at ${fullPracticeTime}. Make sure to check in or out in the app.`,
           { eventId: newPractice.id, type: 'practice_invite' }
-        ).catch(console.error);
+        ).catch(syncError('sync'));
       }
 
       // Create in-app notifications for each invited player

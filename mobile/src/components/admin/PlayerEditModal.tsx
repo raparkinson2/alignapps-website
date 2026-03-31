@@ -26,6 +26,7 @@ import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone'
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
 import { pushPlayerToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface PlayerEditModalProps {
   visible: boolean;
@@ -85,7 +86,7 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
     const state = useTeamStore.getState();
     const p = state.players.find((pl) => pl.id === id)
       ?? state.teams.find((t) => t.id === activeTeamId)?.players.find((pl) => pl.id === id);
-    if (p) pushPlayerToSupabase(p, activeTeamId).catch(console.error);
+    if (p) pushPlayerToSupabase(p, activeTeamId).catch(syncError('sync'));
   };
 
   const handleSavePlayerName = () => {

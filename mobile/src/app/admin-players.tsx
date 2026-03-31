@@ -45,6 +45,7 @@ import { formatPhoneNumber, formatPhoneInput, unformatPhone } from '@/lib/phone'
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { createTeamInvitation } from '@/lib/team-invitations';
 import { pushPlayerToSupabase, pushTeamToSupabase, deletePlayerFromSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 // ─── Helper Components ───────────────────────────────────────────────────────
 
@@ -197,7 +198,7 @@ export default function AdminPlayersScreen() {
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };
@@ -207,7 +208,7 @@ export default function AdminPlayersScreen() {
     const state = useTeamStore.getState();
     const p = state.players.find((pl) => pl.id === playerId)
       ?? state.teams.find(t => t.id === activeTeamId)?.players.find((pl) => pl.id === playerId);
-    if (p) pushPlayerToSupabase(p, activeTeamId).catch(console.error);
+    if (p) pushPlayerToSupabase(p, activeTeamId).catch(syncError('sync'));
   };
 
   // Modal visibility
@@ -487,7 +488,7 @@ export default function AdminPlayersScreen() {
     addPlayer(newPlayer);
 
     if (activeTeamId) {
-      pushPlayerToSupabase(newPlayer, activeTeamId).catch(console.error);
+      pushPlayerToSupabase(newPlayer, activeTeamId).catch(syncError('sync'));
     }
 
     const teamId = activeTeamId || `team-${Date.now()}`;
@@ -807,7 +808,7 @@ export default function AdminPlayersScreen() {
                           style: 'destructive',
                           onPress: () => {
                             removePlayer(player.id);
-                            deletePlayerFromSupabase(player.id).catch(console.error);
+                            deletePlayerFromSupabase(player.id).catch(syncError('sync'));
                             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                           },
                         },

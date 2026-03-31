@@ -30,6 +30,7 @@ import { createTeamInvitation } from '@/lib/team-invitations';
 import { formatPhoneInput, formatPhoneNumber, unformatPhone } from '@/lib/phone';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
 import { SendInviteModal } from './SendInviteModal';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface PlayerEditModalProps {
   visible: boolean;
@@ -244,7 +245,7 @@ export function PlayerEditModal({ visible, onClose, playerId }: PlayerEditModalP
           ?? storeState.teams.find(t => t.id === activeTeamId)?.players.find(p => p.id === editingPlayer.id)
           ?? editingPlayer;
         const updated = { ...basePlayer, ...updates };
-        pushPlayerToSupabase(updated as Player, activeTeamId).catch(console.error);
+        pushPlayerToSupabase(updated as Player, activeTeamId).catch(syncError('sync'));
       }
       onClose();
       resetForm();
@@ -270,7 +271,7 @@ export function PlayerEditModal({ visible, onClose, playerId }: PlayerEditModalP
 
       // Persist new player to Supabase immediately
       if (activeTeamId) {
-        pushPlayerToSupabase(newPlayer, activeTeamId).catch(console.error);
+        pushPlayerToSupabase(newPlayer, activeTeamId).catch(syncError('sync'));
       }
 
       // Also create a Supabase invitation for cross-device joining

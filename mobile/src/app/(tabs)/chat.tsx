@@ -15,6 +15,7 @@ import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { sendPushToPlayers } from '@/lib/notifications';
 import { sendChatMessage, deleteChatMessage as deleteChatMessageFromSupabase } from '@/lib/chat-sync';
 import { uploadPhotoToStorageBase64, uploadPhotoToStorage } from '@/lib/photo-storage';
+import { syncError } from '@/lib/sync-error-handler';
 
 // GIPHY API key
 const GIPHY_API_KEY = 'mUSMkXeohjZdAa2fSpTRGq7ljx5h00fI';
@@ -496,17 +497,17 @@ export default function ChatScreen() {
         const recipientIds = players
           .filter((p) => p.id !== currentPlayerId && p.status === 'active')
           .map((p) => p.id);
-        sendPushToPlayers(recipientIds, `New Team Chat from ${senderFirstName}!`, `${preview}\nTap to Respond.`, { type: 'chat_mention' }).catch(console.error);
+        sendPushToPlayers(recipientIds, `New Team Chat from ${senderFirstName}!`, `${preview}\nTap to Respond.`, { type: 'chat_mention' }).catch(syncError('sync'));
       } else if (mentionType === 'specific' && mentionedPlayerIds?.length) {
         // @specific — push only the mentioned players
-        sendPushToPlayers(mentionedPlayerIds, `New Team Chat from ${senderFirstName}!`, `${preview}\nTap to Respond.`, { type: 'chat_mention' }).catch(console.error);
+        sendPushToPlayers(mentionedPlayerIds, `New Team Chat from ${senderFirstName}!`, `${preview}\nTap to Respond.`, { type: 'chat_mention' }).catch(syncError('sync'));
       } else {
         // Regular message — push all team members except sender
         const recipientIds = players
           .filter((p) => p.id !== currentPlayerId)
           .map((p) => p.id);
         console.log(`[chat-push] sender=${currentPlayerId} recipients=${JSON.stringify(recipientIds)}`);
-        sendPushToPlayers(recipientIds, `New Team Chat from ${senderFirstName}!`, `${preview}\nTap to Respond.`, { type: 'chat_message' }).catch(console.error);
+        sendPushToPlayers(recipientIds, `New Team Chat from ${senderFirstName}!`, `${preview}\nTap to Respond.`, { type: 'chat_message' }).catch(syncError('sync'));
       }
     }
 
@@ -554,7 +555,7 @@ export default function ChatScreen() {
         const recipientIds = players
           .filter((p) => p.id !== currentPlayerId)
           .map((p) => p.id);
-        sendPushToPlayers(recipientIds, `New Team Chat from ${currentPlayer.firstName}!`, `Sent a photo.\nTap to Respond.`, { type: 'chat_message' }).catch(console.error);
+        sendPushToPlayers(recipientIds, `New Team Chat from ${currentPlayer.firstName}!`, `Sent a photo.\nTap to Respond.`, { type: 'chat_message' }).catch(syncError('sync'));
       }
 
       // Upload image to Supabase Storage in background, then sync the cloud URL
@@ -615,7 +616,7 @@ export default function ChatScreen() {
       const recipientIds = players
         .filter((p) => p.id !== currentPlayerId)
         .map((p) => p.id);
-      sendPushToPlayers(recipientIds, `New Team Chat from ${currentPlayer.firstName}!`, `Sent a GIF.\nTap to Respond.`, { type: 'chat_message' }).catch(console.error);
+      sendPushToPlayers(recipientIds, `New Team Chat from ${currentPlayer.firstName}!`, `Sent a GIF.\nTap to Respond.`, { type: 'chat_message' }).catch(syncError('sync'));
     }
 
     setIsGifModalVisible(false);

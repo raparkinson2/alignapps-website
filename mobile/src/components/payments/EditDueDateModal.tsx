@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useTeamStore } from '@/lib/store';
 import { parseISO } from 'date-fns';
 import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface EditDueDateModalProps {
   visible: boolean;
@@ -27,7 +28,7 @@ export function EditDueDateModal({ visible, onClose, periodId }: EditDueDateModa
     if (activeTeamId) {
       const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === pid);
       if (updated) {
-        pushPaymentPeriodToSupabase({ ...updated, ...updates }, activeTeamId).catch(console.error);
+        pushPaymentPeriodToSupabase({ ...updated, ...updates }, activeTeamId).catch(syncError('sync'));
       }
     }
   };

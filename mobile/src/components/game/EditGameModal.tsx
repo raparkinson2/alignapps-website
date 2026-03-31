@@ -10,6 +10,7 @@ import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { cn } from '@/lib/cn';
 import * as Haptics from 'expo-haptics';
 import { pushGameToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface EditGameModalProps {
   visible: boolean;
@@ -45,7 +46,7 @@ export function EditGameModal({ visible, onClose, gameId }: EditGameModalProps) 
     if (activeTeamId) {
       const currentGame = useTeamStore.getState().games.find((g) => g.id === gameId);
       if (currentGame) {
-        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(console.error);
+        pushGameToSupabase({ ...currentGame, ...updates } as any, activeTeamId).catch(syncError('sync'));
       }
     }
   };

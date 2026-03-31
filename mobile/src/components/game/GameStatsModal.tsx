@@ -8,6 +8,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import * as Haptics from 'expo-haptics';
+import { syncError } from '@/lib/sync-error-handler';
 
 // Edit mode type for game stats
 type GameStatEditMode = 'batter' | 'pitcher' | 'skater' | 'goalie' | 'lacrosse' | 'lacrosse_goalie';
@@ -236,7 +237,7 @@ export function GameStatsModal({
 
     if (activeTeamId) {
       const updated = useTeamStore.getState().players.find(p => p.id === selectedStatsPlayer.id);
-      if (updated) pushPlayerToSupabase(updated, activeTeamId).catch(console.error);
+      if (updated) pushPlayerToSupabase(updated, activeTeamId).catch(syncError('sync'));
     }
 
     onSaved();

@@ -4,6 +4,7 @@ import { X, UserPlus } from 'lucide-react-native';
 import { useTeamStore, getPlayerName } from '@/lib/store';
 import { SwipeablePlayerManageCard } from './AdminPlayerCard';
 import { deletePlayerFromSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface ManageTeamModalProps {
   visible: boolean;
@@ -72,7 +73,7 @@ export function ManageTeamModal({ visible, onClose, onOpenPlayerEdit, onOpenAddP
                         style: 'destructive',
                         onPress: () => {
                           removePlayer(player.id);
-                          deletePlayerFromSupabase(player.id).catch(console.error);
+                          deletePlayerFromSupabase(player.id).catch(syncError('sync'));
                           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                         },
                       },

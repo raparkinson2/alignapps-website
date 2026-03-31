@@ -21,6 +21,7 @@ import { SwipeablePaymentRow } from './SwipeablePaymentRow';
 import { calculatePaymentStatus, getDueDateColor } from './paymentUtils';
 import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
 import { BACKEND_URL } from '@/lib/config';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface PaymentPeriodDetailModalProps {
   visible: boolean;
@@ -73,7 +74,7 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
     if (activeTeamId) {
       const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === pid);
       if (updated) {
-        pushPaymentPeriodToSupabase({ ...updated, ...updates }, activeTeamId).catch(console.error);
+        pushPaymentPeriodToSupabase({ ...updated, ...updates }, activeTeamId).catch(syncError('sync'));
       }
     }
   };
@@ -152,7 +153,7 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
       setTimeout(() => {
         const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === periodId);
         if (updated) {
-          pushPaymentPeriodToSupabase(updated, activeTeamId).catch(console.error);
+          pushPaymentPeriodToSupabase(updated, activeTeamId).catch(syncError('sync'));
         }
       }, 50);
     }
@@ -181,7 +182,7 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
               setTimeout(() => {
                 const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === periodIdSnapshot);
                 if (updated) {
-                  pushPaymentPeriodToSupabase(updated, activeTeamId).catch(console.error);
+                  pushPaymentPeriodToSupabase(updated, activeTeamId).catch(syncError('sync'));
                 }
               }, 50);
             }
@@ -971,7 +972,7 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
                             setTimeout(() => {
                               const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === ctxPeriodId);
                               if (updated) {
-                                pushPaymentPeriodToSupabase(updated, activeTeamId).catch(console.error);
+                                pushPaymentPeriodToSupabase(updated, activeTeamId).catch(syncError('sync'));
                               }
                             }, 50);
                           }

@@ -31,6 +31,7 @@ import {
 import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 export default function AdminFeaturesScreen() {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function AdminFeaturesScreen() {
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };

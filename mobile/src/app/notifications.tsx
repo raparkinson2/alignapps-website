@@ -25,6 +25,7 @@ import { useTeamStore, AppNotification } from '@/lib/store';
 import { markNotificationReadInSupabase } from '@/lib/realtime-sync';
 import { cn } from '@/lib/cn';
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import { syncError } from '@/lib/sync-error-handler';
 
 const SWIPE_THRESHOLD = -80;
 
@@ -178,7 +179,7 @@ export default function NotificationsScreen() {
   const handleNotificationPress = (notification: AppNotification) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     markNotificationRead(notification.id);
-    markNotificationReadInSupabase(notification.id).catch(console.error);
+    markNotificationReadInSupabase(notification.id).catch(syncError('sync'));
 
     // Navigate to event if it's an event/practice notification
     if (notification.eventId) {
@@ -199,7 +200,7 @@ export default function NotificationsScreen() {
     myNotifications.forEach((n) => {
       if (!n.read) {
         markNotificationRead(n.id);
-        markNotificationReadInSupabase(n.id).catch(console.error);
+        markNotificationReadInSupabase(n.id).catch(syncError('sync'));
       }
     });
   };

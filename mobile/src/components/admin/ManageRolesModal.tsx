@@ -5,6 +5,7 @@ import { useTeamStore } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface ManageRolesModalProps {
   visible: boolean;
@@ -21,7 +22,7 @@ export function ManageRolesModal({ visible, onClose }: ManageRolesModalProps) {
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };

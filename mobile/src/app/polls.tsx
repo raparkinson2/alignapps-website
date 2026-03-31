@@ -36,6 +36,7 @@ import * as Haptics from 'expo-haptics';
 import { useTeamStore, Poll, getPlayerName, Player, AppNotification } from '@/lib/store';
 import { pushPollToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
 import { sendPushToPlayers } from '@/lib/notifications';
+import { syncError } from '@/lib/sync-error-handler';
 
 const SWIPE_THRESHOLD = -80;
 
@@ -860,7 +861,7 @@ export default function PollsScreen() {
       .filter((p) => p.id !== currentPlayerId)
       .map((p) => p.id);
 
-    sendPushToPlayers(recipientIds, title, body, { type: 'poll', pollGroupId }).catch(console.error);
+    sendPushToPlayers(recipientIds, title, body, { type: 'poll', pollGroupId }).catch(syncError('sync'));
 
     // Send in-app notification to each team member
     players
@@ -878,7 +879,7 @@ export default function PollsScreen() {
         };
         addNotification(notification);
         if (teamId) {
-          pushNotificationToSupabase(notification, teamId).catch(console.error);
+          pushNotificationToSupabase(notification, teamId).catch(syncError('sync'));
         }
       });
   };
@@ -912,7 +913,7 @@ export default function PollsScreen() {
       };
       addPoll(newPoll);
       if (useTeamStore.getState().activeTeamId) {
-        pushPollToSupabase(newPoll, useTeamStore.getState().activeTeamId!).catch(console.error);
+        pushPollToSupabase(newPoll, useTeamStore.getState().activeTeamId!).catch(syncError('sync'));
       }
     });
 
@@ -942,7 +943,7 @@ export default function PollsScreen() {
         const s = useTeamStore.getState();
         const updatedPoll = s.polls.find(p => p.id === pollId);
         if (updatedPoll && s.activeTeamId) {
-          pushPollToSupabase(updatedPoll, s.activeTeamId).catch(console.error);
+          pushPollToSupabase(updatedPoll, s.activeTeamId).catch(syncError('sync'));
         }
       }, 50);
     }

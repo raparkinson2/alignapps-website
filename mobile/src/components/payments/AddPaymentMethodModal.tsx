@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { useTeamStore, PaymentApp, PaymentMethod } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 const PAYMENT_APP_INFO: Record<PaymentApp, { name: string; color: string }> = {
   venmo: { name: 'Venmo', color: '#3D95CE' },
@@ -37,7 +38,7 @@ export function AddPaymentMethodModal({ visible, onClose }: AddPaymentMethodModa
     if (activeTeamId) {
       setTimeout(() => {
         const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(console.error);
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }, 50);
     }
   };

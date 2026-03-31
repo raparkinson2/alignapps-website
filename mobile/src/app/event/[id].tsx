@@ -35,6 +35,7 @@ import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { sendPushToPlayers, scheduleEventReminderDayBefore, scheduleEventReminderHourBefore } from '@/lib/notifications';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface PlayerRowProps {
   player: Player;
@@ -130,7 +131,7 @@ export default function EventDetailScreen() {
     if (activeTeamId) {
       const currentEvent = useTeamStore.getState().events.find((e) => e.id === eventId);
       if (currentEvent) {
-        pushEventToSupabase({ ...currentEvent, ...updates } as any, activeTeamId).catch(console.error);
+        pushEventToSupabase({ ...currentEvent, ...updates } as any, activeTeamId).catch(syncError('sync'));
       }
     }
   };
@@ -180,7 +181,7 @@ export default function EventDetailScreen() {
   useEffect(() => {
     if (!event || !currentPlayerId) return;
     markEventViewedLocally(event.id);
-    pushEventViewedToSupabase(event.id, currentPlayerId).catch(console.error);
+    pushEventViewedToSupabase(event.id, currentPlayerId).catch(syncError('sync'));
   }, [event?.id, currentPlayerId]);
 
   if (!event) {
@@ -240,7 +241,7 @@ export default function EventDetailScreen() {
       updateEventAndSync(event.id, {
         invitedPlayers: [...(event.invitedPlayers ?? []), playerId],
       });
-      pushEventResponseToSupabase(event.id, playerId, 'invited').catch(console.error);
+      pushEventResponseToSupabase(event.id, playerId, 'invited').catch(syncError('sync'));
     }
 
     if (currentStatus === 'none') {
@@ -272,7 +273,7 @@ export default function EventDetailScreen() {
       newDeclined.push(playerId);
       newResponse = 'declined';
       if (playerId === currentPlayerId) {
-        Notifications.cancelAllScheduledNotificationsAsync().catch(console.error);
+        Notifications.cancelAllScheduledNotificationsAsync().catch(syncError('sync'));
       }
     } else {
       // Declined -> No response (back to invited)
@@ -287,7 +288,7 @@ export default function EventDetailScreen() {
 
     // Push the response to Supabase so all other users see the change in real time
     if (activeTeamId && newResponse) {
-      pushEventResponseToSupabase(event.id, playerId, newResponse).catch(console.error);
+      pushEventResponseToSupabase(event.id, playerId, newResponse).catch(syncError('sync'));
     }
   };
 
@@ -396,7 +397,7 @@ export default function EventDetailScreen() {
           createdAt: new Date().toISOString(),
         };
         addNotification(notification);
-        if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
+        if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(syncError('sync'));
       });
     }
 
@@ -433,7 +434,7 @@ export default function EventDetailScreen() {
 
     // Record the invite in event_responses so realtime sync triggers for all clients
     if (activeTeamId) {
-      pushEventResponseToSupabase(event.id, playerId, 'invited').catch(console.error);
+      pushEventResponseToSupabase(event.id, playerId, 'invited').catch(syncError('sync'));
     }
 
     // Create in-app notification
@@ -450,7 +451,7 @@ export default function EventDetailScreen() {
       createdAt: new Date().toISOString(),
     };
     addNotification(notification);
-    if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
+    if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(syncError('sync'));
 
     // Send real push notification to the invited player's device
     sendPushToPlayers(
@@ -458,7 +459,7 @@ export default function EventDetailScreen() {
       'Event Invite',
       `You're invited to "${event.title}" on ${formattedDateShort} at ${event.time}`,
       { eventId: event.id, type: 'event_invite' }
-    ).catch(console.error);
+    ).catch(syncError('sync'));
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -478,7 +479,7 @@ export default function EventDetailScreen() {
     newInvites.forEach((playerId) => {
       // Record invite in event_responses so realtime sync triggers
       if (activeTeamId) {
-        pushEventResponseToSupabase(event.id, playerId, 'invited').catch(console.error);
+        pushEventResponseToSupabase(event.id, playerId, 'invited').catch(syncError('sync'));
       }
 
       const notification: AppNotification = {
@@ -493,7 +494,7 @@ export default function EventDetailScreen() {
         createdAt: new Date().toISOString(),
       };
       addNotification(notification);
-      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(syncError('sync'));
 
       // Collect player IDs for batch push notification (token fetched fresh in sendPushToPlayers)
     });
@@ -504,7 +505,7 @@ export default function EventDetailScreen() {
       'Event Invite',
       `You're invited to "${event.title}" on ${formattedDateShort} at ${event.time}`,
       { eventId: event.id, type: 'event_invite' }
-    ).catch(console.error);
+    ).catch(syncError('sync'));
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert('Invites Sent', `${newInvites.length} player${newInvites.length !== 1 ? 's' : ''} invited!`);
@@ -531,7 +532,7 @@ export default function EventDetailScreen() {
         createdAt: new Date().toISOString(),
       };
       addNotification(notification);
-      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(console.error);
+      if (activeTeamId) pushNotificationToSupabase(notification, activeTeamId).catch(syncError('sync'));
     });
 
     // Push to all pending players' devices
@@ -541,7 +542,7 @@ export default function EventDetailScreen() {
         'Event Reminder',
         `Please RSVP for "${event.title}" on ${formattedDateShort} at ${event.time}`,
         { eventId: event.id, type: 'event_reminder' }
-      ).catch(console.error);
+      ).catch(syncError('sync'));
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

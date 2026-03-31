@@ -5,6 +5,7 @@ import { X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore } from '@/lib/store';
 import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface EditTeamTotalModalProps {
   visible: boolean;
@@ -25,7 +26,7 @@ export function EditTeamTotalModal({ visible, onClose, periodId }: EditTeamTotal
     if (activeTeamId) {
       const updated = useTeamStore.getState().paymentPeriods.find((p) => p.id === pid);
       if (updated) {
-        pushPaymentPeriodToSupabase({ ...updated, ...updates }, activeTeamId).catch(console.error);
+        pushPaymentPeriodToSupabase({ ...updated, ...updates }, activeTeamId).catch(syncError('sync'));
       }
     }
   };
