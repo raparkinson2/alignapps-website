@@ -837,16 +837,16 @@ export default function PlayerProfileScreen() {
               {/* Divider */}
               <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginHorizontal: 24 }} />
 
-              {/* Attendance stats */}
+              {/* Attendance stats — order: Invited | Games Played | Attendance */}
               <View style={{ flexDirection: 'row', paddingHorizontal: 24, paddingVertical: 18 }}>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 22 }}>{totalCheckedIn}</Text>
-                  <Text style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Games In</Text>
-                </View>
-                <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 22 }}>{totalInvited}</Text>
                   <Text style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Invited</Text>
+                </View>
+                <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 22 }}>{totalCheckedIn}</Text>
+                  <Text style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Games Played</Text>
                 </View>
                 <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
                 <View style={{ flex: 1, alignItems: 'center' }}>
