@@ -27,6 +27,7 @@ import {
   Bell,
   CreditCard,
   Beer,
+  Download,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -68,6 +69,7 @@ import { DangerZoneModals } from '@/components/admin/DangerZoneModals';
 import { EndSeasonModal } from '@/components/admin/EndSeasonModal';
 import { EmailTeamModal } from '@/components/admin/EmailTeamModal';
 import { TeamSettingsModal } from '@/components/admin/TeamSettingsModal';
+import { ExportStatsModal } from '@/components/admin/ExportStatsModal';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
 import { syncError } from '@/lib/sync-error-handler';
@@ -155,6 +157,7 @@ function AdminScreen() {
 
   // Season Management modal
   const [isEndSeasonModalVisible, setIsEndSeasonModalVisible] = useState(false);
+  const [isExportStatsModalVisible, setIsExportStatsModalVisible] = useState(false);
   const [isRefreshmentModalVisible, setIsRefreshmentModalVisible] = useState(false);
   const [isTeamStatsModalVisible, setIsTeamStatsModalVisible] = useState(false);
 
@@ -863,6 +866,32 @@ function AdminScreen() {
               </Pressable>
             )}
 
+            {/* Export Stats - premium feature */}
+            {teamSettings.showTeamStats !== false && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsExportStatsModalVisible(true);
+                }}
+                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-green-500/20 p-2 rounded-full">
+                      <Download size={20} color="#22c55e" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-white font-semibold">Export Stats</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Download roster stats as CSV — Premium
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={20} color="#64748b" />
+                </View>
+              </Pressable>
+            )}
+
             {/* Culture Subsection Label */}
             <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
               Culture
@@ -1060,6 +1089,12 @@ function AdminScreen() {
       <EndSeasonModal
         visible={isEndSeasonModalVisible}
         onClose={() => setIsEndSeasonModalVisible(false)}
+      />
+
+      {/* Export Stats Modal */}
+      <ExportStatsModal
+        visible={isExportStatsModalVisible}
+        onClose={() => setIsExportStatsModalVisible(false)}
       />
 
       {/* Email Team Modal */}
