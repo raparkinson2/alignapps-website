@@ -330,7 +330,7 @@ function ColorPicker({ selectedColor, onColorChange, setScrollEnabled, scrollRef
   return (
     <View>
       {/* Preset swatches row */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingRight: 4 }}>
         {COLOR_PRESETS.map((hex) => {
           const isSelected = selectedColor.toUpperCase() === hex.toUpperCase();
           return (
@@ -365,7 +365,7 @@ function ColorPicker({ selectedColor, onColorChange, setScrollEnabled, scrollRef
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* Custom color toggle button */}
       <Pressable
