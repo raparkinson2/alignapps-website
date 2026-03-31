@@ -346,11 +346,13 @@ export async function resendConfirmationEmail(email: string): Promise<AuthResult
 }
 
 /**
- * Sign in with Google using expo-auth-session (native) or Supabase OAuth (web)
+ * Sign in with Google via Supabase OAuth broker.
+ * Supabase acts as middleman — Google only sees Supabase's callback URL
+ * (already registered), then Supabase redirects back into the app.
  */
 export async function signInWithGoogle(): Promise<AuthResult & { email?: string }> {
   try {
-    // Web: use Supabase OAuth redirect
+    // Web: use Supabase OAuth redirect (full page redirect)
     if (Platform.OS === 'web') {
       const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined;
       const { error } = await supabase.auth.signInWithOAuth({
@@ -358,68 +360,71 @@ export async function signInWithGoogle(): Promise<AuthResult & { email?: string 
         options: { redirectTo },
       });
       if (error) return { success: false, error: error.message };
-      // Browser will redirect — keep loading
       return { success: true };
     }
 
-    // Native iOS/Android: use expo-auth-session with Google OAuth
+    // Native iOS/Android: open Supabase's OAuth URL in a browser,
+    // then Supabase redirects back to alignsports:// with tokens.
     WebBrowser.maybeCompleteAuthSession();
 
-    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-    const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+    const redirectTo = AuthSession.makeRedirectUri({ scheme: 'alignsports' });
 
-    if (!webClientId) {
-      return { success: false, error: 'Google Sign-In is not configured' };
-    }
-
-    const redirectUri = AuthSession.makeRedirectUri({ scheme: 'alignsports' });
-
-    const discovery = {
-      authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-      tokenEndpoint: 'https://oauth2.googleapis.com/token',
-    };
-
-    const clientId = Platform.OS === 'ios' && iosClientId ? iosClientId : webClientId;
-
-    const request = new AuthSession.AuthRequest({
-      clientId,
-      scopes: ['openid', 'profile', 'email'],
-      redirectUri,
-      responseType: AuthSession.ResponseType.Token,
-      usePKCE: false,
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
     });
 
-    const result = await request.promptAsync(discovery);
+    if (error || !data.url) {
+      return { success: false, error: error?.message || 'Failed to start Google sign-in' };
+    }
 
-    if (result.type === 'cancel' || result.type === 'dismiss') {
+    // Open Supabase's OAuth URL — user signs in with Google in browser
+    const browserResult = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+    if (browserResult.type === 'cancel' || browserResult.type === 'dismiss') {
       return { success: false, error: 'cancelled' };
     }
 
-    if (result.type !== 'success' || !result.params?.access_token) {
+    if (browserResult.type !== 'success' || !browserResult.url) {
       return { success: false, error: 'Google Sign-In failed' };
     }
 
-    const { data, error } = await supabase.auth.signInWithIdToken({
-      provider: 'google',
-      token: result.params.access_token,
-    });
+    // Parse tokens from the deep link URL Supabase redirects to
+    const returnUrl = browserResult.url;
+    const hash = returnUrl.includes('#') ? returnUrl.split('#')[1] : returnUrl.split('?')[1] ?? '';
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
 
-    if (error) {
-      // Fallback: try signInWithOAuth approach using the access token directly
-      const { data: userData, error: userError } = await supabase.auth.getUser(result.params.access_token);
-      if (userError || !userData.user) {
-        return { success: false, error: error.message };
+    if (accessToken && refreshToken) {
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (sessionError || !sessionData.session) {
+        return { success: false, error: sessionError?.message || 'Failed to establish session' };
       }
-      const email = userData.user.email ?? undefined;
-      return { success: true, userId: userData.user.id, email };
+      return {
+        success: true,
+        userId: sessionData.session.user.id,
+        email: sessionData.session.user.email ?? undefined,
+      };
     }
 
-    if (!data.user) {
-      return { success: false, error: 'Failed to sign in with Google' };
+    // Fallback: session may already be set by Supabase client
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session) {
+      return {
+        success: true,
+        userId: sessionData.session.user.id,
+        email: sessionData.session.user.email ?? undefined,
+      };
     }
 
-    const email = data.user.email ?? undefined;
-    return { success: true, userId: data.user.id, email };
+    return { success: false, error: 'Failed to get session after Google sign-in' };
   } catch (err: any) {
     if (err?.message?.includes('cancel') || err?.message?.includes('dismiss')) {
       return { success: false, error: 'cancelled' };
@@ -428,6 +433,7 @@ export async function signInWithGoogle(): Promise<AuthResult & { email?: string 
     return { success: false, error: err?.message || 'Google Sign-In failed' };
   }
 }
+
 export async function signInWithApple(): Promise<AuthResult & { email?: string }> {
   try {
     const credential = await AppleAuthentication.signInAsync({
