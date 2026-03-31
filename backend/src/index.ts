@@ -1,6 +1,7 @@
 import "@vibecodeapp/proxy"; // DO NOT REMOVE OTHERWISE VIBECODE PROXY WILL NOT WORK
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { secureHeaders } from "hono/secure-headers";
 import "./env";
 import { sampleRouter } from "./routes/sample";
 import { authRouter } from "./routes/auth";
@@ -13,6 +14,20 @@ import { logger } from "hono/logger";
 import { authRateLimit, paymentRateLimit, notificationRateLimit, generalRateLimit } from "./middleware/rate-limit";
 
 const app = new Hono();
+
+// Security headers (X-Content-Type-Options, X-Frame-Options, etc.)
+app.use("*", secureHeaders());
+
+// Body size limit — reject payloads larger than 1 MB for all routes
+// (Stripe webhook is excluded because Hono reads the raw body before this runs)
+const MAX_BODY_BYTES = 1 * 1024 * 1024; // 1 MB
+app.use("*", async (c, next) => {
+  const contentLength = c.req.header("content-length");
+  if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+    return c.json({ error: "Request body too large" }, 413);
+  }
+  return next();
+});
 
 // CORS middleware - validates origin against allowlist
 // Native mobile apps (iOS/Android) send no Origin header — always allow those requests.

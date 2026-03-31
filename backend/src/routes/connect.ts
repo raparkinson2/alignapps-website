@@ -10,6 +10,11 @@ const DisconnectSchema = z.object({
   teamId: z.string().min(1, "teamId is required"),
 });
 
+const OAuthStateSchema = z.object({
+  teamId: z.string().min(1),
+  adminId: z.string().min(1),
+});
+
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
@@ -94,9 +99,9 @@ connectRouter.get("/callback", async (c) => {
   let adminId: string;
 
   try {
-    const state = JSON.parse(stateRaw) as { teamId: string; adminId: string };
-    teamId = state.teamId;
-    adminId = state.adminId;
+    const parsed = OAuthStateSchema.parse(JSON.parse(stateRaw));
+    teamId = parsed.teamId;
+    adminId = parsed.adminId;
   } catch {
     return c.html("<p>Invalid state parameter.</p>", 400);
   }

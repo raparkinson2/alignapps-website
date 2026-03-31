@@ -34,6 +34,18 @@ const ScheduleBeerDutySchema = z.object({
 
 const notificationsRouter = new Hono();
 
+// ── Internal admin secret check ───────────────────────────────────────────────
+// Used by debug/diagnostic endpoints that expose raw player data or device tokens.
+function requireAdminSecret(c: any): Response | null {
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret) return null; // not configured — allow (keeps existing installs working)
+  const provided = c.req.header("x-admin-secret");
+  if (!provided || provided !== secret) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  return null;
+}
+
 // Service-role Supabase client - bypasses RLS to read/write push tokens
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
@@ -345,6 +357,9 @@ notificationsRouter.post("/send-to-players", zValidator("json", SendToPlayersSch
  * GET /api/notifications/debug-tokens?teamId=xxx
  */
 notificationsRouter.get("/debug-tokens", async (c) => {
+  const denied = requireAdminSecret(c);
+  if (denied) return denied;
+
   const teamId = c.req.query("teamId");
   if (!teamId) return c.json({ error: "teamId required" }, 400);
 
@@ -388,6 +403,9 @@ notificationsRouter.get("/debug-tokens", async (c) => {
  * Body: { token: string, title?: string, body?: string }
  */
 notificationsRouter.post("/test-apns", zValidator("json", TestApnsSchema), async (c) => {
+  const denied = requireAdminSecret(c);
+  if (denied) return denied;
+
   const { token, title, body } = c.req.valid("json");
 
   const bundleId = process.env.APNS_BUNDLE_ID || "com.vibecode.alignsports-jy5wjr";
@@ -463,6 +481,9 @@ notificationsRouter.post("/registration-diagnostic", async (c) => {
  * Returns recent diagnostic entries so you can see what happened on tester devices.
  */
 notificationsRouter.get("/registration-diagnostics", async (c) => {
+  const denied = requireAdminSecret(c);
+  if (denied) return denied;
+
   const { data, error } = await supabaseAdmin
     .from("push_diagnostics")
     .select("*")
@@ -533,6 +554,9 @@ notificationsRouter.post("/schedule-beer-duty", zValidator("json", ScheduleBeerD
  * Clears all diagnostic entries from the table.
  */
 notificationsRouter.delete("/registration-diagnostics", async (c) => {
+  const denied = requireAdminSecret(c);
+  if (denied) return denied;
+
   const { error } = await supabaseAdmin
     .from("push_diagnostics")
     .delete()

@@ -40,7 +40,7 @@ authRouter.post("/verify-password", zValidator("json", VerifyPasswordSchema), as
   const email = rawEmail.toLowerCase().trim();
 
   // Compute the SHA-256 hash the same way the mobile app does
-  const SHARED_SALT = "align_sports_shared_salt_v1";
+  const SHARED_SALT = process.env.AUTH_SHARED_SALT ?? "align_sports_shared_salt_v1";
   const passwordHash = createHash("sha256")
     .update(`${SHARED_SALT}:${password}`)
     .digest("hex");
@@ -69,16 +69,9 @@ authRouter.post("/verify-password", zValidator("json", VerifyPasswordSchema), as
   }
 
   // Find any player row with a matching password
-  const playerWithPassword = players.find(
+  const matchedPlayer = players.find(
     (p) => p.password && p.password === passwordHash
   );
-
-  // Also check if any row has a plain-text password matching (legacy)
-  const playerWithPlainPassword = !playerWithPassword
-    ? players.find((p) => p.password && !/^[a-f0-9]{64}$/i.test(p.password) && p.password === password)
-    : null;
-
-  const matchedPlayer = playerWithPassword || playerWithPlainPassword;
 
   if (!matchedPlayer) {
     return c.json({ error: "Incorrect password" }, 401);
