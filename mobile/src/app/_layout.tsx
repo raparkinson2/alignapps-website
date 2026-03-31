@@ -261,13 +261,15 @@ function AuthNavigator() {
     getCustomerInfo().then((result) => {
       if (!result.ok) return;
       const active = result.data.entitlements.active;
-      const isPremium = Boolean(active['premium'] || active['multi_team']);
+      const rcIsPremium = Boolean(active['premium'] || active['multi_team']);
       const latestState = useTeamStore.getState();
-      if (isPremium !== (latestState.teamSettings?.isPremium ?? false)) {
-        setTeamSettings({ isPremium });
+      // Only upgrade to premium via RevenueCat — never downgrade here,
+      // as that would override DEV bypasses or team-level premium set by other means.
+      if (rcIsPremium && !(latestState.teamSettings?.isPremium ?? false)) {
+        setTeamSettings({ isPremium: true });
         if (latestState.activeTeamId) {
           const s = useTeamStore.getState();
-          pushTeamToSupabase(latestState.activeTeamId, s.teamName, { ...s.teamSettings, isPremium })
+          pushTeamToSupabase(latestState.activeTeamId, s.teamName, { ...s.teamSettings, isPremium: true })
             .catch(syncError('sync'));
         }
       }
