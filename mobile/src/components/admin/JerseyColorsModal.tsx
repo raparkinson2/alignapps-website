@@ -1,5 +1,16 @@
-import { View, Text, ScrollView, Pressable, TextInput, Modal, Alert } from 'react-native';
-import { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  TextInput,
+  Modal,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+} from 'react-native';
+import { useState, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { X, Check, Plus, Edit3, Trash2 } from 'lucide-react-native';
 import { useTeamStore } from '@/lib/store';
@@ -30,9 +41,11 @@ function normalizeHex(input: string): string {
 interface ColorPickerProps {
   selectedColor: string;
   onColorChange: (hex: string) => void;
+  scrollRef: React.RefObject<ScrollView | null>;
+  scrollYOffset?: number; // approximate Y position in the scroll view so we can scroll to it
 }
 
-function ColorPicker({ selectedColor, onColorChange }: ColorPickerProps) {
+function ColorPicker({ selectedColor, onColorChange, scrollRef, scrollYOffset = 0 }: ColorPickerProps) {
   const [customHex, setCustomHex] = useState('');
   const [hexError, setHexError] = useState(false);
 
@@ -41,6 +54,7 @@ function ColorPicker({ selectedColor, onColorChange }: ColorPickerProps) {
     onColorChange(hex);
     setCustomHex('');
     setHexError(false);
+    Keyboard.dismiss();
   };
 
   const handleHexChange = (text: string) => {
@@ -58,6 +72,13 @@ function ColorPicker({ selectedColor, onColorChange }: ColorPickerProps) {
     if (!isValidHex(normalized)) {
       setHexError(true);
     }
+  };
+
+  const handleHexFocus = () => {
+    // Scroll down so the input isn't hidden by the keyboard
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: scrollYOffset, animated: true });
+    }, 100);
   };
 
   const isPresetSelected = COLOR_PRESETS.includes(selectedColor);
@@ -83,42 +104,57 @@ function ColorPicker({ selectedColor, onColorChange }: ColorPickerProps) {
         ))}
       </View>
 
-      {/* Custom hex input */}
-      <View className="flex-row items-center gap-3">
+      {/* Custom hex row */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         {/* Live preview swatch */}
         <View
           style={{
             width: 44,
             height: 44,
             borderRadius: 12,
-            backgroundColor: selectedColor,
+            backgroundColor: isValidHex(selectedColor) ? selectedColor : '#ffffff',
             borderWidth: 2,
             borderColor: !isPresetSelected ? '#67e8f9' : '#334155',
             flexShrink: 0,
           }}
         />
-        <View className="flex-1">
+        <View style={{ flex: 1 }}>
           <TextInput
             value={customHex}
             onChangeText={handleHexChange}
             onBlur={handleHexBlur}
-            placeholder={selectedColor}
+            onFocus={handleHexFocus}
+            onSubmitEditing={() => Keyboard.dismiss()}
+            placeholder={selectedColor.toUpperCase()}
             placeholderTextColor="#475569"
             autoCapitalize="characters"
             autoCorrect={false}
+            returnKeyType="done"
             maxLength={7}
-            className={cn(
-              'rounded-xl px-4 py-3 text-white font-mono',
-              hexError ? 'bg-red-500/15 border border-red-500/50' : 'bg-slate-800 border border-slate-700'
-            )}
+            style={{
+              backgroundColor: hexError ? 'rgba(239,68,68,0.12)' : '#1e293b',
+              borderWidth: 1,
+              borderColor: hexError ? 'rgba(239,68,68,0.5)' : '#334155',
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              color: '#ffffff',
+              fontSize: 15,
+              fontWeight: '600',
+              letterSpacing: 1,
+            }}
           />
         </View>
       </View>
       {hexError && (
-        <Text className="text-red-400 text-xs mt-1 ml-14">Enter a valid hex like #FF6B00</Text>
+        <Text style={{ color: '#ef4444', fontSize: 12, marginTop: 4, marginLeft: 54 }}>
+          Enter a valid hex like #FF6B00
+        </Text>
       )}
       {!isPresetSelected && isValidHex(selectedColor) && (
-        <Text className="text-cyan-500 text-xs mt-1 ml-14">Custom color selected</Text>
+        <Text style={{ color: '#67e8f9', fontSize: 12, marginTop: 4, marginLeft: 54 }}>
+          Custom color selected
+        </Text>
       )}
     </View>
   );
@@ -130,6 +166,8 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const games = useTeamStore((s) => s.games);
   const updateGame = useTeamStore((s) => s.updateGame);
+
+  const scrollRef = useRef<ScrollView>(null);
 
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#ffffff');
@@ -149,6 +187,7 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
 
   const handleAddJerseyColor = () => {
     if (!newColorName.trim()) return;
+    Keyboard.dismiss();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const newColors = [...teamSettings.jerseyColors, { name: newColorName.trim(), color: newColorHex }];
     setTeamSettingsAndSync({ jerseyColors: newColors });
@@ -156,43 +195,26 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
     setNewColorHex('#ffffff');
   };
 
-  const handleRemoveJerseyColor = (name: string) => {
-    Alert.alert(
-      'Remove Jersey Color',
-      `Are you sure you want to remove "${name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            const newColors = teamSettings.jerseyColors.filter((c) => c.name !== name);
-            setTeamSettingsAndSync({ jerseyColors: newColors });
-          },
-        },
-      ]
-    );
-  };
-
   const handleEditJerseyColor = (index: number) => {
     const color = teamSettings.jerseyColors[index];
     setEditingColorIndex(index);
     setEditColorName(color.name);
     setEditColorHex(color.color);
+    // Scroll to the editing item
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: index * 72, animated: true });
+    }, 150);
   };
 
   const handleSaveEditJerseyColor = () => {
     if (editingColorIndex === null || !editColorName.trim()) return;
-
+    Keyboard.dismiss();
     const oldColorName = teamSettings.jerseyColors[editingColorIndex].name;
     const newColorNameTrimmed = editColorName.trim();
-
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const newColors = [...teamSettings.jerseyColors];
     newColors[editingColorIndex] = { name: newColorNameTrimmed, color: editColorHex };
     setTeamSettingsAndSync({ jerseyColors: newColors });
-
     if (oldColorName !== newColorNameTrimmed) {
       games.forEach((game) => {
         if (game.jerseyColor === oldColorName) {
@@ -200,13 +222,13 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
         }
       });
     }
-
     setEditingColorIndex(null);
     setEditColorName('');
     setEditColorHex('#ffffff');
   };
 
   const handleCancelEditJerseyColor = () => {
+    Keyboard.dismiss();
     setEditingColorIndex(null);
     setEditColorName('');
     setEditColorHex('#ffffff');
@@ -215,133 +237,265 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
   const handleDeleteEditingColor = () => {
     if (editingColorIndex === null) return;
     const colorName = teamSettings.jerseyColors[editingColorIndex].name;
-    Alert.alert(
-      'Remove Jersey Color',
-      `Are you sure you want to remove "${colorName}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            const newColors = teamSettings.jerseyColors.filter((_, i) => i !== editingColorIndex);
-            setTeamSettingsAndSync({ jerseyColors: newColors });
-            setEditingColorIndex(null);
-            setEditColorName('');
-            setEditColorHex('#ffffff');
-          },
+    Alert.alert('Remove Jersey Color', `Are you sure you want to remove "${colorName}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          const newColors = teamSettings.jerseyColors.filter((_, i) => i !== editingColorIndex);
+          setTeamSettingsAndSync({ jerseyColors: newColors });
+          setEditingColorIndex(null);
+          setEditColorName('');
+          setEditColorHex('#ffffff');
         },
-      ]
-    );
+      },
+    ]);
   };
+
+  const handleRemoveJerseyColor = (name: string) => {
+    Alert.alert('Remove Jersey Color', `Are you sure you want to remove "${name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          const newColors = teamSettings.jerseyColors.filter((c) => c.name !== name);
+          setTeamSettingsAndSync({ jerseyColors: newColors });
+        },
+      },
+    ]);
+  };
+
+  const numColors = teamSettings.jerseyColors.length;
+  // Rough Y offset for the "Add New Color" hex input in the scroll view
+  const addSectionScrollY = numColors * 76 + 160;
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
       transparent
-      onRequestClose={onClose}
+      onRequestClose={() => { Keyboard.dismiss(); onClose(); }}
     >
-      <View className="flex-1 bg-black/60 justify-end">
-        <View className="bg-slate-900 rounded-t-3xl" style={{ maxHeight: '90%', minHeight: 300 }}>
-          <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-            <Text className="text-white text-lg font-bold">Jersey Colors</Text>
-            <Pressable onPress={onClose} className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center">
-              <X size={18} color="#94a3b8" />
-            </Pressable>
-          </View>
-
-          <ScrollView className="px-5 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
-            {/* Current Colors */}
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-              Current Colors
-            </Text>
-
-            {teamSettings.jerseyColors.map((color, index) => (
-              <View key={`color-${index}`}>
-                {editingColorIndex === index ? (
-                  <View className="bg-slate-800/80 rounded-xl p-4 mb-2 border border-cyan-500/50">
-                    <TextInput
-                      value={editColorName}
-                      onChangeText={setEditColorName}
-                      placeholder="Description (e.g. Home)"
-                      placeholderTextColor="#64748b"
-                      autoCapitalize="words"
-                      className="bg-slate-700 rounded-xl px-4 py-3 text-white mb-3"
-                    />
-                    <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
-                    <ColorPicker selectedColor={editColorHex} onColorChange={setEditColorHex} />
-                    <View className="flex-row mt-4">
-                      <Pressable
-                        onPress={handleCancelEditJerseyColor}
-                        className="flex-1 bg-slate-700 rounded-xl py-3 mr-2"
-                      >
-                        <Text className="text-slate-300 font-semibold text-center">Cancel</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={handleDeleteEditingColor}
-                        className="bg-red-500/20 rounded-xl py-3 px-4 mr-2"
-                      >
-                        <Trash2 size={18} color="#ef4444" />
-                      </Pressable>
-                      <Pressable
-                        onPress={handleSaveEditJerseyColor}
-                        className="flex-1 bg-cyan-500 rounded-xl py-3"
-                      >
-                        <Text className="text-white font-semibold text-center">Save</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center bg-slate-800/80 rounded-xl p-4 mb-2 border border-slate-700/50">
-                    <View
-                      className="w-10 h-10 rounded-full border-2 border-slate-600"
-                      style={{ backgroundColor: color.color }}
-                    />
-                    <Text className="text-white font-medium ml-3 flex-1">{color.name}</Text>
-                    <Text className="text-slate-600 text-xs font-mono mr-2">{color.color.toUpperCase()}</Text>
-                    <Pressable
-                      onPress={() => handleEditJerseyColor(index)}
-                      className="p-2"
-                    >
-                      <Edit3 size={18} color="#67e8f9" />
-                    </Pressable>
-                  </View>
-                )}
-              </View>
-            ))}
-
-            {/* Add New Color */}
-            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-              Add New Color
-            </Text>
-
-            <View className="mb-4">
-              <TextInput
-                value={newColorName}
-                onChangeText={setNewColorName}
-                placeholder="Name (e.g. Home, Away, Black)"
-                placeholderTextColor="#64748b"
-                autoCapitalize="words"
-                className="bg-slate-800 rounded-xl px-4 py-3 text-white mb-3"
-              />
-
-              <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
-              <ColorPicker selectedColor={newColorHex} onColorChange={setNewColorHex} />
-
-              <Pressable
-                onPress={handleAddJerseyColor}
-                className="bg-cyan-500 rounded-xl py-3 flex-row items-center justify-center mt-4"
-                style={{ opacity: newColorName.trim() ? 1 : 0.5 }}
+      <Pressable
+        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}
+        onPress={() => Keyboard.dismiss()}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          {/* Stop touch from propagating to the backdrop dismiss */}
+          <Pressable onPress={() => {}}>
+            <View
+              style={{
+                backgroundColor: '#0f172a',
+                borderTopLeftRadius: 28,
+                borderTopRightRadius: 28,
+                maxHeight: '90%',
+                minHeight: 300,
+              }}
+            >
+              {/* Header */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingHorizontal: 20,
+                  paddingVertical: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#1e293b',
+                }}
               >
-                <Plus size={20} color="white" />
-                <Text className="text-white font-semibold ml-2">Add Color</Text>
-              </Pressable>
+                <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '700' }}>Jersey Colors</Text>
+                <Pressable
+                  onPress={() => { Keyboard.dismiss(); onClose(); }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: '#1e293b',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X size={18} color="#94a3b8" />
+                </Pressable>
+              </View>
+
+              <ScrollView
+                ref={scrollRef}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ padding: 20, paddingBottom: 48 }}
+              >
+                {/* Current Colors */}
+                <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 12 }}>
+                  Current Colors
+                </Text>
+
+                {teamSettings.jerseyColors.map((color, index) => (
+                  <View key={`color-${index}`}>
+                    {editingColorIndex === index ? (
+                      <View
+                        style={{
+                          backgroundColor: '#1e293b',
+                          borderRadius: 16,
+                          padding: 16,
+                          marginBottom: 8,
+                          borderWidth: 1.5,
+                          borderColor: 'rgba(103,232,249,0.4)',
+                        }}
+                      >
+                        <TextInput
+                          value={editColorName}
+                          onChangeText={setEditColorName}
+                          onSubmitEditing={() => Keyboard.dismiss()}
+                          returnKeyType="done"
+                          placeholder="Name (e.g. Home)"
+                          placeholderTextColor="#475569"
+                          autoCapitalize="words"
+                          style={{
+                            backgroundColor: '#0f172a',
+                            borderRadius: 12,
+                            paddingHorizontal: 14,
+                            paddingVertical: 12,
+                            color: '#ffffff',
+                            fontSize: 15,
+                            marginBottom: 12,
+                          }}
+                        />
+                        <Text style={{ color: '#64748b', fontSize: 13, marginBottom: 10 }}>Select Color</Text>
+                        <ColorPicker
+                          selectedColor={editColorHex}
+                          onColorChange={setEditColorHex}
+                          scrollRef={scrollRef}
+                          scrollYOffset={index * 76}
+                        />
+                        <View style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}>
+                          <Pressable
+                            onPress={handleCancelEditJerseyColor}
+                            style={{ flex: 1, backgroundColor: '#1e293b', borderRadius: 12, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: '#334155' }}
+                          >
+                            <Text style={{ color: '#94a3b8', fontWeight: '600' }}>Cancel</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={handleDeleteEditingColor}
+                            style={{ backgroundColor: 'rgba(239,68,68,0.15)', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }}
+                          >
+                            <Trash2 size={18} color="#ef4444" />
+                          </Pressable>
+                          <Pressable
+                            onPress={handleSaveEditJerseyColor}
+                            style={{ flex: 1, backgroundColor: '#67e8f9', borderRadius: 12, paddingVertical: 12, alignItems: 'center' }}
+                          >
+                            <Text style={{ color: '#000000', fontWeight: '700' }}>Save</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    ) : (
+                      <Pressable
+                        onPress={() => handleEditJerseyColor(index)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          backgroundColor: '#1e293b',
+                          borderRadius: 14,
+                          padding: 14,
+                          marginBottom: 8,
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: color.color,
+                            borderWidth: 2,
+                            borderColor: '#334155',
+                          }}
+                        />
+                        <Text style={{ color: '#ffffff', fontWeight: '600', marginLeft: 12, flex: 1, fontSize: 15 }}>
+                          {color.name}
+                        </Text>
+                        <Text style={{ color: '#475569', fontSize: 12, fontFamily: 'monospace', marginRight: 8 }}>
+                          {color.color.toUpperCase()}
+                        </Text>
+                        <Edit3 size={16} color="#67e8f9" />
+                      </Pressable>
+                    )}
+                  </View>
+                ))}
+
+                {/* Add New Color */}
+                <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 12, marginTop: 20 }}>
+                  Add New Color
+                </Text>
+
+                <View
+                  style={{
+                    backgroundColor: '#1e293b',
+                    borderRadius: 16,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: '#334155',
+                  }}
+                >
+                  <TextInput
+                    value={newColorName}
+                    onChangeText={setNewColorName}
+                    onSubmitEditing={() => Keyboard.dismiss()}
+                    returnKeyType="done"
+                    placeholder="Name (e.g. Home, Away, Black)"
+                    placeholderTextColor="#475569"
+                    autoCapitalize="words"
+                    style={{
+                      backgroundColor: '#0f172a',
+                      borderRadius: 12,
+                      paddingHorizontal: 14,
+                      paddingVertical: 12,
+                      color: '#ffffff',
+                      fontSize: 15,
+                      marginBottom: 14,
+                    }}
+                  />
+
+                  <Text style={{ color: '#64748b', fontSize: 13, marginBottom: 10 }}>Select Color</Text>
+                  <ColorPicker
+                    selectedColor={newColorHex}
+                    onColorChange={setNewColorHex}
+                    scrollRef={scrollRef}
+                    scrollYOffset={addSectionScrollY}
+                  />
+
+                  <Pressable
+                    onPress={handleAddJerseyColor}
+                    style={{
+                      marginTop: 16,
+                      backgroundColor: newColorName.trim() ? '#67e8f9' : '#1e3a4a',
+                      borderRadius: 12,
+                      paddingVertical: 13,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Plus size={18} color={newColorName.trim() ? '#000' : '#334155'} />
+                    <Text style={{ color: newColorName.trim() ? '#000000' : '#334155', fontWeight: '700', fontSize: 15 }}>
+                      Add Color
+                    </Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
             </View>
-          </ScrollView>
-        </View>
-      </View>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Pressable>
     </Modal>
   );
 }
