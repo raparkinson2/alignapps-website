@@ -1,7 +1,9 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { getMilestonesToFire, buildReminderMessage } from "../lib/payment-logic";
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync } from "fs";
 import { join } from "path";
 
 const paymentRemindersRouter = new Hono();
@@ -10,6 +12,22 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+// ─── Zod schemas ──────────────────────────────────────────────────────────────
+
+const SendManualSchema = z.object({
+  periodId: z.string().min(1, "periodId is required"),
+  teamId: z.string().min(1, "teamId is required"),
+});
+
+const OnCreateSchema = z.object({
+  periodId: z.string().min(1, "periodId is required"),
+  teamId: z.string().min(1, "teamId is required"),
+  playerIds: z.array(z.string()).min(1, "playerIds must have at least one entry"),
+  title: z.string().default("Payment"),
+  amount: z.number().default(0),
+  dueDate: z.string().nullable().optional(),
+});
 
 // ─── Persistent sent-milestone tracking ───────────────────────────────────────
 // Stored on disk so server restarts don't cause milestone re-fires.
@@ -32,20 +50,6 @@ function writeLog(log: MilestoneLog): void {
     Bun.write(LOG_PATH, JSON.stringify(log, null, 2));
   } catch (err) {
     console.error("[payment-reminders] Failed to persist milestone log:", err);
-  }
-}
-
-function getSentForPeriod(periodId: string): Set<string> {
-  const log = readLog();
-  return new Set(log[periodId] ?? []);
-}
-
-function markSent(periodId: string, milestone: string): void {
-  const log = readLog();
-  if (!log[periodId]) log[periodId] = [];
-  if (!log[periodId].includes(milestone)) {
-    log[periodId].push(milestone);
-    writeLog(log);
   }
 }
 
@@ -78,7 +82,7 @@ export async function checkAndSendPaymentReminders() {
   console.log("[payment-reminders] Running scheduled check...");
 
   try {
-    // Fetch all payment periods with a due date
+    // 1. Fetch all payment periods with a due date (1 query)
     const { data: periods, error: periodsError } = await supabaseAdmin
       .from("payment_periods")
       .select("id, team_id, title, amount, due_date")
@@ -94,44 +98,80 @@ export async function checkAndSendPaymentReminders() {
       return;
     }
 
+    // 2. Read the milestone log ONCE upfront (not per-period)
+    const log = readLog();
+    let logDirty = false;
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // 3. First pass: determine which periods actually need action
+    type PeriodWork = {
+      period: typeof periods[number];
+      daysUntilDue: number;
+      dueDate: Date;
+      milestonesToFire: string[];
+    };
+
+    const workList: PeriodWork[] = [];
 
     for (const period of periods) {
       const dueDate = new Date(period.due_date);
       const dueDateMidnight = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
       const daysUntilDue = Math.round((dueDateMidnight.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Determine which milestone(s) to fire based on current days until due
-      const milestonesToFire = getMilestonesToFire(daysUntilDue, getSentForPeriod(period.id));
+      const alreadySent = new Set<string>(log[period.id] ?? []);
+      const milestonesToFire = getMilestonesToFire(daysUntilDue, alreadySent);
 
-      if (milestonesToFire.length === 0) continue;
-
-      // Get unpaid player IDs for this period
-      const { data: playerPayments, error: ppError } = await supabaseAdmin
-        .from("player_payments")
-        .select("player_id, status, amount")
-        .eq("payment_period_id", period.id)
-        .in("status", ["unpaid", "partial"]);
-
-      if (ppError) {
-        console.error(`[payment-reminders] Error fetching player payments for period ${period.id}:`, ppError.message);
-        continue;
+      if (milestonesToFire.length > 0) {
+        workList.push({ period, daysUntilDue, dueDate, milestonesToFire });
       }
+    }
 
-      const unpaidPlayerIds = (playerPayments ?? [])
-        .map((pp: { player_id: string }) => pp.player_id)
-        .filter(Boolean);
+    if (workList.length === 0) {
+      console.log("[payment-reminders] No milestones to fire.");
+      return;
+    }
+
+    // 4. Batch-fetch ALL player_payments for actionable periods in ONE query
+    const periodIds = workList.map((w) => w.period.id);
+
+    const { data: allPlayerPayments, error: ppError } = await supabaseAdmin
+      .from("player_payments")
+      .select("payment_period_id, player_id, status")
+      .in("payment_period_id", periodIds)
+      .in("status", ["unpaid", "partial"]);
+
+    if (ppError) {
+      console.error("[payment-reminders] Error batch-fetching player payments:", ppError.message);
+      return;
+    }
+
+    // 5. Group unpaid player IDs by period ID in memory (zero additional queries)
+    const unpaidByPeriod = new Map<string, string[]>();
+    for (const pp of allPlayerPayments ?? []) {
+      if (!unpaidByPeriod.has(pp.payment_period_id)) {
+        unpaidByPeriod.set(pp.payment_period_id, []);
+      }
+      if (pp.player_id) unpaidByPeriod.get(pp.payment_period_id)!.push(pp.player_id);
+    }
+
+    // 6. Second pass: send notifications using in-memory grouped data
+    for (const { period, daysUntilDue, dueDate, milestonesToFire } of workList) {
+      const unpaidPlayerIds = unpaidByPeriod.get(period.id) ?? [];
 
       if (unpaidPlayerIds.length === 0) {
-        // All paid — mark all milestones as sent to prevent future checks
+        // All paid — mark milestones done to prevent future checks
         for (const milestone of milestonesToFire) {
-          markSent(period.id, milestone);
+          if (!log[period.id]) log[period.id] = [];
+          if (!log[period.id]!.includes(milestone)) {
+            log[period.id]!.push(milestone);
+            logDirty = true;
+          }
         }
         continue;
       }
 
-      // Build notification message
       for (const milestone of milestonesToFire) {
         const { title, body } = buildReminderMessage(daysUntilDue, period.title, period.amount, dueDate);
 
@@ -144,9 +184,16 @@ export async function checkAndSendPaymentReminders() {
           milestone,
         });
 
-        markSent(period.id, milestone);
+        if (!log[period.id]) log[period.id] = [];
+        if (!log[period.id]!.includes(milestone)) {
+          log[period.id]!.push(milestone);
+          logDirty = true;
+        }
       }
     }
+
+    // 7. Write the log ONCE at the end if anything changed
+    if (logDirty) writeLog(log);
 
     console.log("[payment-reminders] Scheduled check complete.");
   } catch (err) {
@@ -178,19 +225,8 @@ export function startPaymentReminderScheduler() {
  * Manually trigger a payment reminder for a specific period to all unpaid players.
  * Called from the admin UI when they tap "Send Reminder".
  */
-paymentRemindersRouter.post("/send-manual", async (c) => {
-  let periodId = "", teamId = "";
-  try {
-    const body = await c.req.json();
-    periodId = body.periodId || "";
-    teamId = body.teamId || "";
-  } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  if (!periodId || !teamId) {
-    return c.json({ error: "periodId and teamId are required" }, 400);
-  }
+paymentRemindersRouter.post("/send-manual", zValidator("json", SendManualSchema), async (c) => {
+  const { periodId, teamId } = c.req.valid("json");
 
   // Fetch period details
   const { data: period, error: periodError } = await supabaseAdmin
@@ -249,23 +285,8 @@ paymentRemindersRouter.post("/send-manual", async (c) => {
  * Called when a payment period with a due date is created.
  * Sends an immediate "new payment period" notification to all assigned players.
  */
-paymentRemindersRouter.post("/on-create", async (c) => {
-  let periodId = "", teamId = "", playerIds: string[] = [], title = "", amount = 0, dueDate: string | null = null;
-  try {
-    const body = await c.req.json();
-    periodId = body.periodId || "";
-    teamId = body.teamId || "";
-    playerIds = body.playerIds || [];
-    title = body.title || "Payment";
-    amount = body.amount || 0;
-    dueDate = body.dueDate || null;
-  } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  if (!periodId || !teamId || playerIds.length === 0) {
-    return c.json({ error: "periodId, teamId, and playerIds are required" }, 400);
-  }
+paymentRemindersRouter.post("/on-create", zValidator("json", OnCreateSchema), async (c) => {
+  const { periodId, teamId, playerIds, title, amount, dueDate = null } = c.req.valid("json");
 
   const dueDateStr = dueDate
     ? new Date(dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
@@ -284,8 +305,13 @@ paymentRemindersRouter.post("/on-create", async (c) => {
     teamId,
   });
 
-  // Mark "created" milestone as sent
-  markSent(periodId, "created");
+  // Mark "created" milestone as sent (read-then-write in one pass)
+  const log = readLog();
+  if (!log[periodId]) log[periodId] = [];
+  if (!log[periodId]!.includes("created")) {
+    log[periodId]!.push("created");
+    writeLog(log);
+  }
 
   return c.json({ message: "Creation notifications sent", sent: playerIds.length });
 });
