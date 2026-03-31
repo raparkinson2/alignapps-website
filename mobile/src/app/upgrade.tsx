@@ -25,6 +25,8 @@ import {
   Zap,
   DollarSign,
   FileText,
+  Image,
+  TrendingUp,
 } from 'lucide-react-native';
 import Animated, {
   FadeIn,
@@ -57,15 +59,17 @@ interface PlanPackages {
 // ─── Static data ─────────────────────────────────────────────────────────────
 
 const FEATURES = [
-  { icon: <Users size={15} color="#67e8f9" />,       label: 'Unlimited players on your roster' },
-  { icon: <Trophy size={15} color="#f59e0b" />,       label: 'Team records, championships & season history' },
-  { icon: <BarChart3 size={15} color="#a78bfa" />,    label: 'Advanced stats, game logs & leaderboards' },
-  { icon: <FileText size={15} color="#22c55e" />,     label: 'Export stats as CSV' },
-  { icon: <Share2 size={15} color="#67e8f9" />,       label: 'Share stat cards & game results' },
-  { icon: <Bell size={15} color="#f97316" />,         label: 'Push notifications for games & chat' },
-  { icon: <Calendar size={15} color="#a78bfa" />,     label: 'Unlimited games, practices & events' },
-  { icon: <MessageSquare size={15} color="#22c55e" />, label: 'Real-time team chat with photos & GIFs' },
-  { icon: <DollarSign size={15} color="#f59e0b" />,   label: 'Payment tracking & dues management' },
+  { icon: <BarChart3 size={15} color="#67e8f9" />,    label: 'Stats tracking — per player, per game, per season' },
+  { icon: <Trophy size={15} color="#f59e0b" />,       label: 'Team records & championship history' },
+  { icon: <Star size={15} color="#a78bfa" />,         label: 'Advanced stats — leaderboards, game logs, trends' },
+  { icon: <Share2 size={15} color="#22c55e" />,       label: 'Share season highlights & stat cards' },
+  { icon: <Calendar size={15} color="#67e8f9" />,     label: 'Seasons — archive & restore full season history' },
+  { icon: <FileText size={15} color="#f97316" />,     label: 'Export stats as CSV' },
+  { icon: <Shield size={15} color="#a78bfa" />,       label: 'File storage — documents, playbooks & media' },
+  { icon: <DollarSign size={15} color="#22c55e" />,   label: 'Payment tracking & dues management' },
+  { icon: <Image size={15} color="#f59e0b" />,        label: 'Expanded photo & media storage' },
+  { icon: <TrendingUp size={15} color="#67e8f9" />,   label: 'Attendance trends — reliability charts over time' },
+  { icon: <Users size={15} color="#a78bfa" />,        label: 'Parent portal — linked parent accounts per player' },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
