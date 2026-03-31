@@ -749,17 +749,17 @@ export default function PlayerProfileScreen() {
             >
               {/* Top section wrapper — watermark is scoped here so it centers on the player info */}
               <View>
-                {/* Team logo watermark — centered in the right section */}
+                {/* Team logo watermark — centered in the right open space */}
                 {teamLogo ? (
                   <View style={{
                     position: 'absolute',
-                    right: 0,
+                    right: 16,
                     top: 0,
                     bottom: 0,
-                    width: 130,
+                    left: '52%',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    opacity: 0.18,
+                    opacity: 0.35,
                   }}>
                     <Image
                       source={{ uri: teamLogo }}
@@ -859,12 +859,12 @@ export default function PlayerProfileScreen() {
               <View style={{ flexDirection: 'row', paddingHorizontal: 24, paddingVertical: 18 }}>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 22 }}>{totalInvited}</Text>
-                  <Text style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Invited</Text>
+                  <Text numberOfLines={1} style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Invited</Text>
                 </View>
                 <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 22 }}>{totalCheckedIn}</Text>
-                  <Text style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Games Played</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Games Played</Text>
                 </View>
                 <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
                 <View style={{ flex: 1, alignItems: 'center' }}>
@@ -874,7 +874,7 @@ export default function PlayerProfileScreen() {
                   }}>
                     {attendancePct}%
                   </Text>
-                  <Text style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Attendance</Text>
+                  <Text numberOfLines={1} style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Attendance</Text>
                 </View>
               </View>
             </LinearGradient>
