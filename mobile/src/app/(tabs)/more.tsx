@@ -37,7 +37,6 @@ import {
   TrendingUp,
   Inbox,
   Trophy,
-  Crown,
   Zap,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
@@ -408,62 +407,6 @@ function MoreScreen() {
               </Pressable>
             </Animated.View>
           )}
-
-          {/* Premium Upgrade Banner */}
-          <Animated.View entering={FadeInDown.delay(40).springify()} className="mb-5">
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push('/upgrade');
-              }}
-            >
-              <LinearGradient
-                colors={['rgba(245,158,11,0.18)', 'rgba(245,158,11,0.06)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  borderRadius: 18,
-                  padding: 16,
-                  borderWidth: 1.5,
-                  borderColor: 'rgba(245,158,11,0.35)',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }}
-              >
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    backgroundColor: 'rgba(245,158,11,0.2)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 14,
-                  }}
-                >
-                  <Crown size={22} color="#f59e0b" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#f59e0b', fontWeight: '700', fontSize: 15 }}>
-                    Upgrade to Premium
-                  </Text>
-                  <Text style={{ color: '#78716c', fontSize: 13, marginTop: 1 }}>
-                    Unlimited players, stats, records & more
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    backgroundColor: 'rgba(245,158,11,0.25)',
-                    borderRadius: 12,
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                  }}
-                >
-                  <Text style={{ color: '#f59e0b', fontWeight: '700', fontSize: 12 }}>$59/yr</Text>
-                </View>
-              </LinearGradient>
-            </Pressable>
-          </Animated.View>
 
           {/* MY TEAM Section */}
           <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-2">

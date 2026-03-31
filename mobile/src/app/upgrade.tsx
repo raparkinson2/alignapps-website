@@ -4,6 +4,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -147,6 +148,12 @@ export default function UpgradeScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       syncPremiumFlag(result.data.entitlements.active);
       router.back();
+    } else if (result.reason === 'sdk_error') {
+      // Ignore user-cancelled purchases; show an alert for genuine errors
+      const errMsg = String((result.error as any)?.message ?? '').toLowerCase();
+      if (!errMsg.includes('cancel') && !errMsg.includes('user_cancelled') && !errMsg.includes('purchase_cancelled')) {
+        Alert.alert('Purchase Failed', 'Something went wrong. Please try again or restore your purchases.');
+      }
     }
   };
 

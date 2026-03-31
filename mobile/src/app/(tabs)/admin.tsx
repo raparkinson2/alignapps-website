@@ -28,6 +28,8 @@ import {
   CreditCard,
   Beer,
   Download,
+  Crown,
+  Check,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -299,6 +301,70 @@ function AdminScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: isTablet ? containerPadding : 20 }}
         >
+          {/* Premium Status Card */}
+          <Animated.View entering={FadeInDown.delay(80).springify()} style={{ marginBottom: 20 }}>
+            {teamSettings?.isPremium ? (
+              <LinearGradient
+                colors={['rgba(34,197,94,0.14)', 'rgba(34,197,94,0.05)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  borderRadius: 18,
+                  padding: 16,
+                  borderWidth: 1.5,
+                  borderColor: 'rgba(34,197,94,0.3)',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(34,197,94,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                  <Crown size={22} color="#22c55e" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                    <Text style={{ color: '#22c55e', fontWeight: '700', fontSize: 15 }}>Premium Active</Text>
+                    <View style={{ backgroundColor: 'rgba(34,197,94,0.2)', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(34,197,94,0.35)' }}>
+                      <Check size={10} color="#22c55e" strokeWidth={3} />
+                    </View>
+                  </View>
+                  <Text style={{ color: '#64748b', fontSize: 13 }}>All features unlocked for your team</Text>
+                </View>
+              </LinearGradient>
+            ) : (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push('/upgrade');
+                }}
+              >
+                <LinearGradient
+                  colors={['rgba(245,158,11,0.18)', 'rgba(245,158,11,0.06)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    borderRadius: 18,
+                    padding: 16,
+                    borderWidth: 1.5,
+                    borderColor: 'rgba(245,158,11,0.35)',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(245,158,11,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                    <Crown size={22} color="#f59e0b" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#f59e0b', fontWeight: '700', fontSize: 15 }}>Upgrade to Premium</Text>
+                    <Text style={{ color: '#78716c', fontSize: 13, marginTop: 1 }}>Stats, records, payments & more</Text>
+                  </View>
+                  <View style={{ backgroundColor: 'rgba(245,158,11,0.25)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 }}>
+                    <Text style={{ color: '#f59e0b', fontWeight: '700', fontSize: 12 }}>$49.99/yr</Text>
+                  </View>
+                </LinearGradient>
+              </Pressable>
+            )}
+          </Animated.View>
+
           {/* Team Identity Section */}
           <Animated.View entering={FadeInDown.delay(100).springify()}>
             <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4">
