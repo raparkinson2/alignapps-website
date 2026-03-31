@@ -745,45 +745,47 @@ export default function PlayerProfileScreen() {
                 borderWidth: 1, borderColor: 'rgba(103,232,249,0.12)',
               }}
             >
-              {/* Jersey number watermark — right-aligned, bounded, scales to fit */}
-              <View style={{
-                position: 'absolute',
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: 130,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: 0.07,
-              }}>
-                <Text
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.3}
-                  style={{
-                    color: '#67e8f9',
-                    fontSize: 130,
-                    fontWeight: '900',
-                    letterSpacing: -6,
-                    width: 120,
-                    textAlign: 'center',
-                  }}
-                >
-                  {player.number || '0'}
-                </Text>
-              </View>
+              {/* Top section wrapper — watermark is scoped here so it centers on the player info */}
+              <View>
+                {/* Jersey number watermark — centered within this section */}
+                <View style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 130,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: 0.07,
+                }}>
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.3}
+                    style={{
+                      color: '#67e8f9',
+                      fontSize: 130,
+                      fontWeight: '900',
+                      letterSpacing: -6,
+                      width: 120,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {player.number || '0'}
+                  </Text>
+                </View>
 
-              {/* Top cyan accent line */}
-              <View style={{ height: 3, borderRadius: 3, marginHorizontal: 32, marginTop: 0, overflow: 'hidden' }}>
-                <LinearGradient
-                  colors={['transparent', '#67e8f9', 'transparent']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={{ height: 3, borderRadius: 2 }}
-                />
-              </View>
+                {/* Top cyan accent line */}
+                <View style={{ height: 3, borderRadius: 3, marginHorizontal: 32, marginTop: 0, overflow: 'hidden' }}>
+                  <LinearGradient
+                    colors={['transparent', '#67e8f9', 'transparent']}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={{ height: 3, borderRadius: 2 }}
+                  />
+                </View>
 
-              {/* Player info */}
-              <View style={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 24 }}>
+                {/* Player info */}
+                <View style={{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 24 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
                   {/* Avatar */}
                   <View style={{ marginRight: 18 }}>
@@ -854,6 +856,7 @@ export default function PlayerProfileScreen() {
                   </View>
                 </View>
               </View>
+              </View>{/* end top section wrapper */}
 
               {/* Divider */}
               <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginHorizontal: 24 }} />
