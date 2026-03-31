@@ -10,6 +10,7 @@ import { connectRouter } from "./routes/connect";
 import { filesRouter } from "./routes/files";
 import { paymentRemindersRouter, startPaymentReminderScheduler } from "./routes/payment-reminders";
 import { logger } from "hono/logger";
+import { authRateLimit, paymentRateLimit, notificationRateLimit, generalRateLimit } from "./middleware/rate-limit";
 
 const app = new Hono();
 
@@ -45,8 +46,12 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 
 // Routes
 app.route("/api/sample", sampleRouter);
+app.use("/api/auth/*", authRateLimit);
 app.route("/api/auth", authRouter);
+app.use("/api/notifications/*", notificationRateLimit);
 app.route("/api/notifications", notificationsRouter);
+app.use("/api/payments/connect/*", generalRateLimit);
+app.use("/api/payments/*", paymentRateLimit);
 app.route("/api/payments", paymentsRouter);
 app.route("/api/payments/connect", connectRouter);
 app.route("/api/payments/reminders", paymentRemindersRouter);
