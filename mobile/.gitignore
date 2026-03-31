@@ -42,3 +42,7 @@ yarn-error.*
 
 # Expo log
 expo.log
+
+# Google services (contains API keys)
+google-services.json
+GoogleService-Info.plist
