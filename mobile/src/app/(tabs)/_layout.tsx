@@ -51,11 +51,12 @@ export default function TabLayout() {
           height: 60,
           paddingTop: 8,
           paddingBottom: 10,
+          paddingHorizontal: 20,
         },
         tabBarActiveTintColor: '#67e8f9',
         tabBarInactiveTintColor: '#475569',
         tabBarItemStyle: {
-          paddingHorizontal: 0,
+          maxWidth: 56,
         },
       }}
     >
