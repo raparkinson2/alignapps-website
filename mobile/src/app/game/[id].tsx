@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { format, parseISO } from 'date-fns';
 import { useState, useEffect, Component } from 'react';
 import type { ReactNode } from 'react';
+import { fetchAndSaveWeather } from '@/lib/weather-service';
 import {
   MapPin,
   ChevronLeft,
@@ -648,6 +649,12 @@ function GameDetailScreenInner() {
       gameResult: selectedResult,
       resultRecorded: true,
     });
+
+    // Auto-fetch weather in background for past games
+    if (activeTeamId) {
+      const updatedGame = { ...game, finalScoreUs: usScore, finalScoreThem: themScore, gameResult: selectedResult };
+      fetchAndSaveWeather(updatedGame as any, activeTeamId).catch(() => {});
+    }
 
     // Update team record if not already recorded
     if (!game.resultRecorded) {

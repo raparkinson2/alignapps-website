@@ -662,6 +662,18 @@ function AuthNavigator() {
           presentation: 'card',
         }}
       />
+      <Stack.Screen
+        name="premium-insights"
+        options={{ headerShown: false, presentation: 'card' }}
+      />
+      <Stack.Screen
+        name="opponent-scouting"
+        options={{ headerShown: false, presentation: 'card' }}
+      />
+      <Stack.Screen
+        name="game-momentum"
+        options={{ headerShown: false, presentation: 'card' }}
+      />
 <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       <Stack.Screen
         name="upgrade"

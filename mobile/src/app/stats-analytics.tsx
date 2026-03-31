@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import {
   ArrowLeft, TrendingUp, UserCheck, BarChart3, ChevronRight,
-  Trophy, Calendar, Flame, Star, Zap,
+  Trophy, Calendar, Flame, Star, Zap, Crown,
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -18,6 +18,7 @@ export default function StatsAnalyticsScreen() {
   const showTeamStats = useTeamStore((s) => s.teamSettings.showTeamStats !== false);
   const showTeamRecords = useTeamStore((s) => s.teamSettings.showTeamRecords === true && s.teamSettings.showTeamStats !== false);
   const hasSeasonHistory = useTeamStore((s) => (s.teamSettings.seasonHistory?.length ?? 0) > 0);
+  const isPremium = useTeamStore((s) => s.teamSettings.isPremium);
 
   const games = useTeamStore((s) => s.games);
   const players = useTeamStore((s) => s.players);
@@ -394,6 +395,44 @@ export default function StatsAnalyticsScreen() {
               </Pressable>
             </Animated.View>
           )}
+
+          {/* ── Premium Insights ── */}
+          <Animated.View entering={FadeInDown.delay(baseDelay + 150).springify()} className="mt-2">
+            <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">Premium</Text>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('/premium-insights');
+              }}
+            >
+              <LinearGradient
+                colors={isPremium ? ['rgba(245,158,11,0.18)', 'rgba(245,158,11,0.06)'] : ['rgba(100,116,139,0.15)', 'rgba(100,116,139,0.05)']}
+                style={{
+                  borderRadius: 18,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: isPremium ? 'rgba(245,158,11,0.35)' : 'rgba(100,116,139,0.25)',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isPremium ? 'rgba(245,158,11,0.2)' : 'rgba(100,116,139,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                  <Crown size={22} color={isPremium ? '#f59e0b' : '#64748b'} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: isPremium ? '#f59e0b' : '#94a3b8', fontWeight: '700', fontSize: 15 }}>
+                    Coach Insights
+                  </Text>
+                  <Text style={{ color: '#64748b', fontSize: 13, marginTop: 2 }}>
+                    {isPremium
+                      ? 'Engagement scores, flakes, scouting & weather'
+                      : 'Upgrade to unlock advanced analytics'}
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </LinearGradient>
+            </Pressable>
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </View>

@@ -121,6 +121,9 @@ function mapGame(g: any): Game {
     finalScoreThem: g.final_score_them ?? undefined,
     gameResult: g.game_result || undefined,
     resultRecorded: g.result_recorded || false,
+    weatherTemp: g.weather_temp ?? undefined,
+    weatherCondition: g.weather_condition || undefined,
+    weatherAutoFetched: g.weather_auto_fetched || false,
     checkedInPlayers: [],
     checkedOutPlayers: [],
     invitedPlayers: [],
@@ -1037,6 +1040,9 @@ export async function pushGameToSupabase(game: Game, teamId: string): Promise<vo
       final_score_them: game.finalScoreThem ?? null,
       game_result: game.gameResult || null,
       result_recorded: game.resultRecorded || false,
+      weather_temp: game.weatherTemp ?? null,
+      weather_condition: game.weatherCondition || null,
+      weather_auto_fetched: game.weatherAutoFetched || false,
     }, { onConflict: 'id' });
     if (error) console.error('SYNC: pushGameToSupabase error:', error.message);
   } catch (err) {
@@ -1054,8 +1060,30 @@ export async function deleteGameFromSupabase(gameId: string): Promise<void> {
 
 export async function pushGameResponseToSupabase(gameId: string, playerId: string, response: 'in' | 'out' | 'invited', note?: string): Promise<void> {
   try {
+    const now = new Date().toISOString();
+    // Fetch current response to build history (for flake factor tracking)
+    const { data: existing } = await supabase
+      .from('game_responses')
+      .select('response, response_history')
+      .eq('game_id', gameId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+
+    const currentHistory: Array<{ response: string; at: string }> = existing?.response_history ?? [];
+    // Only append to history if the response actually changed
+    const updatedHistory = existing?.response && existing.response !== response
+      ? [...currentHistory, { response, at: now }]
+      : currentHistory;
+
     await supabase.from('game_responses').upsert(
-      { game_id: gameId, player_id: playerId, response, note: note || null },
+      {
+        game_id: gameId,
+        player_id: playerId,
+        response,
+        note: note || null,
+        responded_at: now,
+        response_history: updatedHistory,
+      },
       { onConflict: 'game_id,player_id' }
     );
     // Broadcast the response change so other subscribers can update in real-time.

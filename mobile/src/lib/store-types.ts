@@ -549,6 +549,10 @@ export interface Game {
   finalScoreThem?: number; // Opponent's final score
   gameResult?: 'win' | 'loss' | 'tie' | 'otLoss'; // Game result for record tracking
   resultRecorded?: boolean; // Whether the result has been added to team record
+  // Weather (auto-fetched via OpenMeteo after game)
+  weatherTemp?: number; // Temperature in °F at game time
+  weatherCondition?: 'sunny' | 'partly_cloudy' | 'cloudy' | 'rain' | 'snow' | 'indoor'; // Weather condition
+  weatherAutoFetched?: boolean; // Whether weather was auto-fetched
 }
 
 // In-app notification types
