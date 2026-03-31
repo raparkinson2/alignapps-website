@@ -61,6 +61,7 @@ function mapTeamSettings(t: any): TeamSettings {
     championships: t.championships || [],
     stripeAccountId: t.stripe_account_id || undefined,
     stripeOnboardingComplete: t.stripe_onboarding_complete ?? false,
+    isPremium: t.is_premium ?? false,
   };
 }
 
@@ -307,6 +308,8 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       const mergedSettings = {
         ...teamSettings,
         upcomingGamesViewMode: existingSettings.upcomingGamesViewMode ?? teamSettings.upcomingGamesViewMode,
+        // Preserve isPremium from existing state if Supabase column doesn't exist yet
+        isPremium: teamSettings.isPremium || existingSettings.isPremium || false,
       };
       useTeamStore.setState({ teamName, teamSettings: mergedSettings, players: finalPlayers, games, events, chatMessages, notifications });
     }
@@ -487,6 +490,10 @@ export function startRealtimeSync(teamId: string): void {
         teamSettings: {
           ...newSettings,
           upcomingGamesViewMode: existingSettings.upcomingGamesViewMode ?? newSettings.upcomingGamesViewMode,
+          // Preserve existing isPremium if Supabase column doesn't exist yet (is_premium = undefined)
+          isPremium: (payload.new as any).is_premium !== undefined
+            ? ((payload.new as any).is_premium ?? false)
+            : (existingSettings.isPremium ?? false),
         },
       });
     })
@@ -887,6 +894,7 @@ export async function pushTeamToSupabase(teamId: string, teamName: string, setti
     current_season_name: settings.currentSeasonName || null,
     season_history: settings.seasonHistory || [],
     championships: settings.championships || [],
+    is_premium: settings.isPremium ?? false,
   };
 
   try {
@@ -897,10 +905,25 @@ export async function pushTeamToSupabase(teamId: string, teamName: string, setti
     }, { onConflict: 'id' });
 
     if (error) {
-      // If Stripe columns don't exist yet (migration not run), fall back to base payload
-      if (error.message?.includes('stripe_account_id') || error.message?.includes('stripe_onboarding_complete')) {
-        const { error: fallbackError } = await supabase.from('teams').upsert(basePayload, { onConflict: 'id' });
-        if (fallbackError) console.error('SYNC: pushTeamToSupabase error:', fallbackError.message);
+      // If optional columns don't exist yet (migration not run), fall back without them
+      if (error.message?.includes('stripe_account_id') || error.message?.includes('stripe_onboarding_complete') || error.message?.includes('is_premium')) {
+        const { basePayload: _bp, ...rest } = { basePayload };
+        // Try without stripe columns first
+        const withoutStripe = { ...basePayload };
+        delete (withoutStripe as any).is_premium;
+        const { error: e2 } = await supabase.from('teams').upsert({
+          ...withoutStripe,
+          stripe_account_id: settings.stripeAccountId || null,
+          stripe_onboarding_complete: settings.stripeOnboardingComplete ?? false,
+        }, { onConflict: 'id' });
+        if (e2) {
+          // Final fallback: base only
+          const { error: fallbackError } = await supabase.from('teams').upsert(
+            Object.fromEntries(Object.entries(basePayload).filter(([k]) => k !== 'is_premium')),
+            { onConflict: 'id' }
+          );
+          if (fallbackError) console.error('SYNC: pushTeamToSupabase error:', fallbackError.message);
+        }
       } else {
         console.error('SYNC: pushTeamToSupabase error:', error.message);
       }
