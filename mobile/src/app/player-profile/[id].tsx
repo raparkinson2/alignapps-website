@@ -35,6 +35,7 @@ import {
   type ArchivedSeason,
   type ArchivedPlayerStats,
   type PlayerStats,
+  SPORT_POSITION_NAMES,
 } from '@/lib/store';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 
@@ -815,7 +816,7 @@ export default function PlayerProfileScreen() {
                     <Text style={{ color: '#67e8f9', fontSize: 13, fontWeight: '600', marginBottom: 8 }}>
                       {(player.positions?.length ?? 0) > 1
                         ? player.positions!.join(' / ')
-                        : player.position}
+                        : (SPORT_POSITION_NAMES[sport]?.[player.position] ?? player.position)}
                     </Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                       {isAdmin && (
