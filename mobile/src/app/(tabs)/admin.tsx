@@ -323,9 +323,6 @@ function AdminScreen() {
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                     <Text style={{ color: '#22c55e', fontWeight: '700', fontSize: 15 }}>Premium Active</Text>
-                    <View style={{ backgroundColor: 'rgba(34,197,94,0.2)', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(34,197,94,0.35)' }}>
-                      <Check size={10} color="#22c55e" strokeWidth={3} />
-                    </View>
                   </View>
                   <Text style={{ color: '#64748b', fontSize: 13 }}>All features unlocked for your team</Text>
                 </View>
