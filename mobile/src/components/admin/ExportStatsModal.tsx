@@ -259,7 +259,7 @@ export function ExportStatsModal({ visible, onClose }: Props) {
   }, []);
 
   const loadPackage = useCallback(async () => {
-    const result = await getPackage('$rc_monthly');
+    const result = await getPackage('$rc_annual');
     if (result.ok && result.data) setPkg(result.data);
   }, []);
 
