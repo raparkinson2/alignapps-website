@@ -99,6 +99,7 @@ export default function UpgradeScreen() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const [loadError, setLoadError] = useState(false);
 
@@ -152,7 +153,8 @@ export default function UpgradeScreen() {
       await syncPremiumFlag();
       setPurchasing(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      setSuccess(true);
+      setTimeout(() => router.back(), 2200);
     } else {
       setPurchasing(false);
       if (result.reason === 'sdk_error') {
@@ -172,14 +174,16 @@ export default function UpgradeScreen() {
     setRestoring(false);
     if (info.ok && Object.keys(info.data.entitlements.active).length > 0) {
       await syncPremiumFlag();
-      router.back();
+      setSuccess(true);
+      setTimeout(() => router.back(), 2200);
     }
   };
 
   const handleDevBypass = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await syncPremiumFlag();
-    router.back();
+    setSuccess(true);
+    setTimeout(() => router.back(), 2200);
   };
 
   // Price display helpers
@@ -495,6 +499,37 @@ export default function UpgradeScreen() {
 
         </ScrollView>
       </SafeAreaView>
+
+      {/* Success overlay */}
+      {success && (
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={{
+            position: 'absolute', inset: 0,
+            backgroundColor: '#080c14',
+            alignItems: 'center', justifyContent: 'center',
+            gap: 20,
+          }}
+        >
+          <Animated.View entering={FadeInDown.delay(100).springify()} style={{ alignItems: 'center', gap: 16 }}>
+            <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(245,158,11,0.15)', borderWidth: 2, borderColor: 'rgba(245,158,11,0.4)', alignItems: 'center', justifyContent: 'center' }}>
+              <Crown size={40} color="#f59e0b" />
+            </View>
+            <Text style={{ color: '#ffffff', fontSize: 26, fontWeight: '800', textAlign: 'center' }}>You're Premium!</Text>
+            <Text style={{ color: '#64748b', fontSize: 15, textAlign: 'center', lineHeight: 22 }}>
+              All features are now unlocked{'\n'}for your entire team.
+            </Text>
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(250).springify()} style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center', paddingHorizontal: 40 }}>
+            {['Parent portal', 'Stats tracking', 'Premium colors', 'Chat & photos', 'Payment tracking'].map((f) => (
+              <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(245,158,11,0.2)' }}>
+                <Check size={11} color="#f59e0b" strokeWidth={3} />
+                <Text style={{ color: '#f59e0b', fontSize: 12, fontWeight: '600' }}>{f}</Text>
+              </View>
+            ))}
+          </Animated.View>
+        </Animated.View>
+      )}
     </View>
   );
 }
