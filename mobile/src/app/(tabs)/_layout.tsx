@@ -45,18 +45,19 @@ export default function TabLayout() {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: '#0f172a',
-          borderTopColor: '#1e293b',
+          backgroundColor: '#0a1628',
+          borderTopColor: 'rgba(255,255,255,0.07)',
           borderTopWidth: 1,
-          height: 60,
-          paddingTop: 8,
-          paddingBottom: 10,
-          paddingHorizontal: 20,
+          height: 80,
+          paddingTop: 10,
+          paddingBottom: 16,
+          paddingHorizontal: 16,
         },
         tabBarActiveTintColor: '#67e8f9',
-        tabBarInactiveTintColor: '#475569',
+        tabBarInactiveTintColor: '#3d5166',
         tabBarItemStyle: {
-          maxWidth: 56,
+          maxWidth: 64,
+          paddingTop: 2,
         },
       }}
     >
