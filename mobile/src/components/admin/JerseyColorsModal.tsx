@@ -302,41 +302,41 @@ function CustomColorPicker({ color, onChange, setScrollEnabled }: CustomPickerPr
 
 // ─── Preset palettes ───────────────────────────────────────────────────────────
 
-// Free: 10 classic sport colors
+// Free: 8 classic sport colors
 const FREE_PRESETS = [
-  '#FFFFFF', '#1A1A1A', '#1E40AF', '#DC2626', '#16A34A',
-  '#7C3AED', '#EA580C', '#CA8A04', '#0891B2', '#DB2777',
+  '#FFFFFF', '#1A1A1A', '#1E40AF', '#DC2626',
+  '#16A34A', '#7C3AED', '#EA580C', '#0891B2',
 ];
 
-// Premium: expanded packs — team blues, deep reds, greens, golds, neutrals, neons
+// Premium: expanded packs — 8 colors each
 const PREMIUM_PRESETS: { label: string; colors: string[] }[] = [
   {
     label: 'Deep Blues',
-    colors: ['#0F172A', '#1E3A5F', '#0047AB', '#003087', '#1B4FBE', '#1D4ED8'],
+    colors: ['#0F172A', '#1E3A5F', '#0047AB', '#003087', '#1B4FBE', '#1D4ED8', '#1E40AF', '#2563EB'],
   },
   {
     label: 'Deep Reds',
-    colors: ['#7F1D1D', '#991B1B', '#B91C1C', '#C41E3A', '#8B0000', '#5C0B0B'],
+    colors: ['#7F1D1D', '#991B1B', '#B91C1C', '#C41E3A', '#8B0000', '#5C0B0B', '#DC2626', '#EF4444'],
   },
   {
     label: 'Forest Greens',
-    colors: ['#14532D', '#166534', '#15803D', '#004D25', '#006400', '#1B4332'],
+    colors: ['#14532D', '#166534', '#15803D', '#004D25', '#006400', '#1B4332', '#16A34A', '#22C55E'],
   },
   {
     label: 'Golds & Bronzes',
-    colors: ['#FFD700', '#FFC200', '#DAA520', '#B8860B', '#CD7F32', '#A16207'],
+    colors: ['#FFD700', '#FFC200', '#DAA520', '#B8860B', '#CD7F32', '#A16207', '#D97706', '#F59E0B'],
   },
   {
     label: 'Purples & Maroons',
-    colors: ['#4B0082', '#581C87', '#6B21A8', '#7E22CE', '#3B0764', '#4A044E'],
+    colors: ['#4B0082', '#581C87', '#6B21A8', '#7E22CE', '#3B0764', '#4A044E', '#7C3AED', '#A855F7'],
   },
   {
     label: 'Steels & Silvers',
-    colors: ['#1F2937', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#2D2D2D'],
+    colors: ['#1F2937', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#2D2D2D', '#D1D5DB', '#E5E7EB'],
   },
   {
     label: 'Neon & Bright',
-    colors: ['#00FF41', '#39FF14', '#FF073A', '#FF6B00', '#00BFFF', '#FF00FF'],
+    colors: ['#00FF41', '#39FF14', '#FF073A', '#FF6B00', '#00BFFF', '#FF00FF', '#FFFF00', '#00FFFF'],
   },
 ];
 
@@ -416,7 +416,7 @@ function ColorPicker({ selectedColor, onColorChange, setScrollEnabled, scrollRef
                       key={hex}
                       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onColorChange(hex); setExpanded(false); }}
                       style={{
-                        width: 34, height: 34, borderRadius: 17,
+                        width: 38, height: 38, borderRadius: 19,
                         backgroundColor: hex,
                         borderWidth: isSelected ? 3 : 2,
                         borderColor: isSelected ? '#f59e0b' : '#334155',
@@ -424,7 +424,7 @@ function ColorPicker({ selectedColor, onColorChange, setScrollEnabled, scrollRef
                       }}
                     >
                       {isSelected && (
-                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />
+                        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' }} />
                       )}
                     </Pressable>
                   );
