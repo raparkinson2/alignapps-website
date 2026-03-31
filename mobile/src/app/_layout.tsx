@@ -480,15 +480,26 @@ function AuthNavigator() {
     }
   }, [isLoggedIn, pendingTeamIds, segments, isReady, isHydrated, router]);
 
-  // Handle deep links for Stripe Connect callback (Safari redirects back via alignsports://)
+  // Handle deep links for Stripe Connect callback
   useEffect(() => {
     const handleUrl = (event: { url: string }) => {
       const url = event.url;
       if (url.includes('stripe-connect-success')) {
-        const match = url.match(/accountId=([^&]+)/);
-        const teamMatch = url.match(/teamId=([^&]+)/);
-        const accountId = match?.[1];
-        const teamId = teamMatch?.[1];
+        // Only trust our domain or custom scheme (custom scheme kept for transition period)
+        const isTrusted = url.startsWith('https://alignapps.com/') || url.startsWith('alignsports://');
+        if (!isTrusted) {
+          console.warn('[deep-link] Rejected untrusted origin for stripe-connect-success');
+          return;
+        }
+        const queryString = url.includes('?') ? url.split('?')[1] : '';
+        const params = new URLSearchParams(queryString);
+        const accountId = params.get('accountId');
+        const teamId = params.get('teamId');
+        // Validate Stripe account ID format — all Stripe account IDs start with acct_
+        if (accountId && !/^acct_[A-Za-z0-9]+$/.test(accountId)) {
+          console.warn('[deep-link] Rejected invalid accountId format');
+          return;
+        }
         if (accountId) {
           const s = useTeamStore.getState();
           s.setTeamSettings({ stripeAccountId: accountId, stripeOnboardingComplete: true });
@@ -501,6 +512,8 @@ function AuthNavigator() {
         }
         router.replace('/stripe-setup');
       } else if (url.includes('stripe-connect-cancel')) {
+        const isTrusted = url.startsWith('https://alignapps.com/') || url.startsWith('alignsports://');
+        if (!isTrusted) return;
         router.replace('/stripe-setup');
       }
     };

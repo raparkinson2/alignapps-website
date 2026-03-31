@@ -15,7 +15,10 @@ const CreatePaymentIntentSchema = z.object({
 });
 
 const CreateCheckoutSessionSchema = z.object({
-  amount: z.number().int("Amount must be an integer").min(50, "Amount must be at least 50 cents ($0.50)"),
+  // Preferred: send the raw balance owed in cents — backend calculates the gross-up
+  balanceCents: z.number().int().min(50).optional(),
+  // Legacy: pre-calculated total in cents (still accepted for backward compat)
+  amount: z.number().int("Amount must be an integer").min(50, "Amount must be at least 50 cents ($0.50)").optional(),
   playerName: z.string().optional(),
   teamName: z.string().optional(),
   paymentPeriodTitle: z.string().optional(),
@@ -24,6 +27,8 @@ const CreateCheckoutSessionSchema = z.object({
   successUrl: z.string().url("successUrl must be a valid URL").optional(),
   cancelUrl: z.string().url("cancelUrl must be a valid URL").optional(),
   teamStripeAccountId: z.string().optional(),
+}).refine(d => d.balanceCents !== undefined || d.amount !== undefined, {
+  message: "Either balanceCents or amount must be provided",
 });
 
 function getStripe(): Stripe {
@@ -234,7 +239,8 @@ async function handlePaymentSucceeded({
 paymentsRouter.post("/create-checkout-session", zValidator("json", CreateCheckoutSessionSchema), async (c) => {
   try {
     const {
-      amount,
+      balanceCents,
+      amount: legacyAmount,
       playerName,
       teamName,
       paymentPeriodTitle,
@@ -247,7 +253,16 @@ paymentsRouter.post("/create-checkout-session", zValidator("json", CreateCheckou
 
     const stripe = getStripe();
     const feePct = parseFloat(process.env.STRIPE_PLATFORM_FEE_PERCENT ?? "0.5") / 100;
-    const applicationFeeAmount = Math.round(amount * feePct);
+
+    // If balanceCents provided, gross up so admin receives the full balance after all fees.
+    // Stripe takes 2.9% + $0.30, platform takes feePct. Formula: total = (balance + 0.30) / (1 - 0.029 - feePct)
+    const STRIPE_FEE_PCT = 0.029;
+    const STRIPE_FIXED_FEE = 0.30;
+    const chargeAmount = balanceCents !== undefined
+      ? Math.round(((balanceCents / 100 + STRIPE_FIXED_FEE) / (1 - STRIPE_FEE_PCT - feePct)) * 100)
+      : legacyAmount!;
+
+    const applicationFeeAmount = Math.round(chargeAmount * feePct);
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
@@ -255,7 +270,7 @@ paymentsRouter.post("/create-checkout-session", zValidator("json", CreateCheckou
         {
           price_data: {
             currency: "usd",
-            unit_amount: amount,
+            unit_amount: chargeAmount,
             product_data: {
               name: paymentPeriodTitle ?? "Team Payment",
               description: teamName ? `Payment to ${teamName}` : undefined,
@@ -289,7 +304,7 @@ paymentsRouter.post("/create-checkout-session", zValidator("json", CreateCheckou
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    console.log(`[payments] Created Checkout Session ${session.id} for ${amount} cents`);
+    console.log(`[payments] Created Checkout Session ${session.id} for ${chargeAmount} cents`);
 
     return c.json({ url: session.url, sessionId: session.id });
   } catch (error: any) {

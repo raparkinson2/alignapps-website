@@ -79,14 +79,6 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
     }
   };
 
-  // Calculate the gross-up amount so admin receives the full balance after all fees
-  // Formula: total = (balance + 0.30) / (1 - 0.029 - 0.005)
-  // Stripe takes 2.9% + $0.30, platform takes 0.5%
-  const calcTotalWithFees = (balance: number) => {
-    const total = (balance + 0.30) / (1 - 0.029 - 0.005);
-    return Math.ceil(total * 100) / 100; // round up to nearest cent
-  };
-
   // Launch Stripe Checkout in a WebView modal
   const handleStripePayment = async (pid: string, playerId: string) => {
     if (!selectedPeriod) return;
@@ -98,14 +90,12 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
 
     try {
       const player = players.find(p => p.id === playerId);
-      const totalWithFees = calcTotalWithFees(balance);
-      const amountInCents = Math.round(totalWithFees * 100);
 
       const res = await fetch(`${BACKEND_URL}/api/payments/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: amountInCents,
+          balanceCents: Math.round(balance * 100),
           playerName: player ? getPlayerName(player) : '',
           teamName: teamName ?? '',
           paymentPeriodTitle: selectedPeriod.title,
@@ -447,14 +437,14 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
                           <>
                             <Zap size={18} color="white" />
                             <Text className="text-white font-bold text-base ml-2">
-                              Pay ${calcTotalWithFees(Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0))).toFixed(2)} with Stripe
+                              Pay ${(Math.ceil(((Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0)) + 0.30) / (1 - 0.029 - 0.005)) * 100) / 100).toFixed(2)} with Stripe
                             </Text>
                           </>
                         )}
                       </LinearGradient>
                       {(() => {
                         const balance = Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0));
-                        const total = calcTotalWithFees(balance);
+                        const total = Math.ceil(((balance + 0.30) / (1 - 0.029 - 0.005)) * 100) / 100;
                         const fee = Math.round((total - balance) * 100) / 100;
                         return (
                           <View style={{ backgroundColor: '#4a44cc', paddingVertical: 6, alignItems: 'center' }}>

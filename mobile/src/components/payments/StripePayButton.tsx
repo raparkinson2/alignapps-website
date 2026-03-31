@@ -27,12 +27,6 @@ export function StripePayButton({ myPaymentStatus, isSetupComplete, isAdmin }: S
   const [stripePaymentContext, setStripePaymentContext] = useState<{ periodId: string; playerId: string; amount: number } | null>(null);
   const [showPicker, setShowPicker] = useState(false);
 
-  // Gross-up so admin receives the full balance after all fees
-  const calcTotalWithFees = (balance: number) => {
-    const total = (balance + 0.30) / (1 - 0.029 - 0.005);
-    return Math.ceil(total * 100) / 100;
-  };
-
   const handleStripePayment = async (period: PaymentPeriod, playerId: string) => {
     const balance = period.amount - (period.playerPayments.find(pp => pp.playerId === playerId)?.amount ?? 0);
     if (balance <= 0) return;
@@ -42,14 +36,12 @@ export function StripePayButton({ myPaymentStatus, isSetupComplete, isAdmin }: S
 
     try {
       const player = players.find(p => p.id === playerId);
-      const totalWithFees = calcTotalWithFees(balance);
-      const amountInCents = Math.round(totalWithFees * 100);
 
       const res = await fetch(`${BACKEND_URL}/api/payments/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: amountInCents,
+          balanceCents: Math.round(balance * 100),
           playerName: player ? getPlayerName(player) : '',
           teamName: teamName ?? '',
           paymentPeriodTitle: period.title,

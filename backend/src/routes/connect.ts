@@ -8,6 +8,7 @@ const connectRouter = new Hono();
 
 const DisconnectSchema = z.object({
   teamId: z.string().min(1, "teamId is required"),
+  adminId: z.string().min(1, "adminId is required"),
 });
 
 const OAuthStateSchema = z.object({
@@ -26,6 +27,19 @@ function getSupabase() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("Supabase not configured");
   return createClient(url, key);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function verifyAdmin(supabase: any, adminId: string, teamId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("players")
+    .select("roles")
+    .eq("id", adminId)
+    .eq("team_id", teamId)
+    .maybeSingle() as { data: { roles: unknown } | null; error: unknown };
+  if (error || !data) return false;
+  const roles: string[] = Array.isArray(data.roles) ? (data.roles as string[]) : [];
+  return roles.includes("admin") || roles.includes("coach");
 }
 
 /**
@@ -47,6 +61,13 @@ connectRouter.get("/onboard", async (c) => {
 
     if (!teamId || !adminId) {
       return c.json({ error: "teamId and adminId are required" }, 400);
+    }
+
+    const supabase = getSupabase();
+    const isAdmin = await verifyAdmin(supabase, adminId, teamId);
+    if (!isAdmin) {
+      console.warn(`[connect] Unauthorized onboard attempt: player ${adminId} is not admin of team ${teamId}`);
+      return c.json({ error: "Unauthorized" }, 403);
     }
 
     const backendUrl = process.env.BACKEND_URL ?? "http://localhost:3000";
@@ -157,9 +178,15 @@ connectRouter.get("/callback", async (c) => {
  */
 connectRouter.post("/disconnect", zValidator("json", DisconnectSchema), async (c) => {
   try {
-    const { teamId } = c.req.valid("json");
+    const { teamId, adminId } = c.req.valid("json");
 
     const supabase = getSupabase();
+    const isAdmin = await verifyAdmin(supabase, adminId, teamId);
+    if (!isAdmin) {
+      console.warn(`[connect] Unauthorized disconnect attempt: player ${adminId} is not admin of team ${teamId}`);
+      return c.json({ error: "Unauthorized" }, 403);
+    }
+
     const { error } = await supabase
       .from("teams")
       .update({

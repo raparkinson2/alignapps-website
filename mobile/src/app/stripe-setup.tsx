@@ -22,27 +22,6 @@ export default function StripeSetupScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
 
-  // TEST ONLY: Hardcoded test account for TestFlight testing
-  const TEST_STRIPE_ACCOUNT_ID = 'acct_1T6w9SL8UhXWGxLI';
-
-  const handleUseTestAccount = () => {
-    Alert.alert(
-      'Use Test Account',
-      `Connect test Stripe account?\n\n${TEST_STRIPE_ACCOUNT_ID}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Connect',
-          onPress: () => {
-            setTeamSettingsAndSync({ stripeAccountId: TEST_STRIPE_ACCOUNT_ID, stripeOnboardingComplete: true });
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert('Test Account Connected', 'Using test Stripe account for payments.');
-          },
-        },
-      ]
-    );
-  };
-
   const isConnected = !!(teamSettings.stripeAccountId && teamSettings.stripeOnboardingComplete);
 
   const setTeamSettingsAndSync = (updates: Partial<typeof teamSettings>) => {
@@ -87,7 +66,7 @@ export default function StripeSetupScreen() {
               await fetch(`${BACKEND_URL}/api/payments/connect/disconnect`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ teamId: activeTeamId }),
+                body: JSON.stringify({ teamId: activeTeamId, adminId: currentPlayerId }),
               });
               setTeamSettingsAndSync({ stripeAccountId: undefined, stripeOnboardingComplete: false });
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -122,34 +101,42 @@ export default function StripeSetupScreen() {
             style={{ flex: 1, backgroundColor: '#0f172a' }}
             onShouldStartLoadWithRequest={(request) => {
               const url = request.url ?? '';
-              if (url.startsWith('alignsports://') || url.includes('stripe-connect-success') || url.includes('stripe-connect-cancel')) {
+              const isTrusted = url.startsWith('https://alignapps.com/stripe-connect-success') ||
+                url.startsWith('https://alignapps.com/stripe-connect-cancel') ||
+                url.startsWith('alignsports://stripe-connect-success') ||
+                url.startsWith('alignsports://stripe-connect-cancel');
+              if (isTrusted) {
                 if (url.includes('stripe-connect-success')) {
-                  const match = url.match(/accountId=([^&]+)/);
-                  const accountId = match?.[1];
+                  const queryString = url.includes('?') ? url.split('?')[1] : '';
+                  const params = new URLSearchParams(queryString);
+                  const accountId = params.get('accountId');
                   setWebViewUrl(null);
-                  if (accountId) {
+                  if (accountId && /^acct_[A-Za-z0-9]+$/.test(accountId)) {
                     setTeamSettingsAndSync({ stripeAccountId: accountId, stripeOnboardingComplete: true });
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert('Stripe Connected!', 'Your Stripe account is linked. Players can now pay dues directly in the app.', [{ text: 'Done' }]);
+                  } else {
+                    Alert.alert('Error', 'Could not verify Stripe account. Please try again.');
                   }
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  Alert.alert('Stripe Connected!', 'Your Stripe account is linked. Players can now pay dues directly in the app.', [{ text: 'Done' }]);
                 } else if (url.includes('stripe-connect-cancel')) {
                   setWebViewUrl(null);
                 }
-                return false; // Block the WebView from navigating to the deep link
+                return false;
               }
               return true;
             }}
             onNavigationStateChange={(navState) => {
               const url = navState.url ?? '';
               if (url.includes('stripe-connect-success')) {
-                const match = url.match(/accountId=([^&]+)/);
-                const accountId = match?.[1];
+                const queryString = url.includes('?') ? url.split('?')[1] : '';
+                const params = new URLSearchParams(queryString);
+                const accountId = params.get('accountId');
                 setWebViewUrl(null);
-                if (accountId) {
+                if (accountId && /^acct_[A-Za-z0-9]+$/.test(accountId)) {
                   setTeamSettingsAndSync({ stripeAccountId: accountId, stripeOnboardingComplete: true });
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  Alert.alert('Stripe Connected!', 'Your Stripe account is linked. Players can now pay dues directly in the app.', [{ text: 'Done' }]);
                 }
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                Alert.alert('Stripe Connected!', 'Your Stripe account is linked. Players can now pay dues directly in the app.', [{ text: 'Done' }]);
               } else if (url.includes('stripe-connect-cancel')) {
                 setWebViewUrl(null);
               }
@@ -284,12 +271,6 @@ export default function StripeSetupScreen() {
                     </>
                   )}
                 </LinearGradient>
-              </Pressable>
-              <Pressable
-                onPress={handleUseTestAccount}
-                style={{ borderRadius: 16, paddingVertical: 13, alignItems: 'center', backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#334155' }}
-              >
-                <Text style={{ color: '#94a3b8', fontWeight: '500', fontSize: 13 }}>Use Test Account (TestFlight)</Text>
               </Pressable>
             </View>
           )}
