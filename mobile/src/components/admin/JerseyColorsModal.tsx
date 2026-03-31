@@ -13,11 +13,12 @@ import {
 } from 'react-native';
 import { useState, useRef, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
-import { X, Plus, Edit3, Trash2, ChevronDown, ChevronUp, Hash } from 'lucide-react-native';
+import { X, Plus, Edit3, Trash2, ChevronDown, ChevronUp, Hash, Crown, Lock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTeamStore } from '@/lib/store';
 import { pushTeamToSupabase } from '@/lib/realtime-sync';
 import { syncError } from '@/lib/sync-error-handler';
+import { useRouter } from 'expo-router';
 
 interface JerseyColorsModalProps {
   visible: boolean;
@@ -152,7 +153,7 @@ interface CustomPickerProps {
 function CustomColorPicker({ color, onChange, setScrollEnabled }: CustomPickerProps) {
   const hsv = hexToHsv(isValidHex(color) ? color : '#FF0000');
   const [hue, setHue] = useState(hsv.h);
-  const [brightness, setBrightness] = useState(Math.max(hsv.v, 40)); // at least 40% so it's visible
+  const [brightness, setBrightness] = useState(Math.max(hsv.v, 40));
   const [showHex, setShowHex] = useState(false);
   const [hexInput, setHexInput] = useState('');
   const [hexError, setHexError] = useState(false);
@@ -167,7 +168,6 @@ function CustomColorPicker({ color, onChange, setScrollEnabled }: CustomPickerPr
   };
 
   const handleBrightnessChange = (v: number) => {
-    // v=0 → black, v=1 → full hue color
     const newBrightness = Math.round(v * 100);
     setBrightness(newBrightness);
     onChange(hsvToHex(hue, 100, newBrightness));
@@ -300,6 +300,46 @@ function CustomColorPicker({ color, onChange, setScrollEnabled }: CustomPickerPr
   );
 }
 
+// ─── Preset palettes ───────────────────────────────────────────────────────────
+
+// Free: 10 classic sport colors
+const FREE_PRESETS = [
+  '#FFFFFF', '#1A1A1A', '#1E40AF', '#DC2626', '#16A34A',
+  '#7C3AED', '#EA580C', '#CA8A04', '#0891B2', '#DB2777',
+];
+
+// Premium: expanded packs — team blues, deep reds, greens, golds, neutrals, neons
+const PREMIUM_PRESETS: { label: string; colors: string[] }[] = [
+  {
+    label: 'Deep Blues',
+    colors: ['#0F172A', '#1E3A5F', '#0047AB', '#003087', '#1B4FBE', '#1D4ED8'],
+  },
+  {
+    label: 'Deep Reds',
+    colors: ['#7F1D1D', '#991B1B', '#B91C1C', '#C41E3A', '#8B0000', '#5C0B0B'],
+  },
+  {
+    label: 'Forest Greens',
+    colors: ['#14532D', '#166534', '#15803D', '#004D25', '#006400', '#1B4332'],
+  },
+  {
+    label: 'Golds & Bronzes',
+    colors: ['#FFD700', '#FFC200', '#DAA520', '#B8860B', '#CD7F32', '#A16207'],
+  },
+  {
+    label: 'Purples & Maroons',
+    colors: ['#4B0082', '#581C87', '#6B21A8', '#7E22CE', '#3B0764', '#4A044E'],
+  },
+  {
+    label: 'Steels & Silvers',
+    colors: ['#1F2937', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#2D2D2D'],
+  },
+  {
+    label: 'Neon & Bright',
+    colors: ['#00FF41', '#39FF14', '#FF073A', '#FF6B00', '#00BFFF', '#FF00FF'],
+  },
+];
+
 // ─── Color picker wrapper: presets + expandable custom ────────────────────────
 
 interface ColorPickerProps {
@@ -308,18 +348,19 @@ interface ColorPickerProps {
   setScrollEnabled: (v: boolean) => void;
   scrollRef: React.RefObject<ScrollView | null>;
   scrollToY?: number;
+  isPremium: boolean;
+  onUpgrade: () => void;
 }
 
-const COLOR_PRESETS = [
-  '#FFFFFF', '#1A1A1A', '#1E40AF', '#DC2626', '#16A34A',
-  '#7C3AED', '#EA580C', '#CA8A04', '#0891B2', '#DB2777',
-];
-
-function ColorPicker({ selectedColor, onColorChange, setScrollEnabled, scrollRef, scrollToY = 400 }: ColorPickerProps) {
+function ColorPicker({ selectedColor, onColorChange, setScrollEnabled, scrollRef, scrollToY = 400, isPremium, onUpgrade }: ColorPickerProps) {
   const [expanded, setExpanded] = useState(false);
-  const isPreset = COLOR_PRESETS.map((c) => c.toUpperCase()).includes(selectedColor.toUpperCase());
+  const allPresetFlat = isPremium
+    ? [...FREE_PRESETS, ...PREMIUM_PRESETS.flatMap((p) => p.colors)]
+    : FREE_PRESETS;
+  const isPreset = allPresetFlat.map((c) => c.toUpperCase()).includes(selectedColor.toUpperCase());
 
   const handleToggle = () => {
+    if (!isPremium) { onUpgrade(); return; }
     const next = !expanded;
     setExpanded(next);
     if (next) {
@@ -329,83 +370,112 @@ function ColorPicker({ selectedColor, onColorChange, setScrollEnabled, scrollRef
 
   return (
     <View>
-      {/* Preset swatches row */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingRight: 4 }}>
-        {COLOR_PRESETS.map((hex) => {
-          const isSelected = selectedColor.toUpperCase() === hex.toUpperCase();
-          return (
-            <Pressable
-              key={hex}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onColorChange(hex);
-                setExpanded(false);
-              }}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: hex,
-                borderWidth: isSelected ? 3 : 2,
-                borderColor: isSelected ? '#67e8f9' : '#334155',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {isSelected && (
-                <View
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 5,
-                    backgroundColor: hex === '#FFFFFF' || hex === '#CA8A04' ? '#000' : '#fff',
-                  }}
-                />
-              )}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      {/* Free presets row */}
+      <View style={{ marginBottom: 8 }}>
+        <Text style={{ color: '#475569', fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
+          Standard Colors
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }} contentContainerStyle={{ gap: 8, paddingRight: 4 }}>
+          {FREE_PRESETS.map((hex) => {
+            const isSelected = selectedColor.toUpperCase() === hex.toUpperCase();
+            return (
+              <Pressable
+                key={hex}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onColorChange(hex); setExpanded(false); }}
+                style={{
+                  width: 38, height: 38, borderRadius: 19,
+                  backgroundColor: hex,
+                  borderWidth: isSelected ? 3 : 2,
+                  borderColor: isSelected ? '#67e8f9' : '#334155',
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {isSelected && (
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: hex === '#FFFFFF' || hex === '#CA8A04' ? '#000' : '#fff' }} />
+                )}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-      {/* Custom color toggle button */}
+      {/* Premium preset packs */}
+      {isPremium && (
+        <View style={{ marginBottom: 12 }}>
+          <Text style={{ color: '#f59e0b', fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
+            Premium Packs
+          </Text>
+          {PREMIUM_PRESETS.map((pack) => (
+            <View key={pack.label} style={{ marginBottom: 8 }}>
+              <Text style={{ color: '#475569', fontSize: 10, marginBottom: 6 }}>{pack.label}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 4 }}>
+                {pack.colors.map((hex) => {
+                  const isSelected = selectedColor.toUpperCase() === hex.toUpperCase();
+                  return (
+                    <Pressable
+                      key={hex}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onColorChange(hex); setExpanded(false); }}
+                      style={{
+                        width: 34, height: 34, borderRadius: 17,
+                        backgroundColor: hex,
+                        borderWidth: isSelected ? 3 : 2,
+                        borderColor: isSelected ? '#f59e0b' : '#334155',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      {isSelected && (
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Custom color toggle — locked for free users */}
       <Pressable
         onPress={handleToggle}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: expanded ? 'rgba(103,232,249,0.08)' : 'rgba(255,255,255,0.04)',
+          backgroundColor: !isPremium
+            ? 'rgba(245,158,11,0.05)'
+            : expanded ? 'rgba(103,232,249,0.08)' : 'rgba(255,255,255,0.04)',
           borderRadius: 14,
           paddingHorizontal: 14,
           paddingVertical: 12,
           borderWidth: 1,
-          borderColor: expanded ? 'rgba(103,232,249,0.25)' : 'rgba(255,255,255,0.07)',
+          borderColor: !isPremium
+            ? 'rgba(245,158,11,0.2)'
+            : expanded ? 'rgba(103,232,249,0.25)' : 'rgba(255,255,255,0.07)',
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          {/* Current custom color preview */}
-          <View
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 8,
-              backgroundColor: selectedColor,
-              borderWidth: 1.5,
-              borderColor: 'rgba(255,255,255,0.2)',
-            }}
-          />
-          <Text style={{ color: !isPreset && !expanded ? '#67e8f9' : '#94a3b8', fontSize: 14, fontWeight: '600' }}>
-            {!isPreset ? 'Custom color' : 'Custom color...'}
+          <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: selectedColor, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)' }} />
+          <Text style={{ color: !isPremium ? '#f59e0b' : (!isPreset && !expanded ? '#67e8f9' : '#94a3b8'), fontSize: 14, fontWeight: '600' }}>
+            {!isPremium ? 'Custom Color Picker' : (!isPreset ? 'Custom color' : 'Custom color...')}
           </Text>
+          {!isPremium && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(245,158,11,0.12)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' }}>
+              <Crown size={9} color="#f59e0b" />
+              <Text style={{ color: '#f59e0b', fontSize: 9, fontWeight: '700' }}>PREMIUM</Text>
+            </View>
+          )}
         </View>
-        {expanded
-          ? <ChevronUp size={16} color="#67e8f9" />
-          : <ChevronDown size={16} color="#64748b" />
+        {!isPremium
+          ? <Lock size={15} color="#f59e0b" style={{ opacity: 0.6 }} />
+          : expanded
+            ? <ChevronUp size={16} color="#67e8f9" />
+            : <ChevronDown size={16} color="#64748b" />
         }
       </Pressable>
 
-      {/* Expanded custom picker */}
-      {expanded && (
+      {/* Expanded custom picker — premium only */}
+      {expanded && isPremium && (
         <View
           style={{
             marginTop: 12,
@@ -430,11 +500,13 @@ function ColorPicker({ selectedColor, onColorChange, setScrollEnabled, scrollRef
 // ─── Main modal ───────────────────────────────────────────────────────────────
 
 export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) {
+  const router = useRouter();
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const games = useTeamStore((s) => s.games);
   const updateGame = useTeamStore((s) => s.updateGame);
+  const isPremium = teamSettings?.isPremium ?? false;
 
   const scrollRef = useRef<ScrollView | null>(null);
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -453,6 +525,12 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
       }, 50);
     }
   }, [activeTeamId, setTeamSettings]);
+
+  const handleUpgrade = () => {
+    Keyboard.dismiss();
+    onClose();
+    router.push('/upgrade');
+  };
 
   const handleAdd = () => {
     if (!newColorName.trim()) return;
@@ -519,7 +597,15 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
             <View style={{ backgroundColor: '#0f172a', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '92%' }}>
               {/* Header */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#1e293b' }}>
-                <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '700' }}>Jersey Colors</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '700' }}>Jersey Colors</Text>
+                  {!isPremium && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(245,158,11,0.12)', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)' }}>
+                      <Crown size={10} color="#f59e0b" />
+                      <Text style={{ color: '#f59e0b', fontSize: 10, fontWeight: '700' }}>MORE COLORS WITH PREMIUM</Text>
+                    </View>
+                  )}
+                </View>
                 <Pressable onPress={() => { Keyboard.dismiss(); onClose(); }} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#1e293b', alignItems: 'center', justifyContent: 'center' }}>
                   <X size={18} color="#94a3b8" />
                 </Pressable>
@@ -558,6 +644,8 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
                           setScrollEnabled={setScrollEnabled}
                           scrollRef={scrollRef}
                           scrollToY={index * 80 + 100}
+                          isPremium={isPremium}
+                          onUpgrade={handleUpgrade}
                         />
                         <View style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}>
                           <Pressable onPress={handleCancelEdit} style={{ flex: 1, backgroundColor: '#1e293b', borderRadius: 12, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: '#334155' }}>
@@ -608,6 +696,8 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
                     setScrollEnabled={setScrollEnabled}
                     scrollRef={scrollRef}
                     scrollToY={addSectionY}
+                    isPremium={isPremium}
+                    onUpgrade={handleUpgrade}
                   />
                   <Pressable
                     onPress={handleAdd}
