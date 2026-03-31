@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["ZCSQQ2YC44.com.vibecode.alignsports-jy5wjr"],
+        "components": [
+          { "/": "/stripe-connect-success*", "comment": "Stripe Connect OAuth success" },
+          { "/": "/stripe-connect-cancel*", "comment": "Stripe Connect OAuth cancel" },
+          { "/": "/auth/callback*", "comment": "OAuth authentication callback" }
+        ]
+      }
+    ]
+  }
+}
