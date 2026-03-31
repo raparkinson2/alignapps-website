@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.vibecode.alignsports",
-      "sha256_cert_fingerprints": []
+      "sha256_cert_fingerprints": ["A8:67:4F:83:98:DC:DB:E6:48:E3:CE:EF:2E:F4:90:68:41:42:3C:5D:0B:D0:BC:C8:26:83:9E:1B:15:E0:23:5B"]
     }
   }
 ]
