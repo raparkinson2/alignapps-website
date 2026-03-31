@@ -313,4 +313,19 @@ paymentsRouter.post("/create-checkout-session", zValidator("json", CreateCheckou
   }
 });
 
+/**
+ * GET /api/payments/fee-config
+ *
+ * Returns the current fee configuration so the frontend can display
+ * accurate breakdowns without hardcoding values.
+ */
+paymentsRouter.get("/fee-config", (c) => {
+  const platformFeePercent = parseFloat(process.env.STRIPE_PLATFORM_FEE_PERCENT ?? "0.5");
+  return c.json({
+    platformFeePercent,   // e.g. 1.0  → 1%
+    stripeFeePercent: 2.9, // Stripe standard US rate
+    stripeFixedFee: 0.30,  // Stripe standard fixed fee
+  });
+});
+
 export { paymentsRouter };

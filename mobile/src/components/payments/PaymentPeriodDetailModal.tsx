@@ -2,7 +2,7 @@ import {
   View, Text, ScrollView, Pressable, TextInput, Modal, Alert, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X, ChevronLeft, DollarSign, Bell, Plus, Users, Calendar, Edit3, Trash2, ChevronRight, Zap,
 } from 'lucide-react-native';
@@ -63,6 +63,15 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
   const [stripeCheckoutUrl, setStripeCheckoutUrl] = useState<string | null>(null);
   const [isStripeLoading, setIsStripeLoading] = useState(false);
   const [stripePaymentContext, setStripePaymentContext] = useState<{ periodId: string; playerId: string; amount: number } | null>(null);
+
+  // Fee config from backend — keeps display in sync with actual charges
+  const [feeConfig, setFeeConfig] = useState({ platformFeePercent: 1.0, stripeFeePercent: 2.9, stripeFixedFee: 0.30 });
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/payments/fee-config`)
+      .then(r => r.json())
+      .then((data: { platformFeePercent: number; stripeFeePercent: number; stripeFixedFee: number }) => setFeeConfig(data))
+      .catch(() => {}); // silently keep defaults on failure
+  }, []);
 
   const selectedPeriod = paymentPeriods.find((p) => p.id === periodId);
   const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
@@ -437,14 +446,14 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
                           <>
                             <Zap size={18} color="white" />
                             <Text className="text-white font-bold text-base ml-2">
-                              Pay ${(Math.ceil(((Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0)) + 0.30) / (1 - 0.029 - 0.005)) * 100) / 100).toFixed(2)} with Stripe
+                              Pay ${(Math.ceil(((Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0)) + feeConfig.stripeFixedFee) / (1 - feeConfig.stripeFeePercent / 100 - feeConfig.platformFeePercent / 100)) * 100) / 100).toFixed(2)} with Stripe
                             </Text>
                           </>
                         )}
                       </LinearGradient>
                       {(() => {
                         const balance = Math.max(0, selectedPeriod.amount - (selectedPlayerPayment?.amount ?? 0));
-                        const total = Math.ceil(((balance + 0.30) / (1 - 0.029 - 0.005)) * 100) / 100;
+                        const total = Math.ceil(((balance + feeConfig.stripeFixedFee) / (1 - feeConfig.stripeFeePercent / 100 - feeConfig.platformFeePercent / 100)) * 100) / 100;
                         const fee = Math.round((total - balance) * 100) / 100;
                         return (
                           <View style={{ backgroundColor: '#4a44cc', paddingVertical: 6, alignItems: 'center' }}>
