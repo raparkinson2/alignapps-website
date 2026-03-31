@@ -96,7 +96,7 @@ function computeTrophies(
 
   const statLeadership: { key: string; label: string }[] = [];
   if (sport === 'hockey') {
-    statLeadership.push({ key: 'goals', label: 'Goals' }, { key: 'assists', label: 'Assists' }, { key: 'pim', label: 'PIM' });
+    statLeadership.push({ key: 'goals', label: 'Goals' }, { key: 'assists', label: 'Assists' });
   } else if (sport === 'soccer') {
     statLeadership.push({ key: 'goals', label: 'Goals' }, { key: 'assists', label: 'Assists' });
   } else if (sport === 'lacrosse') {
@@ -174,6 +174,39 @@ function computeTrophies(
         subtitle: `${attended} games this season`,
         color: '#67e8f9', bg: 'rgba(103,232,249,0.1)', border: 'rgba(103,232,249,0.25)',
       });
+    }
+  }
+
+  // ── Most Penalty Minutes (hockey) / Most Fouls (soccer/lacrosse) ───────────
+  if (sport === 'hockey') {
+    const myPim = getStatValue(player.stats, 'pim');
+    if (myPim > 0) {
+      const maxPim = Math.max(...eligiblePlayers.map((p) => getStatValue(p.stats, 'pim')));
+      if (myPim === maxPim) {
+        trophies.push({
+          id: 'sin-bin',
+          icon: <Flame size={18} color="#f43f5e" />,
+          title: 'Sin Bin King 🥊',
+          subtitle: `${myPim} penalty minutes — most on the team`,
+          color: '#f43f5e', bg: 'rgba(244,63,94,0.1)', border: 'rgba(244,63,94,0.3)',
+        });
+      }
+    }
+  } else if (sport === 'soccer' || sport === 'lacrosse') {
+    const myFouls = getStatValue(player.stats, 'fouls') || getStatValue(player.stats, 'yellowCards');
+    if (myFouls > 0) {
+      const maxFouls = Math.max(...eligiblePlayers.map((p) =>
+        getStatValue(p.stats, 'fouls') || getStatValue(p.stats, 'yellowCards')
+      ));
+      if (myFouls === maxFouls) {
+        trophies.push({
+          id: 'most-fouls',
+          icon: <Flame size={18} color="#f43f5e" />,
+          title: 'Card Collector 🟨',
+          subtitle: `${myFouls} fouls — most on the team`,
+          color: '#f43f5e', bg: 'rgba(244,63,94,0.1)', border: 'rgba(244,63,94,0.3)',
+        });
+      }
     }
   }
 
