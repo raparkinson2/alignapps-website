@@ -11,14 +11,19 @@ import {
   ChevronRight,
   Calendar,
   Trash2,
+  Crown,
+  Flame,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Sport, HockeyStats, HockeyGoalieStats, BaseballStats, BaseballPitcherStats, BasketballStats, SoccerStats, SoccerGoalieStats, LacrosseStats, LacrosseGoalieStats, Player, PlayerStats, getPlayerPositions, GameLogEntry, getPlayerName } from '@/lib/store';
 import { pushPlayerToSupabase } from '@/lib/realtime-sync';
 import { syncError } from '@/lib/sync-error-handler';
+import { useTeamColor, hexToRgba } from '@/lib/theme';
 
 // Edit mode type - determines which stats to show/edit
 type EditMode = 'batter' | 'pitcher' | 'skater' | 'goalie';
@@ -514,6 +519,12 @@ export default function TeamStatsScreen() {
 
   const sport = teamSettings.sport || 'hockey';
 
+  const teamColor = useTeamColor();
+
+  // Sort state — column index into statHeaders (-1 = unsorted/default)
+  const [sortCol, setSortCol] = useState<number>(0);
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+
   // Get current player and check their roles
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const isAdmin = currentPlayer?.roles?.includes('admin') ?? false;
@@ -739,46 +750,56 @@ export default function TeamStatsScreen() {
     return getStatFields(sport, positionForStats);
   })() : [];
 
-  // Sort players by points — exclude coaches and parents (no stats)
-  const sortedPlayers = [...players].filter(
-    (p) => p.position !== 'Coach' && p.position !== 'Parent' && !p.roles?.includes('coach') && !p.roles?.includes('parent')
-  ).sort((a, b) => {
-    const aStats = a.stats;
-    const bStats = b.stats;
-
-    if (!aStats && !bStats) return 0;
-    if (!aStats) return 1;
-    if (!bStats) return -1;
-
-    switch (sport) {
-      case 'hockey': {
-        const aTotal = (aStats as HockeyStats).goals + (aStats as HockeyStats).assists;
-        const bTotal = (bStats as HockeyStats).goals + (bStats as HockeyStats).assists;
-        return bTotal - aTotal;
-      }
-      case 'baseball':
-      case 'softball': {
-        return (bStats as BaseballStats).hits - (aStats as BaseballStats).hits;
-      }
-      case 'basketball': {
-        return (bStats as BasketballStats).points - (aStats as BasketballStats).points;
-      }
-      case 'soccer': {
-        const aTotal = (aStats as SoccerStats).goals + (aStats as SoccerStats).assists;
-        const bTotal = (bStats as SoccerStats).goals + (bStats as SoccerStats).assists;
-        return bTotal - aTotal;
-      }
-      case 'lacrosse': {
-        const aTotal = (aStats as LacrosseStats).goals + (aStats as LacrosseStats).assists;
-        const bTotal = (bStats as LacrosseStats).goals + (bStats as LacrosseStats).assists;
-        return bTotal - aTotal;
-      }
-      default:
-        return 0;
-    }
-  });
+  // Sort players by selected column
+  const sortedPlayers = useMemo(() => {
+    return [...players].filter(
+      (p) => p.position !== 'Coach' && p.position !== 'Parent' && !p.roles?.includes('coach') && !p.roles?.includes('parent'),
+    ).sort((a, b) => {
+      const aVals = getStatValues(sport, a.stats, 'batter');
+      const bVals = getStatValues(sport, b.stats, 'batter');
+      const toNum = (v: number | string) => typeof v === 'string' ? parseFloat(v) || 0 : (v ?? 0);
+      const aVal = toNum(aVals[sortCol] ?? 0);
+      const bVal = toNum(bVals[sortCol] ?? 0);
+      if (bVal === aVal) return 0;
+      return sortDir === 'desc' ? bVal - aVal : aVal - bVal;
+    });
+  }, [players, sport, sortCol, sortDir]);
 
   const statHeaders = getStatHeaders(sport);
+
+  // Max value per column for progress bars
+  const colMaxValues = useMemo(() => {
+    return statHeaders.map((_, colIdx) => {
+      let max = 0;
+      for (const p of sortedPlayers) {
+        const vals = getStatValues(sport, p.stats, 'batter');
+        const v = typeof vals[colIdx] === 'string' ? parseFloat(vals[colIdx] as string) || 0 : (vals[colIdx] as number ?? 0);
+        if (v > max) max = v;
+      }
+      return max;
+    });
+  }, [sortedPlayers, sport, statHeaders]);
+
+  // "Heating Up" — player IDs where last 3 game logs each had a contribution
+  const heatingUpIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const p of sortedPlayers) {
+      if ((p.gameLogs?.length ?? 0) < 3) continue;
+      const recent = [...(p.gameLogs ?? [])]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 3);
+      const hot = recent.every((log) => {
+        const s = log.stats as unknown as Record<string, number>;
+        if (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') {
+          return (s.goals ?? 0) > 0 || (s.assists ?? 0) > 0;
+        }
+        if (sport === 'basketball') return (s.points ?? 0) >= 5;
+        return (s.hits ?? 0) > 0;
+      });
+      if (hot) ids.add(p.id);
+    }
+    return ids;
+  }, [sortedPlayers, sport]);
 
   return (
     <View className="flex-1 bg-slate-900">
@@ -924,10 +945,32 @@ export default function TeamStatsScreen() {
               <Text className="text-slate-300 font-semibold" style={{ flex: 1 }}>Player</Text>
               <Text className="text-slate-300 font-semibold text-center text-xs" style={{ width: 40 }}>Pos</Text>
               <View style={{ flexDirection: 'row', marginLeft: 8 }}>
-                {statHeaders.map((header) => (
-                  <Text key={header} className="text-slate-300 font-semibold text-center text-xs" style={{ width: 36 }}>
-                    {header}
-                  </Text>
+                {statHeaders.map((header, colIdx) => (
+                  <Pressable
+                    key={header}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      if (sortCol === colIdx) {
+                        setSortDir((d) => d === 'desc' ? 'asc' : 'desc');
+                      } else {
+                        setSortCol(colIdx);
+                        setSortDir('desc');
+                      }
+                    }}
+                    style={{ width: 36, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                  >
+                    <Text
+                      className="font-semibold text-center text-xs"
+                      style={{ color: sortCol === colIdx ? teamColor : '#cbd5e1' }}
+                    >
+                      {header}
+                    </Text>
+                    {sortCol === colIdx && (
+                      sortDir === 'desc'
+                        ? <ChevronDown size={9} color={teamColor} style={{ marginLeft: 1 }} />
+                        : <ChevronUp size={9} color={teamColor} style={{ marginLeft: 1 }} />
+                    )}
+                  </Pressable>
                 ))}
               </View>
               <View style={{ width: 16 }} />
@@ -951,26 +994,63 @@ export default function TeamStatsScreen() {
                 (sport === 'hockey' || sport === 'soccer') ||
                 (sport === 'baseball' && sortedPlayers.some(p => playerIsPitcher(p)));
               const canEdit = canEditPlayer(player.id);
+              const isLeader = index === 0;
+              const isHot = heatingUpIds.has(player.id);
               return (
                 <Pressable
                   key={player.id}
                   onPress={() => openEditModal(player, sport === 'baseball' ? 'batter' : 'skater')}
                   disabled={!canEdit}
-                  className={`flex-row items-center px-3 py-3 ${canEdit ? 'active:bg-slate-700/50' : ''} ${
+                  className={`flex-row items-center px-3 py-2.5 ${canEdit ? 'active:bg-slate-700/50' : ''} ${
                     showBorder ? 'border-b border-slate-700/50' : ''
                   }`}
+                  style={isLeader ? { backgroundColor: hexToRgba(teamColor, 0.07) } : undefined}
                 >
                   <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 0 }}>
                     <Text className="text-cyan-400 font-medium text-xs mr-1" style={{ flexShrink: 0 }}>#{player.number}</Text>
                     <Text className="text-white text-sm" style={{ flexShrink: 1, flexGrow: 1 }} numberOfLines={1}>{formatName(player)}</Text>
+                    {isLeader && (
+                      <View style={{ marginLeft: 4, flexShrink: 0 }}>
+                        <Crown size={11} color="#fbbf24" />
+                      </View>
+                    )}
+                    {isHot && (
+                      <View style={{ marginLeft: isLeader ? 2 : 4, flexShrink: 0 }}>
+                        <Flame size={11} color="#f97316" />
+                      </View>
+                    )}
                   </View>
                   <Text className="text-slate-400 text-center text-xs" style={{ width: 40, flexShrink: 0 }}>{getDisplayPosition(player)}</Text>
                   <View style={{ flexDirection: 'row', marginLeft: 8, flexShrink: 0 }}>
-                    {statValues.map((value, i) => (
-                      <Text key={i} className="text-slate-300 text-center text-sm" style={{ width: 36 }}>
-                        {value}
-                      </Text>
-                    ))}
+                    {statValues.map((value, i) => {
+                      const numVal = typeof value === 'string' ? parseFloat(value) || 0 : (value ?? 0);
+                      const maxVal = colMaxValues[i] ?? 0;
+                      const pct = maxVal > 0 ? numVal / maxVal : 0;
+                      const isActiveCol = sortCol === i;
+                      return (
+                        <View key={i} style={{ width: 36, alignItems: 'center' }}>
+                          <Text
+                            className="text-center text-sm font-semibold"
+                            style={{ color: isActiveCol ? teamColor : '#cbd5e1' }}
+                          >
+                            {value}
+                          </Text>
+                          {isActiveCol && maxVal > 0 && (
+                            <View style={{ width: 24, height: 3, backgroundColor: 'rgba(51,65,85,0.8)', borderRadius: 2, marginTop: 2, overflow: 'hidden' }}>
+                              <View
+                                style={{
+                                  width: `${Math.round(pct * 100)}%`,
+                                  height: '100%',
+                                  backgroundColor: teamColor,
+                                  borderRadius: 2,
+                                  opacity: 0.8,
+                                }}
+                              />
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
                   </View>
                   <View style={{ width: 16, alignItems: 'center', flexShrink: 0 }}>
                     {canEdit && <ChevronRight size={14} color="#64748b" />}

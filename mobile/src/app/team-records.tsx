@@ -2,12 +2,13 @@ import { View, Text, ScrollView, Pressable, TextInput, Modal, KeyboardAvoidingVi
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Trophy, Target, Crosshair, Calendar, Shield, Award, Plus, X, Star, TrendingUp, Users, Flame, TrendingDown, Edit3 } from 'lucide-react-native';
+import { ArrowLeft, Trophy, Target, Crosshair, Calendar, Shield, Award, Plus, X, Star, TrendingUp, Users, Flame, TrendingDown, Edit3, Crown } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
 import { useTeamStore, Player, getPlayerName, Championship, ArchivedPlayerStats, ArchivedSeason } from '@/lib/store';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { useTeamColor, hexToRgba } from '@/lib/theme';
 
 interface RecordEntry {
   playerId: string;
@@ -41,6 +42,7 @@ export default function TeamRecordsScreen() {
   const isAdmin = useTeamStore((s) => s.isAdmin);
   const sport = teamSettings.sport || 'hockey';
   const championships = teamSettings.championships || [];
+  const teamColor = useTeamColor();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newYear, setNewYear] = useState('');
@@ -747,7 +749,7 @@ export default function TeamRecordsScreen() {
                 <Text className="text-slate-600 text-xs mt-0.5">Add player stats to track records</Text>
               </View>
             ) : (
-              individualRecords.map((category, catIndex) => (
+              individualRecords.map((category) => (
                 <View
                   key={category.title}
                   className="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden mb-2"
@@ -760,45 +762,79 @@ export default function TeamRecordsScreen() {
                     <Text className="text-white font-semibold text-sm flex-1">{category.title}</Text>
                   </View>
 
-                  {/* Records */}
-                  {category.records.map((record, index) => (
-                    <View
-                      key={record.playerId}
-                      className={`flex-row items-center px-3 py-1.5 ${
-                        index !== category.records.length - 1 ? 'border-b border-slate-700/30' : ''
-                      }`}
-                    >
-                      {/* Rank */}
-                      <View
-                        className="w-5 h-5 rounded-full items-center justify-center mr-2"
-                        style={{ backgroundColor: `${getMedalColor(index)}20` }}
+                  {/* #1 Hero Card */}
+                  {category.records[0] && (() => {
+                    const record = category.records[0];
+                    return (
+                      <LinearGradient
+                        colors={[hexToRgba(teamColor, 0.22), hexToRgba(teamColor, 0.06), 'rgba(15,23,42,0)']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ padding: 14, borderBottomWidth: category.records.length > 1 ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.5)' }}
                       >
-                        <Text
-                          className="text-[9px] font-bold"
-                          style={{ color: getMedalColor(index) }}
+                        <View className="flex-row items-center">
+                          {/* Crown badge */}
+                          <View
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: 11,
+                              backgroundColor: 'rgba(251,191,36,0.2)',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginRight: 10,
+                            }}
+                          >
+                            <Crown size={12} color="#fbbf24" />
+                          </View>
+                          <PlayerAvatar player={record.player} size={36} />
+                          <View className="flex-1 ml-2.5">
+                            <Text className="text-white font-bold text-sm">{record.playerName}</Text>
+                            {record.seasonName && (
+                              <Text className="text-slate-400 text-xs">{record.seasonName}</Text>
+                            )}
+                          </View>
+                          <Text
+                            style={{ color: teamColor, fontSize: 26, fontWeight: '800', letterSpacing: -0.5 }}
+                          >
+                            {category.isLowerBetter ? record.value.toFixed(2) : record.value}
+                          </Text>
+                        </View>
+                      </LinearGradient>
+                    );
+                  })()}
+
+                  {/* #2 and #3 compact rows */}
+                  {category.records.slice(1).map((record, idx) => {
+                    const index = idx + 1;
+                    return (
+                      <View
+                        key={record.playerId}
+                        className={`flex-row items-center px-3 py-1.5 ${
+                          idx !== category.records.slice(1).length - 1 ? 'border-b border-slate-700/30' : ''
+                        }`}
+                      >
+                        <View
+                          className="w-5 h-5 rounded-full items-center justify-center mr-2"
+                          style={{ backgroundColor: `${getMedalColor(index)}20` }}
                         >
-                          {getMedalEmoji(index)}
+                          <Text className="text-[9px] font-bold" style={{ color: getMedalColor(index) }}>
+                            {getMedalEmoji(index)}
+                          </Text>
+                        </View>
+                        <PlayerAvatar player={record.player} size={24} />
+                        <View className="flex-1 ml-2">
+                          <Text className="text-white font-medium text-sm">{record.playerName}</Text>
+                          {record.seasonName && (
+                            <Text className="text-slate-500 text-xs">{record.seasonName}</Text>
+                          )}
+                        </View>
+                        <Text className="text-base font-bold" style={{ color: getMedalColor(index) }}>
+                          {category.isLowerBetter ? record.value.toFixed(2) : record.value}
                         </Text>
                       </View>
-
-                      {/* Player */}
-                      <PlayerAvatar player={record.player} size={24} />
-                      <View className="flex-1 ml-2">
-                        <Text className="text-white font-medium text-sm">{record.playerName}</Text>
-                        {record.seasonName && (
-                          <Text className="text-slate-500 text-xs">{record.seasonName}</Text>
-                        )}
-                      </View>
-
-                      {/* Value */}
-                      <Text
-                        className="text-base font-bold"
-                        style={{ color: getMedalColor(index) }}
-                      >
-                        {category.isLowerBetter ? record.value.toFixed(2) : record.value}
-                      </Text>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               ))
             )}
