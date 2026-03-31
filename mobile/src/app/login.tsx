@@ -911,12 +911,12 @@ export default function LoginScreen() {
               >
                 {!isGoogleLoading && (
                   <Image
-                    source={{ uri: 'https://www.google.com/favicon.ico' }}
+                    source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png' }}
                     style={{ width: 20, height: 20, marginRight: 10 }}
                     contentFit="contain"
                   />
                 )}
-                <Text style={{ color: '#1f2937', fontSize: 17, fontWeight: '600' }}>
+                <Text style={{ color: '#1f2937', fontSize: 17, fontWeight: '700' }}>
                   {isGoogleLoading ? 'Signing in with Google...' : 'Sign in with Google'}
                 </Text>
               </Pressable>
