@@ -745,9 +745,30 @@ export default function PlayerProfileScreen() {
                 borderWidth: 1, borderColor: 'rgba(103,232,249,0.12)',
               }}
             >
-              {/* Jersey number watermark */}
-              <View style={{ position: 'absolute', right: -10, top: -10, opacity: 0.06 }}>
-                <Text style={{ color: '#67e8f9', fontSize: 160, fontWeight: '900', letterSpacing: -8 }}>
+              {/* Jersey number watermark — right-aligned, bounded, scales to fit */}
+              <View style={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: 130,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: 0.07,
+              }}>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.3}
+                  style={{
+                    color: '#67e8f9',
+                    fontSize: 130,
+                    fontWeight: '900',
+                    letterSpacing: -6,
+                    width: 120,
+                    textAlign: 'center',
+                  }}
+                >
                   {player.number || '0'}
                 </Text>
               </View>
