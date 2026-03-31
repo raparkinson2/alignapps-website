@@ -312,7 +312,7 @@ const FREE_PRESETS = [
 const PREMIUM_PRESETS: { label: string; colors: string[] }[] = [
   {
     label: 'Deep Blues',
-    colors: ['#0F172A', '#003087', '#1E3A5F', '#0047AB', '#1B4FBE', '#1E40AF', '#1D4ED8', '#2563EB'],
+    colors: ['#0F172A', '#003087', '#1E3A5F', '#0047AB', '#1E40AF', '#1B4FBE', '#1D4ED8', '#2563EB'],
   },
   {
     label: 'Deep Reds',
@@ -320,11 +320,11 @@ const PREMIUM_PRESETS: { label: string; colors: string[] }[] = [
   },
   {
     label: 'Forest Greens',
-    colors: ['#004D25', '#006400', '#1B4332', '#14532D', '#166534', '#15803D', '#16A34A', '#22C55E'],
+    colors: ['#004D25', '#1B4332', '#006400', '#14532D', '#166534', '#15803D', '#16A34A', '#22C55E'],
   },
   {
     label: 'Golds & Bronzes',
-    colors: ['#A16207', '#B8860B', '#CD7F32', '#D97706', '#DAA520', '#F59E0B', '#FFC200', '#FFD700'],
+    colors: ['#A16207', '#B8860B', '#D97706', '#CD7F32', '#DAA520', '#F59E0B', '#FFC200', '#FFD700'],
   },
   {
     label: 'Purples & Maroons',
