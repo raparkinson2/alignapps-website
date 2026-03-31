@@ -292,13 +292,27 @@ export default function PremiumInsightsScreen() {
 
           {/* ── Engagement Leaderboard ── */}
           <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-5">
-            <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center" style={{ gap: 8 }}>
                 <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: hexToRgba(teamColor, 0.2), alignItems: 'center', justifyContent: 'center' }}>
                   <TrendingUp size={14} color={teamColor} />
                 </View>
                 <Text className="text-white font-bold text-base">Engagement Leaderboard</Text>
               </View>
+            </View>
+
+            {/* Scoring explanation */}
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 12, marginBottom: 10, flexDirection: 'row', gap: 12 }}>
+              {[
+                { label: 'Attendance', pts: '40 pts', color: '#22c55e' },
+                { label: 'Payments', pts: '30 pts', color: '#f59e0b' },
+                { label: 'RSVP Speed', pts: '30 pts', color: '#38bdf8' },
+              ].map((item) => (
+                <View key={item.label} style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={{ color: item.color, fontWeight: '700', fontSize: 12 }}>{item.pts}</Text>
+                  <Text style={{ color: '#64748b', fontSize: 10, marginTop: 2, textAlign: 'center' }}>{item.label}</Text>
+                </View>
+              ))}
             </View>
 
             <View style={{ backgroundColor: 'rgba(30,41,59,0.7)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
@@ -351,9 +365,16 @@ export default function PremiumInsightsScreen() {
                       </View>
                     </View>
 
-                    <View className="ml-3 items-end">
-                      <Text className="text-slate-400 text-xs">{item.attendanceRate}%</Text>
-                      <Text className="text-slate-600 text-xs">att.</Text>
+                    {/* Score aligned right */}
+                    <View style={{ width: 52, alignItems: 'flex-end', marginLeft: 10 }}>
+                      <Text style={{
+                        color: item.total >= 80 ? '#22c55e' : item.total >= 55 ? '#f59e0b' : '#ef4444',
+                        fontWeight: '800',
+                        fontSize: 15,
+                      }}>
+                        {Math.round(item.total)}
+                      </Text>
+                      <Text style={{ color: '#475569', fontSize: 10 }}>/100</Text>
                     </View>
                   </View>
                 ))

@@ -139,6 +139,17 @@ export default function OpponentScoutingScreen() {
           </View>
         </Animated.View>
 
+        {/* Win Score explanation */}
+        <Animated.View entering={FadeIn.delay(50)} className="px-5 mb-3">
+          <View style={{ backgroundColor: 'rgba(168,85,247,0.08)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(168,85,247,0.2)', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Trophy size={14} color="#c084fc" />
+            <Text style={{ color: '#94a3b8', fontSize: 12, flex: 1, lineHeight: 17 }}>
+              <Text style={{ color: '#c084fc', fontWeight: '700' }}>Win Score</Text>
+              {' '}is a 0–100 composite: 60% win rate + 40% avg score margin vs this opponent.
+            </Text>
+          </View>
+        </Animated.View>
+
         {/* Search */}
         <Animated.View entering={FadeIn.delay(60)} className="px-5 mb-3">
           <View className="flex-row items-center bg-slate-800/80 rounded-2xl px-4 py-3 border border-slate-700/40">
@@ -238,7 +249,7 @@ export default function OpponentScoutingScreen() {
                             {recordGames > 0 ? opp.gameIQ : '—'}
                           </Text>
                           {recordGames > 0 && (
-                            <Text style={{ color: gameIQColor(opp.gameIQ), fontSize: 8, fontWeight: '600' }}>IQ</Text>
+                            <Text style={{ color: gameIQColor(opp.gameIQ), fontSize: 8, fontWeight: '600' }}>WS</Text>
                           )}
                         </View>
 

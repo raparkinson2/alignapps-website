@@ -284,8 +284,8 @@ export default function GameMomentumScreen() {
               {!hasWeather ? (
                 <EmptyState
                   emoji="🌤️"
-                  title="Building weather history"
-                  subtitle="Weather is auto-tagged after each game is scored. Check back after a few games."
+                  title="No weather data yet"
+                  subtitle={"Weather auto-tags when you log a final score on a past game. It builds up over time as you record results."}
                 />
               ) : (
                 <View style={{ padding: 16 }}>
