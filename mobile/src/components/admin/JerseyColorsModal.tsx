@@ -17,6 +17,113 @@ const COLOR_PRESETS = [
   '#7c3aed', '#ea580c', '#ca8a04', '#0891b2', '#db2777',
 ];
 
+function isValidHex(hex: string): boolean {
+  return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex);
+}
+
+function normalizeHex(input: string): string {
+  let h = input.trim();
+  if (!h.startsWith('#')) h = `#${h}`;
+  return h;
+}
+
+interface ColorPickerProps {
+  selectedColor: string;
+  onColorChange: (hex: string) => void;
+}
+
+function ColorPicker({ selectedColor, onColorChange }: ColorPickerProps) {
+  const [customHex, setCustomHex] = useState('');
+  const [hexError, setHexError] = useState(false);
+
+  const handlePresetPress = (hex: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onColorChange(hex);
+    setCustomHex('');
+    setHexError(false);
+  };
+
+  const handleHexChange = (text: string) => {
+    setCustomHex(text);
+    setHexError(false);
+    const normalized = normalizeHex(text);
+    if (isValidHex(normalized)) {
+      onColorChange(normalized.toUpperCase());
+    }
+  };
+
+  const handleHexBlur = () => {
+    if (customHex.trim() === '') return;
+    const normalized = normalizeHex(customHex);
+    if (!isValidHex(normalized)) {
+      setHexError(true);
+    }
+  };
+
+  const isPresetSelected = COLOR_PRESETS.includes(selectedColor);
+
+  return (
+    <View>
+      {/* Preset swatches */}
+      <View className="flex-row justify-between mb-4">
+        {COLOR_PRESETS.map((hex) => (
+          <Pressable
+            key={hex}
+            onPress={() => handlePresetPress(hex)}
+            className={cn(
+              'flex-1 aspect-square rounded-full border-2 items-center justify-center mx-0.5',
+              selectedColor === hex ? 'border-cyan-400' : 'border-slate-600'
+            )}
+            style={{ backgroundColor: hex, maxWidth: 32 }}
+          >
+            {selectedColor === hex && (
+              <Check size={14} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
+            )}
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Custom hex input */}
+      <View className="flex-row items-center gap-3">
+        {/* Live preview swatch */}
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            backgroundColor: selectedColor,
+            borderWidth: 2,
+            borderColor: !isPresetSelected ? '#67e8f9' : '#334155',
+            flexShrink: 0,
+          }}
+        />
+        <View className="flex-1">
+          <TextInput
+            value={customHex}
+            onChangeText={handleHexChange}
+            onBlur={handleHexBlur}
+            placeholder={selectedColor}
+            placeholderTextColor="#475569"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={7}
+            className={cn(
+              'rounded-xl px-4 py-3 text-white font-mono',
+              hexError ? 'bg-red-500/15 border border-red-500/50' : 'bg-slate-800 border border-slate-700'
+            )}
+          />
+        </View>
+      </View>
+      {hexError && (
+        <Text className="text-red-400 text-xs mt-1 ml-14">Enter a valid hex like #FF6B00</Text>
+      )}
+      {!isPresetSelected && isValidHex(selectedColor) && (
+        <Text className="text-cyan-500 text-xs mt-1 ml-14">Custom color selected</Text>
+      )}
+    </View>
+  );
+}
+
 export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
@@ -24,7 +131,6 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
   const games = useTeamStore((s) => s.games);
   const updateGame = useTeamStore((s) => s.updateGame);
 
-  // Jersey color form
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#ffffff');
   const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
@@ -82,13 +188,11 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
     const oldColorName = teamSettings.jerseyColors[editingColorIndex].name;
     const newColorNameTrimmed = editColorName.trim();
 
-    // Update the jersey color in settings
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const newColors = [...teamSettings.jerseyColors];
     newColors[editingColorIndex] = { name: newColorNameTrimmed, color: editColorHex };
     setTeamSettingsAndSync({ jerseyColors: newColors });
 
-    // Update all games that use the old color name
     if (oldColorName !== newColorNameTrimmed) {
       games.forEach((game) => {
         if (game.jerseyColor === oldColorName) {
@@ -157,7 +261,6 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
             {teamSettings.jerseyColors.map((color, index) => (
               <View key={`color-${index}`}>
                 {editingColorIndex === index ? (
-                  // Edit mode
                   <View className="bg-slate-800/80 rounded-xl p-4 mb-2 border border-cyan-500/50">
                     <TextInput
                       value={editColorName}
@@ -168,27 +271,8 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
                       className="bg-slate-700 rounded-xl px-4 py-3 text-white mb-3"
                     />
                     <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
-                    <View className="flex-row justify-between mb-3">
-                      {COLOR_PRESETS.map((hex) => (
-                        <Pressable
-                          key={hex}
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            setEditColorHex(hex);
-                          }}
-                          className={cn(
-                            'flex-1 aspect-square rounded-full border-2 items-center justify-center mx-0.5',
-                            editColorHex === hex ? 'border-cyan-400' : 'border-slate-600'
-                          )}
-                          style={{ backgroundColor: hex, maxWidth: 32 }}
-                        >
-                          {editColorHex === hex && (
-                            <Check size={14} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
-                          )}
-                        </Pressable>
-                      ))}
-                    </View>
-                    <View className="flex-row">
+                    <ColorPicker selectedColor={editColorHex} onColorChange={setEditColorHex} />
+                    <View className="flex-row mt-4">
                       <Pressable
                         onPress={handleCancelEditJerseyColor}
                         className="flex-1 bg-slate-700 rounded-xl py-3 mr-2"
@@ -210,13 +294,13 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
                     </View>
                   </View>
                 ) : (
-                  // Display mode
                   <View className="flex-row items-center bg-slate-800/80 rounded-xl p-4 mb-2 border border-slate-700/50">
                     <View
                       className="w-10 h-10 rounded-full border-2 border-slate-600"
                       style={{ backgroundColor: color.color }}
                     />
                     <Text className="text-white font-medium ml-3 flex-1">{color.name}</Text>
+                    <Text className="text-slate-600 text-xs font-mono mr-2">{color.color.toUpperCase()}</Text>
                     <Pressable
                       onPress={() => handleEditJerseyColor(index)}
                       className="p-2"
@@ -230,49 +314,29 @@ export function JerseyColorsModal({ visible, onClose }: JerseyColorsModalProps) 
 
             {/* Add New Color */}
             <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">
-              Add New Color<Text className="text-red-400">*</Text>
+              Add New Color
             </Text>
 
             <View className="mb-4">
               <TextInput
                 value={newColorName}
                 onChangeText={setNewColorName}
-                placeholder="Description (e.g. Home)"
+                placeholder="Name (e.g. Home, Away, Black)"
                 placeholderTextColor="#64748b"
                 autoCapitalize="words"
                 className="bg-slate-800 rounded-xl px-4 py-3 text-white mb-3"
               />
 
               <Text className="text-slate-400 text-sm mb-2">Select Color</Text>
-              <View className="flex-row justify-between mb-4">
-                {COLOR_PRESETS.map((hex) => (
-                  <Pressable
-                    key={hex}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setNewColorHex(hex);
-                    }}
-                    className={cn(
-                      'flex-1 aspect-square rounded-full border-2 items-center justify-center mx-0.5',
-                      newColorHex === hex ? 'border-cyan-400' : 'border-slate-600'
-                    )}
-                    style={{ backgroundColor: hex, maxWidth: 32 }}
-                  >
-                    {newColorHex === hex && (
-                      <Check size={14} color={hex === '#ffffff' || hex === '#ca8a04' ? '#000' : '#fff'} />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-
-              <Text className="text-slate-500 text-xs mb-3"><Text className="text-red-400">*</Text> Required</Text>
+              <ColorPicker selectedColor={newColorHex} onColorChange={setNewColorHex} />
 
               <Pressable
                 onPress={handleAddJerseyColor}
-                className="bg-cyan-500 rounded-xl py-3 flex-row items-center justify-center"
+                className="bg-cyan-500 rounded-xl py-3 flex-row items-center justify-center mt-4"
+                style={{ opacity: newColorName.trim() ? 1 : 0.5 }}
               >
                 <Plus size={20} color="white" />
-                <Text className="text-white font-semibold ml-2">Save Color</Text>
+                <Text className="text-white font-semibold ml-2">Add Color</Text>
               </Pressable>
             </View>
           </ScrollView>
