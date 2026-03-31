@@ -120,7 +120,7 @@ export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<v
 
     console.log(`[weather] Game ${game.id}: ${condition}, ${tempF}°F (WMO ${wmoCode})`);
 
-    // Step 3: Save to Supabase
+    // Step 3: Save to Supabase (best-effort — columns may not exist until migration is run)
     const { error } = await supabase.from('games').update({
       weather_temp: tempF,
       weather_condition: condition,
@@ -128,11 +128,11 @@ export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<v
     }).eq('id', game.id);
 
     if (error) {
-      console.error('[weather] Supabase update error:', error.message);
-      return;
+      // Columns missing = migration not run yet. Still save locally so the session works.
+      console.log('[weather] Supabase save skipped (migration pending):', error.message);
     }
 
-    // Step 4: Update local store
+    // Step 4: Always update local store regardless of Supabase result
     useTeamStore.getState().updateGame(game.id, {
       weatherTemp: tempF,
       weatherCondition: condition,
@@ -147,17 +147,19 @@ export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<v
 
 async function markWeatherFetched(gameId: string, temp: number | null, condition: WeatherCondition | null): Promise<void> {
   try {
+    // Best-effort Supabase save — silently skip if columns missing (migration not run yet)
     await supabase.from('games').update({
       weather_temp: temp,
       weather_condition: condition,
       weather_auto_fetched: true,
     }).eq('id', gameId);
+    // Always update local store
     useTeamStore.getState().updateGame(gameId, {
       weatherTemp: temp ?? undefined,
       weatherCondition: condition ?? undefined,
       weatherAutoFetched: true,
     });
-  } catch (err) {
-    console.error('[weather] markWeatherFetched error:', err);
+  } catch {
+    // Silently ignore — migration may not be run yet
   }
 }
