@@ -100,9 +100,13 @@ export default function UpgradeScreen() {
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
+  const [loadError, setLoadError] = useState(false);
+
   const loadOfferings = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     const result = await getOfferings();
+    console.log('[Upgrade] getOfferings result:', JSON.stringify({ ok: result.ok, reason: !result.ok ? (result as any).reason : undefined, hasCurrent: result.ok ? !!result.data.current : false, pkgCount: result.ok && result.data.current ? result.data.current.availablePackages.length : 0, pkgIds: result.ok && result.data.current ? result.data.current.availablePackages.map((p: any) => p.identifier) : [] }));
     if (result.ok && result.data.current) {
       const pkgs = result.data.current.availablePackages;
       setPremium({
@@ -113,6 +117,8 @@ export default function UpgradeScreen() {
         monthly: pkgs.find((p) => p.identifier === '$rc_custom_multiteam_monthly') ?? null,
         annual:  pkgs.find((p) => p.identifier === '$rc_custom_multiteam_annual') ?? null,
       });
+    } else {
+      setLoadError(true);
     }
     setLoading(false);
   }, []);
@@ -168,6 +174,12 @@ export default function UpgradeScreen() {
       await syncPremiumFlag();
       router.back();
     }
+  };
+
+  const handleDevBypass = async () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await syncPremiumFlag();
+    router.back();
   };
 
   // Price display helpers
@@ -345,35 +357,53 @@ export default function UpgradeScreen() {
           <Animated.View entering={FadeInDown.delay(150).springify()} style={{ paddingHorizontal: 20, marginBottom: 16 }}>
             {rcEnabled ? (
               <>
-                <Pressable
-                  onPress={handlePurchase}
-                  disabled={purchasing || loading || !activePkg}
-                  style={({ pressed }) => ({
-                    borderRadius: 16,
-                    overflow: 'hidden',
-                    opacity: pressed || purchasing || !activePkg ? 0.75 : 1,
-                  })}
-                >
-                  <LinearGradient
-                    colors={ctaColors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{ paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                {loadError ? (
+                  <View style={{ backgroundColor: 'rgba(239,68,68,0.08)', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', alignItems: 'center', gap: 10 }}>
+                    <Text style={{ color: '#f87171', fontSize: 13, textAlign: 'center' }}>Could not load subscription options. Check your connection and try again.</Text>
+                    <Pressable onPress={loadOfferings} style={{ backgroundColor: 'rgba(239,68,68,0.15)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 20 }}>
+                      <Text style={{ color: '#f87171', fontWeight: '700', fontSize: 13 }}>Retry</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={handlePurchase}
+                    disabled={purchasing || loading || !activePkg}
+                    style={({ pressed }) => ({
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      opacity: pressed || purchasing || (loading) ? 0.75 : 1,
+                    })}
                   >
-                    {purchasing ? (
-                      <ActivityIndicator color="#000" size="small" />
-                    ) : (
-                      <>
-                        <Zap size={18} color="#000" />
-                        <Text style={{ color: '#000', fontSize: 16, fontWeight: '800' }}>
-                          {isPremium && billing === 'annual'
-                            ? `Start Free Trial — ${premiumAnnualStr}/yr`
-                            : `Get ${isPremium ? '1 Team' : 'Multi-Team'} — ${billing === 'monthly' ? (isPremium ? premiumMonthlyStr : multiMonthlyStr) : (isPremium ? premiumAnnualStr : multiAnnualStr)}/${billing === 'monthly' ? 'mo' : 'yr'}`}
-                        </Text>
-                      </>
-                    )}
-                  </LinearGradient>
-                </Pressable>
+                    <LinearGradient
+                      colors={ctaColors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={{ paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                    >
+                      {purchasing || loading ? (
+                        <ActivityIndicator color="#000" size="small" />
+                      ) : (
+                        <>
+                          <Zap size={18} color="#000" />
+                          <Text style={{ color: '#000', fontSize: 16, fontWeight: '800' }}>
+                            {isPremium && billing === 'annual'
+                              ? `Start Free Trial — ${premiumAnnualStr}/yr`
+                              : `Get ${isPremium ? '1 Team' : 'Multi-Team'} — ${billing === 'monthly' ? (isPremium ? premiumMonthlyStr : multiMonthlyStr) : (isPremium ? premiumAnnualStr : multiAnnualStr)}/${billing === 'monthly' ? 'mo' : 'yr'}`}
+                          </Text>
+                        </>
+                      )}
+                    </LinearGradient>
+                  </Pressable>
+                )}
+
+                {__DEV__ && (
+                  <Pressable
+                    onPress={handleDevBypass}
+                    style={{ alignItems: 'center', paddingVertical: 10, marginTop: 4, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(103,232,249,0.2)', backgroundColor: 'rgba(103,232,249,0.05)' }}
+                  >
+                    <Text style={{ color: '#67e8f9', fontSize: 12, fontWeight: '600' }}>DEV: Activate Premium Without Purchase</Text>
+                  </Pressable>
+                )}
 
                 <Pressable
                   onPress={handleRestore}
