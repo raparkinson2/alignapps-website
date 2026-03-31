@@ -25,38 +25,17 @@ export default function RosterScreen() {
   const { isTablet, columns, containerPadding } = useResponsive();
 
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
 
   const openAddModal = () => {
     if (!canEditPlayers()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    setEditingPlayerId(null);
     setIsModalVisible(true);
   };
 
-  const openEditModal = (player: Player) => {
-    if (!canEditPlayers()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-    setEditingPlayerId(player.id);
-    setIsModalVisible(true);
-  };
-
-  // Handle player card press - either edit player or view player profile card
+  // Handle player card press - always open trading card for everyone
   const handlePlayerPress = (player: Player) => {
-    const isOwnProfile = player.id === currentPlayerId;
-    const canEdit = canEditPlayers();
-
-    // If admin/coach, open edit modal
-    if (canEdit) {
-      openEditModal(player);
-      return;
-    }
-
-    // Everyone can view the player profile card
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/player-profile/${player.id}`);
   };
@@ -226,7 +205,7 @@ export default function RosterScreen() {
       <PlayerEditModal
         visible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
-        playerId={editingPlayerId}
+        playerId={null}
       />
     </View>
   );
