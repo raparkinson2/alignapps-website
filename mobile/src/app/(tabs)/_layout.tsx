@@ -15,7 +15,7 @@ export default function TabLayout() {
   const showTeamChat = useTeamStore((s) => s.teamSettings?.showTeamChat !== false);
   const showPhotos = useTeamStore((s) => s.teamSettings?.showPhotos !== false);
   const teamColor = useTeamColor();
-  const focusBg = hexToRgba(teamColor, 0.15);
+  const focusBg = 'rgba(103, 232, 249, 0.15)';
 
   // Derive role status from reactive state
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
@@ -53,7 +53,7 @@ export default function TabLayout() {
           paddingTop: 8,
           paddingBottom: 28,
         },
-        tabBarActiveTintColor: teamColor,
+        tabBarActiveTintColor: '#67e8f9',
         tabBarInactiveTintColor: '#64748b',
         tabBarLabelStyle: {
           fontSize: 8,
