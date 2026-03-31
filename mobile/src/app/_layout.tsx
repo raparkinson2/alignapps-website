@@ -14,6 +14,7 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTeamStore, useStoreHydrated, defaultNotificationPreferences } from '@/lib/store';
+import { useTeamColor } from '@/lib/theme';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession, supabase } from '@/lib/supabase';
 import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
@@ -29,18 +30,6 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-// Custom dark theme for hockey app
-const HockeyDarkTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: '#0f172a',
-    card: '#1e293b',
-    text: '#ffffff',
-    border: '#334155',
-    primary: '#67e8f9',
-  },
-};
 
 function AuthNavigator() {
   const router = useRouter();
@@ -684,8 +673,20 @@ function AuthNavigator() {
 }
 
 function RootLayoutNav() {
+  const teamColor = useTeamColor();
+  const dynamicTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      background: '#0f172a',
+      card: '#1e293b',
+      text: '#ffffff',
+      border: '#334155',
+      primary: teamColor,
+    },
+  };
   return (
-    <ThemeProvider value={HockeyDarkTheme}>
+    <ThemeProvider value={dynamicTheme}>
       <AuthNavigator />
     </ThemeProvider>
   );

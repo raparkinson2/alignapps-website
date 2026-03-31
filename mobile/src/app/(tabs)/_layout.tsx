@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { View, Text } from 'react-native';
 import { Calendar, Users, MessageSquare, DollarSign, MoreHorizontal, Shield, ImageIcon } from 'lucide-react-native';
 import { useTeamStore } from '@/lib/store';
+import { useTeamColor, hexToRgba } from '@/lib/theme';
 
 export default function TabLayout() {
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
@@ -13,6 +14,8 @@ export default function TabLayout() {
   const showPayments = useTeamStore((s) => s.teamSettings?.showPayments !== false);
   const showTeamChat = useTeamStore((s) => s.teamSettings?.showTeamChat !== false);
   const showPhotos = useTeamStore((s) => s.teamSettings?.showPhotos !== false);
+  const teamColor = useTeamColor();
+  const focusBg = hexToRgba(teamColor, 0.15);
 
   // Derive role status from reactive state
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
@@ -50,7 +53,7 @@ export default function TabLayout() {
           paddingTop: 8,
           paddingBottom: 28,
         },
-        tabBarActiveTintColor: '#67e8f9',
+        tabBarActiveTintColor: teamColor,
         tabBarInactiveTintColor: '#64748b',
         tabBarLabelStyle: {
           fontSize: 8,
@@ -65,7 +68,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                backgroundColor: focused ? focusBg : 'transparent',
                 borderRadius: 10,
                 padding: 6,
               }}
@@ -82,7 +85,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                backgroundColor: focused ? focusBg : 'transparent',
                 borderRadius: 10,
                 padding: 6,
               }}
@@ -100,7 +103,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                backgroundColor: focused ? focusBg : 'transparent',
                 borderRadius: 10,
                 padding: 6,
                 position: 'relative',
@@ -139,7 +142,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                backgroundColor: focused ? focusBg : 'transparent',
                 borderRadius: 10,
                 padding: 6,
               }}
@@ -157,7 +160,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                backgroundColor: focused ? focusBg : 'transparent',
                 borderRadius: 10,
                 padding: 6,
               }}
@@ -174,7 +177,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                backgroundColor: focused ? focusBg : 'transparent',
                 borderRadius: 10,
                 padding: 6,
                 position: 'relative',
@@ -213,7 +216,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(103, 232, 249, 0.15)' : 'transparent',
+                backgroundColor: focused ? focusBg : 'transparent',
                 borderRadius: 10,
                 padding: 6,
               }}
