@@ -308,35 +308,35 @@ const FREE_PRESETS = [
   '#16A34A', '#7C3AED', '#EA580C', '#0891B2',
 ];
 
-// Premium: expanded packs — 8 colors each
+// Premium: expanded packs — 8 colors each, dark → light
 const PREMIUM_PRESETS: { label: string; colors: string[] }[] = [
   {
     label: 'Deep Blues',
-    colors: ['#0F172A', '#1E3A5F', '#0047AB', '#003087', '#1B4FBE', '#1D4ED8', '#1E40AF', '#2563EB'],
+    colors: ['#0F172A', '#003087', '#1E3A5F', '#0047AB', '#1B4FBE', '#1E40AF', '#1D4ED8', '#2563EB'],
   },
   {
     label: 'Deep Reds',
-    colors: ['#7F1D1D', '#991B1B', '#B91C1C', '#C41E3A', '#8B0000', '#5C0B0B', '#DC2626', '#EF4444'],
+    colors: ['#5C0B0B', '#8B0000', '#7F1D1D', '#991B1B', '#B91C1C', '#C41E3A', '#DC2626', '#EF4444'],
   },
   {
     label: 'Forest Greens',
-    colors: ['#14532D', '#166534', '#15803D', '#004D25', '#006400', '#1B4332', '#16A34A', '#22C55E'],
+    colors: ['#004D25', '#006400', '#1B4332', '#14532D', '#166534', '#15803D', '#16A34A', '#22C55E'],
   },
   {
     label: 'Golds & Bronzes',
-    colors: ['#FFD700', '#FFC200', '#DAA520', '#B8860B', '#CD7F32', '#A16207', '#D97706', '#F59E0B'],
+    colors: ['#A16207', '#B8860B', '#CD7F32', '#D97706', '#DAA520', '#F59E0B', '#FFC200', '#FFD700'],
   },
   {
     label: 'Purples & Maroons',
-    colors: ['#4B0082', '#581C87', '#6B21A8', '#7E22CE', '#3B0764', '#4A044E', '#7C3AED', '#A855F7'],
+    colors: ['#3B0764', '#4A044E', '#4B0082', '#581C87', '#6B21A8', '#7E22CE', '#7C3AED', '#A855F7'],
   },
   {
     label: 'Steels & Silvers',
-    colors: ['#1F2937', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#2D2D2D', '#D1D5DB', '#E5E7EB'],
+    colors: ['#1F2937', '#2D2D2D', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB'],
   },
   {
     label: 'Neon & Bright',
-    colors: ['#00FF41', '#39FF14', '#FF073A', '#FF6B00', '#00BFFF', '#FF00FF', '#FFFF00', '#00FFFF'],
+    colors: ['#FF073A', '#FF6B00', '#FFFF00', '#39FF14', '#00FF41', '#00BFFF', '#00FFFF', '#FF00FF'],
   },
 ];
 
