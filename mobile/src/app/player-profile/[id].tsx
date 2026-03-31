@@ -753,10 +753,10 @@ export default function PlayerProfileScreen() {
                 {teamLogo ? (
                   <View style={{
                     position: 'absolute',
-                    right: 16,
+                    right: 12,
                     top: 16,
                     bottom: 0,
-                    left: '52%',
+                    left: '58%',
                     alignItems: 'center',
                     justifyContent: 'center',
                     opacity: 0.35,
@@ -816,8 +816,6 @@ export default function PlayerProfileScreen() {
                       {(player.positions?.length ?? 0) > 1
                         ? player.positions!.join(' / ')
                         : player.position}
-                      {' · '}
-                      <Text style={{ color: '#64748b' }}>{teamName}</Text>
                     </Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                       {isAdmin && (
