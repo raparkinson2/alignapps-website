@@ -481,8 +481,28 @@ When players tap a payment method:
 - **Zelle**: Shows recipient info (bank-specific, no universal deep link)
 - **Cash App**: Opens Cash App with recipient pre-filled
 
-## Tech Stack
-- Expo SDK 53 / React Native
+## Phase 4: Premium Paywall & Viral Sharing
+
+### Upgrade / Premium Screen
+- Beautiful full-screen paywall at `/upgrade` (accessible via More tab)
+- $59/year pricing with 7-day free trial offer
+- Feature comparison (free vs. premium)
+- Social proof testimonials
+- Trust signals (cancel anytime, secure payments)
+- Directs users to Payments tab for RevenueCat setup
+
+### Viral Sharing
+- **Season Summary Share**: Tap the "Share" button in Season Summary to share a stats card (record, win %, goals) via the native share sheet
+  - Uses `react-native-view-shot` to capture the stats card as an image
+  - Falls back to text share if image capture fails
+- **Game Recap Share**: Existing share functionality in Game Recap screen
+
+### Premium Banner in More Tab
+- Prominent amber-colored upgrade banner in the More tab scrollview
+- Shows price ($59/yr) and key premium features at a glance
+- Taps through to the full Upgrade screen
+
+
 - Expo Router for navigation
 - Zustand for state management with AsyncStorage persistence
 - NativeWind (Tailwind CSS) for styling

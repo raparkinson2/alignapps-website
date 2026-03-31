@@ -626,6 +626,13 @@ function AuthNavigator() {
         }}
       />
 <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+      <Stack.Screen
+        name="upgrade"
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
     </Stack>
 
     {/* Push Notification Contextual Ramp — shown before the iOS system prompt */}

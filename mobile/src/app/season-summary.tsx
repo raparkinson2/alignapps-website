@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, Share } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,13 +11,19 @@ import {
   Target,
   Calendar,
   Swords,
+  Share2,
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, getPlayerName } from '@/lib/store';
+import { useRef, useState } from 'react';
+import { captureRef } from 'react-native-view-shot';
+import * as ExpoSharing from 'expo-sharing';
 
 export default function SeasonSummaryScreen() {
   const router = useRouter();
+  const [isSharing, setIsSharing] = useState(false);
+  const shareCardRef = useRef<View>(null);
 
   const games = useTeamStore((s) => s.games);
   const players = useTeamStore((s) => s.players);
@@ -140,6 +146,52 @@ export default function SeasonSummaryScreen() {
   const resultLabel = (result: string) =>
     result === 'win' ? 'W' : result === 'loss' ? 'L' : result === 'otLoss' ? 'OTL' : 'T';
 
+  const handleShare = async () => {
+    if (isSharing) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Use native text share as the share card
+    const recordStr = formatRecord();
+    const seasonStr = seasonName ? `${seasonName} — ` : '';
+    const goalsStr = scoredGames.length > 0 ? `\n⚽ ${totalGoalsFor} Goals For | ${totalGoalsAgainst} Against` : '';
+    const streakStr = longestStreak > 1 ? `\n🔥 Best Win Streak: ${longestStreak}` : '';
+    const message = `${teamName} ${seasonStr}Season Summary\n\n🏆 Record: ${recordStr}\n📊 Win Rate: ${winPct}%${goalsStr}${streakStr}\n\n📱 Tracked with AlignSports`;
+
+    try {
+      setIsSharing(true);
+
+      // Try to capture the share card image first
+      if (shareCardRef.current) {
+        try {
+          const uri = await captureRef(shareCardRef, {
+            format: 'png',
+            quality: 1,
+            result: 'tmpfile',
+          });
+
+          const canShare = await ExpoSharing.isAvailableAsync();
+          if (canShare) {
+            await ExpoSharing.shareAsync(uri, {
+              mimeType: 'image/png',
+              dialogTitle: `${teamName} Season Highlights`,
+              UTI: 'public.png',
+            });
+            return;
+          }
+        } catch (captureErr) {
+          // Fall through to text share
+        }
+      }
+
+      // Fallback: native text share
+      await Share.share({ message });
+    } catch (err) {
+      // User dismissed
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   return (
     <View className="flex-1 bg-slate-900">
       <LinearGradient
@@ -159,7 +211,7 @@ export default function SeasonSummaryScreen() {
           >
             <ChevronLeft size={24} color="white" />
           </Pressable>
-          <View>
+          <View className="flex-1">
             <Text className="text-white font-bold text-xl">Season Summary</Text>
             {seasonName ? (
               <Text className="text-cyan-400 text-sm">{seasonName}</Text>
@@ -167,6 +219,27 @@ export default function SeasonSummaryScreen() {
               <Text className="text-slate-500 text-xs">{teamName}</Text>
             )}
           </View>
+          {gamesPlayed > 0 && (
+            <Pressable
+              onPress={handleShare}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: 'rgba(103, 232, 249, 0.12)',
+                borderWidth: 1,
+                borderColor: 'rgba(103, 232, 249, 0.25)',
+                borderRadius: 20,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+              }}
+            >
+              <Share2 size={15} color="#67e8f9" />
+              <Text style={{ color: '#67e8f9', fontSize: 13, fontWeight: '600' }}>
+                {isSharing ? 'Sharing...' : 'Share'}
+              </Text>
+            </Pressable>
+          )}
         </Animated.View>
 
         <ScrollView
@@ -174,59 +247,67 @@ export default function SeasonSummaryScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 16 }}
         >
-          {/* Record Hero */}
-          <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-5">
-            <LinearGradient
-              colors={wins > losses ? ['rgba(34,197,94,0.15)', 'rgba(34,197,94,0.05)'] : wins < losses ? ['rgba(239,68,68,0.12)', 'rgba(239,68,68,0.04)'] : ['rgba(148,163,184,0.1)', 'rgba(148,163,184,0.04)']}
-              style={{ borderRadius: 24, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: wins > losses ? 'rgba(34,197,94,0.25)' : wins < losses ? 'rgba(239,68,68,0.2)' : 'rgba(148,163,184,0.15)' }}
-            >
-              <Trophy size={32} color={wins > losses ? '#22c55e' : wins < losses ? '#ef4444' : '#94a3b8'} />
-              <Text style={{ color: '#ffffff', fontSize: 48, fontWeight: '800', marginTop: 8, letterSpacing: -1 }}>
-                {formatRecord()}
-              </Text>
-              {sport === 'hockey' ? (
-                <Text className="text-slate-400 text-sm mt-1">W — L — T — OTL</Text>
-              ) : sport === 'soccer' ? (
-                <Text className="text-slate-400 text-sm mt-1">W — L — T</Text>
-              ) : (
-                <Text className="text-slate-400 text-sm mt-1">W — L</Text>
-              )}
-              {gamesPlayed > 0 && (
-                <Text className="text-cyan-400 font-semibold mt-3">{winPct}% win rate</Text>
-              )}
-            </LinearGradient>
-          </Animated.View>
-
-          {/* Stats Row */}
-          <Animated.View entering={FadeInDown.delay(150).springify()} className="flex-row mb-4 gap-3">
-            <View className="flex-1 bg-slate-800/60 rounded-2xl p-4 border border-slate-700/30 items-center">
-              <Calendar size={18} color="#67e8f9" />
-              <Text className="text-white font-bold text-2xl mt-2">{gamesPlayed}</Text>
-              <Text className="text-slate-400 text-xs text-center mt-0.5">Games Played</Text>
-              {totalScheduled > gamesPlayed && (
-                <Text className="text-slate-600 text-xs mt-0.5">of {totalScheduled}</Text>
-              )}
-            </View>
-
-            {scoredGames.length > 0 && (
-              <>
-                <View className="flex-1 bg-slate-800/60 rounded-2xl p-4 border border-slate-700/30 items-center">
-                  <Target size={18} color="#22c55e" />
-                  <Text className="text-white font-bold text-2xl mt-2">{totalGoalsFor}</Text>
-                  <Text className="text-slate-400 text-xs text-center mt-0.5">
-                    {sport === 'basketball' ? 'Pts Scored' : 'Goals For'}
+          {/* Share Card — this gets captured */}
+          <View ref={shareCardRef} collapsable={false}>
+            {/* Record Hero */}
+            <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-5">
+              <LinearGradient
+                colors={wins > losses ? ['rgba(34,197,94,0.15)', 'rgba(34,197,94,0.05)'] : wins < losses ? ['rgba(239,68,68,0.12)', 'rgba(239,68,68,0.04)'] : ['rgba(148,163,184,0.1)', 'rgba(148,163,184,0.04)']}
+                style={{ borderRadius: 24, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: wins > losses ? 'rgba(34,197,94,0.25)' : wins < losses ? 'rgba(239,68,68,0.2)' : 'rgba(148,163,184,0.15)' }}
+              >
+                <Trophy size={32} color={wins > losses ? '#22c55e' : wins < losses ? '#ef4444' : '#94a3b8'} />
+                <Text style={{ color: '#ffffff', fontSize: 48, fontWeight: '800', marginTop: 8, letterSpacing: -1 }}>
+                  {formatRecord()}
+                </Text>
+                {sport === 'hockey' ? (
+                  <Text className="text-slate-400 text-sm mt-1">W — L — T — OTL</Text>
+                ) : sport === 'soccer' ? (
+                  <Text className="text-slate-400 text-sm mt-1">W — L — T</Text>
+                ) : (
+                  <Text className="text-slate-400 text-sm mt-1">W — L</Text>
+                )}
+                {gamesPlayed > 0 && (
+                  <Text className="text-cyan-400 font-semibold mt-3">{winPct}% win rate</Text>
+                )}
+                {(seasonName || teamName) && (
+                  <Text className="text-slate-600 text-xs mt-2">
+                    {seasonName ? `${teamName} · ${seasonName}` : teamName}
                   </Text>
-                </View>
-                <View className="flex-1 bg-slate-800/60 rounded-2xl p-4 border border-slate-700/30 items-center">
-                  <Swords size={18} color="#ef4444" />
-                  <Text className="text-white font-bold text-2xl mt-2">{totalGoalsAgainst}</Text>
-                  <Text className="text-slate-400 text-xs text-center mt-0.5">
-                    {sport === 'basketball' ? 'Pts Against' : 'Goals Against'}
-                  </Text>
-                </View>
-              </>
-            )}
-          </Animated.View>
+                )}
+              </LinearGradient>
+            </Animated.View>
+
+            {/* Stats Row */}
+            <Animated.View entering={FadeInDown.delay(150).springify()} className="flex-row mb-4 gap-3">
+              <View className="flex-1 bg-slate-800/60 rounded-2xl p-4 border border-slate-700/30 items-center">
+                <Calendar size={18} color="#67e8f9" />
+                <Text className="text-white font-bold text-2xl mt-2">{gamesPlayed}</Text>
+                <Text className="text-slate-400 text-xs text-center mt-0.5">Games Played</Text>
+                {totalScheduled > gamesPlayed && (
+                  <Text className="text-slate-600 text-xs mt-0.5">of {totalScheduled}</Text>
+                )}
+              </View>
+
+              {scoredGames.length > 0 && (
+                <>
+                  <View className="flex-1 bg-slate-800/60 rounded-2xl p-4 border border-slate-700/30 items-center">
+                    <Target size={18} color="#22c55e" />
+                    <Text className="text-white font-bold text-2xl mt-2">{totalGoalsFor}</Text>
+                    <Text className="text-slate-400 text-xs text-center mt-0.5">
+                      {sport === 'basketball' ? 'Pts Scored' : 'Goals For'}
+                    </Text>
+                  </View>
+                  <View className="flex-1 bg-slate-800/60 rounded-2xl p-4 border border-slate-700/30 items-center">
+                    <Swords size={18} color="#ef4444" />
+                    <Text className="text-white font-bold text-2xl mt-2">{totalGoalsAgainst}</Text>
+                    <Text className="text-slate-400 text-xs text-center mt-0.5">
+                      {sport === 'basketball' ? 'Pts Against' : 'Goals Against'}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </Animated.View>
+          </View>
 
           {/* Streak Info */}
           {gamesPlayed > 0 && (
