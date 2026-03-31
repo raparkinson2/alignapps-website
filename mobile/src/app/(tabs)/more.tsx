@@ -364,7 +364,8 @@ function MoreScreen() {
             >
               <Pressable
                 onPress={() => handleEditProfile(currentPlayer)}
-                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
+                className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700/50 active:bg-slate-700/80"
+                style={{ marginBottom: 8 }}
               >
                 <View className="flex-row items-center">
                   <View className="relative">
@@ -381,6 +382,29 @@ function MoreScreen() {
                     <Pencil size={16} color="#94a3b8" />
                   </View>
                 </View>
+              </Pressable>
+
+              {/* View My Card button */}
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/player-profile/${currentPlayer.id}`);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  paddingVertical: 9,
+                  marginBottom: 16,
+                  backgroundColor: 'rgba(103,232,249,0.07)',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: 'rgba(103,232,249,0.15)',
+                }}
+              >
+                <Trophy size={14} color="#67e8f9" />
+                <Text style={{ color: '#67e8f9', fontSize: 13, fontWeight: '600' }}>View My Player Card</Text>
               </Pressable>
             </Animated.View>
           )}

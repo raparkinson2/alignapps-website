@@ -633,6 +633,13 @@ function AuthNavigator() {
           presentation: 'modal',
         }}
       />
+      <Stack.Screen
+        name="player-profile/[id]"
+        options={{
+          headerShown: false,
+          presentation: 'card',
+        }}
+      />
     </Stack>
 
     {/* Push Notification Contextual Ramp — shown before the iOS system prompt */}

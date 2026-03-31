@@ -45,7 +45,7 @@ export default function RosterScreen() {
     setIsModalVisible(true);
   };
 
-  // Handle player card press - either edit player or go to stats
+  // Handle player card press - either edit player or view player profile card
   const handlePlayerPress = (player: Player) => {
     const isOwnProfile = player.id === currentPlayerId;
     const canEdit = canEditPlayers();
@@ -56,15 +56,9 @@ export default function RosterScreen() {
       return;
     }
 
-    // If it's their own profile and self-stats is enabled, go to team stats
-    if (isOwnProfile && allowPlayerSelfStats && showTeamStats) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      router.push('/team-stats');
-      return;
-    }
-
-    // Otherwise, no action (or could show a read-only profile in the future)
+    // Everyone can view the player profile card
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/player-profile/${player.id}`);
   };
 
   // Group players by position type based on sport
