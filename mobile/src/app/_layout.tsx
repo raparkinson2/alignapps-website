@@ -20,6 +20,7 @@ import { clearInvalidSession, getSafeSession, supabase } from '@/lib/supabase';
 import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
 import { BACKEND_URL } from '@/lib/config';
 import { syncError } from '@/lib/sync-error-handler';
+import { getCustomerInfo } from '@/lib/revenuecatClient';
 
 export const unstable_settings = {
   initialRouteName: 'login',
@@ -41,6 +42,7 @@ function AuthNavigator() {
   const logout = useTeamStore((s) => s.logout);
   const updateNotificationPreferences = useTeamStore((s) => s.updateNotificationPreferences);
   const addNotification = useTeamStore((s) => s.addNotification);
+  const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const navigationRef = useNavigationContainerRef();
   const [isReady, setIsReady] = useState(false);
   const isHydrated = useStoreHydrated();
@@ -247,6 +249,31 @@ function AuthNavigator() {
     }
   }, [isLoggedIn]);
 
+  // Sync premium status for admins/captains and persist to Supabase
+  // This ensures all team members inherit the correct isPremium flag
+  useEffect(() => {
+    if (!isLoggedIn || !currentPlayerId) return;
+    const state = useTeamStore.getState();
+    const currentPlayer = state.players.find((p) => p.id === currentPlayerId);
+    const canManage = currentPlayer?.roles?.includes('admin') || currentPlayer?.roles?.includes('captain');
+    if (!canManage) return;
+
+    getCustomerInfo().then((result) => {
+      if (!result.ok) return;
+      const active = result.data.entitlements.active;
+      const isPremium = Boolean(active['premium'] || active['multi_team']);
+      const latestState = useTeamStore.getState();
+      if (isPremium !== (latestState.teamSettings?.isPremium ?? false)) {
+        setTeamSettings({ isPremium });
+        if (latestState.activeTeamId) {
+          const s = useTeamStore.getState();
+          pushTeamToSupabase(latestState.activeTeamId, s.teamName, { ...s.teamSettings, isPremium })
+            .catch(syncError('sync'));
+        }
+      }
+    });
+  }, [isLoggedIn, currentPlayerId, setTeamSettings]);
+
   // Register for push notifications when logged in
   const doRegisterTokenRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -254,6 +281,14 @@ function AuthNavigator() {
     if (!isLoggedIn || !currentPlayerId) return;
     // Only register once per player session to avoid duplicate APNs calls
     if (pushTokenRegistered.current === currentPlayerId) return;
+
+    // Skip push notification registration for parents if the team is not on a premium plan
+    const notifState = useTeamStore.getState();
+    const notifPlayer = notifState.players.find((p) => p.id === currentPlayerId);
+    if (notifPlayer?.roles?.includes('parent') && !notifState.teamSettings?.isPremium) {
+      console.log('Push notifications: skipping registration for parent on non-premium team');
+      return;
+    }
 
     const doRegisterToken = async () => {
       const token = await registerForPushNotificationsAsync(currentPlayerId);

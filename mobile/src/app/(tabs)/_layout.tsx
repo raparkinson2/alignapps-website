@@ -14,6 +14,7 @@ export default function TabLayout() {
   const showPayments = useTeamStore((s) => s.teamSettings?.showPayments !== false);
   const showTeamChat = useTeamStore((s) => s.teamSettings?.showTeamChat !== false);
   const showPhotos = useTeamStore((s) => s.teamSettings?.showPhotos !== false);
+  const teamIsPremium = useTeamStore((s) => s.teamSettings?.isPremium ?? false);
   const teamColor = useTeamColor();
   const focusBg = 'rgba(103, 232, 249, 0.15)';
 
@@ -99,7 +100,7 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: 'Chat',
-          href: showTeamChat && !isParentUser ? undefined : null,
+          href: showTeamChat && (!isParentUser || teamIsPremium) ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{
@@ -138,7 +139,7 @@ export default function TabLayout() {
         name="photos"
         options={{
           title: 'Photos',
-          href: showPhotos && !isParentUser ? undefined : null,
+          href: showPhotos && (!isParentUser || teamIsPremium) ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <View
               style={{

@@ -219,8 +219,10 @@ function GameDetailScreenInner() {
   const canManageStats = canManageTeam() || isCoach;
 
   // Parent/guardian: detect if current user is a parent with an associated player (child)
+  // Parent portal features (child check-in) require the team to be on a premium plan
   const isParent = currentPlayer?.roles?.includes('parent') ?? false;
-  const associatedChildId = isParent ? (currentPlayer?.associatedPlayerId ?? null) : null;
+  const teamIsPremium = teamSettings?.isPremium ?? false;
+  const associatedChildId = (isParent && teamIsPremium) ? (currentPlayer?.associatedPlayerId ?? null) : null;
 
 
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);

@@ -730,6 +730,8 @@ export interface TeamSettings {
   // Stripe Connect
   stripeAccountId?: string; // Connected Stripe account ID (acct_xxx)
   stripeOnboardingComplete?: boolean; // Whether onboarding is fully complete
+  // Premium subscription
+  isPremium?: boolean; // True when team admin has an active premium subscription
 }
 
 export interface Championship {

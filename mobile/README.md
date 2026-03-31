@@ -47,7 +47,28 @@ Listen for: `payment_intent.succeeded`, `payment_intent.payment_failed`
 
 **Connected accounts** (optional): If teams have their own Stripe accounts (`acct_xxx`), pass `teamStripeAccountId` in the checkout session request to route funds to them with a platform fee cut.
 
-## Known Crash Fixes
+## Premium Subscriptions (RevenueCat)
+
+ALIGN Sports uses RevenueCat for in-app subscriptions. Two tiers are available:
+
+- **1 Team** — `$4.99/mo` or `$49.99/yr` (30-day free trial on annual). RevenueCat packages: `$rc_monthly`, `$rc_annual`. Grants entitlement: `premium`.
+- **Multi-Team** — `$9.99/mo` or `$99.99/yr` (up to 3 teams). RevenueCat packages: `$rc_custom_multiteam_monthly`, `$rc_custom_multiteam_annual`. Grants entitlements: `premium` + `multi_team`.
+
+**Premium features**: Stats tracking, Team records & history, Advanced stats, Share season highlights, Seasons (archive/restore), Export stats as CSV, File storage, Payment tracking, Expanded photo storage, Attendance trends, Parent portal access.
+
+**`isPremium` flag**: Stored in `TeamSettings.isPremium`. When an admin/captain purchases a subscription, `isPremium` is set to `true` locally and synced to Supabase via `pushTeamToSupabase`. All team members (including parents) read this flag from Supabase to inherit the team's subscription status.
+
+**Premium sync**: On admin/captain login, `_layout.tsx` checks RevenueCat entitlements and updates `teamSettings.isPremium` if it changed. On purchase/restore in `upgrade.tsx`, `isPremium` is set immediately.
+
+**Parent portal gating** (requires team `isPremium === true`):
+- Chat tab — hidden from parents if team is not premium
+- Photos tab — hidden from parents if team is not premium
+- Push notifications (APNs) — not registered for parent accounts on non-premium teams
+- Child check-in — parent cannot check in their associated child on non-premium teams
+
+### RevenueCat Setup
+
+
 
 **Login crash on fresh install**: `teamSettings` can be `null` before Zustand persist hydration completes. All accesses to `teamSettings.*` in `(tabs)/_layout.tsx` and `(tabs)/index.tsx` must use optional chaining (`teamSettings?.field`).
 

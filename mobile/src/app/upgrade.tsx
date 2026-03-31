@@ -45,6 +45,8 @@ import {
   getCustomerInfo,
 } from '@/lib/revenuecatClient';
 import type { PurchasesPackage } from 'react-native-purchases';
+import { useTeamStore } from '@/lib/store';
+import { pushTeamToSupabase } from '@/lib/realtime-sync';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -123,6 +125,18 @@ export default function UpgradeScreen() {
     selectedTier === 'premium' ? premium.annual    : multiTeam.annual,
   );
 
+  const syncPremiumFlag = (active: Record<string, any>) => {
+    const isPremium = Boolean(active['premium'] || active['multi_team']);
+    if (!isPremium) return;
+    const s = useTeamStore.getState();
+    s.setTeamSettings({ isPremium: true });
+    if (s.activeTeamId) {
+      const latest = useTeamStore.getState();
+      pushTeamToSupabase(s.activeTeamId, latest.teamName, { ...latest.teamSettings, isPremium: true })
+        .catch(() => {});
+    }
+  };
+
   const handlePurchase = async () => {
     if (!activePkg) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -131,6 +145,7 @@ export default function UpgradeScreen() {
     setPurchasing(false);
     if (result.ok) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      syncPremiumFlag(result.data.entitlements.active);
       router.back();
     }
   };
@@ -142,6 +157,7 @@ export default function UpgradeScreen() {
     const info = await getCustomerInfo();
     setRestoring(false);
     if (info.ok && Object.keys(info.data.entitlements.active).length > 0) {
+      syncPremiumFlag(info.data.entitlements.active);
       router.back();
     }
   };
