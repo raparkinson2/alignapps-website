@@ -415,6 +415,76 @@ function buildCareerRows(
   return rows;
 }
 
+// ─── Stat Card Grid ───────────────────────────────────────────────────────────
+// Renders stats in rows of 3 so values like "95.2%" never wrap on narrow phones.
+
+function StatCardGrid({ cards }: { cards: StatCard[] }) {
+  const GAP = 8;
+  const COLS = 3;
+  const totalHPad = 40; // 20px each side from parent paddingHorizontal
+  const cardWidth = (SCREEN_WIDTH - totalHPad - GAP * (COLS - 1)) / COLS;
+
+  const rows: StatCard[][] = [];
+  for (let i = 0; i < cards.length; i += COLS) {
+    rows.push(cards.slice(i, i + COLS));
+  }
+
+  return (
+    <View style={{ gap: GAP }}>
+      {rows.map((row, ri) => (
+        <View key={ri} style={{ flexDirection: 'row', gap: GAP }}>
+          {row.map((card) => (
+            <View
+              key={card.label}
+              style={{
+                width: cardWidth,
+                backgroundColor: card.isHighlight
+                  ? 'rgba(15,30,53,0.9)'
+                  : 'rgba(15,23,42,0.7)',
+                borderRadius: 16,
+                paddingVertical: 14,
+                paddingHorizontal: 4,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: card.isHighlight
+                  ? `${card.color}30`
+                  : 'rgba(255,255,255,0.05)',
+              }}
+            >
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+                style={{
+                  color: card.color,
+                  fontSize: card.isHighlight ? 26 : 22,
+                  fontWeight: '900',
+                  letterSpacing: -0.5,
+                  width: cardWidth - 8,
+                  textAlign: 'center',
+                }}
+              >
+                {card.value}
+              </Text>
+              <Text
+                style={{
+                  color: '#475569',
+                  fontSize: 10,
+                  fontWeight: '700',
+                  marginTop: 2,
+                  letterSpacing: 0.5,
+                }}
+              >
+                {card.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function PlayerProfileScreen() {
@@ -767,92 +837,13 @@ export default function PlayerProfileScreen() {
 
               {/* Skater / field stats */}
               {statCards.length > 0 && (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                  }}
-                >
-                  {statCards.map((card) => (
-                    <View
-                      key={card.label}
-                      style={{
-                        flex: 1,
-                        minWidth: 60,
-                        backgroundColor: card.isHighlight
-                          ? 'rgba(15,30,53,0.9)'
-                          : 'rgba(15,23,42,0.7)',
-                        borderRadius: 16,
-                        padding: 14,
-                        alignItems: 'center',
-                        borderWidth: 1,
-                        borderColor: card.isHighlight
-                          ? `${card.color}30`
-                          : 'rgba(255,255,255,0.05)',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: card.color,
-                          fontSize: card.isHighlight ? 26 : 22,
-                          fontWeight: '900',
-                          letterSpacing: -0.5,
-                        }}
-                      >
-                        {card.value}
-                      </Text>
-                      <Text style={{ color: '#475569', fontSize: 10, fontWeight: '700', marginTop: 2, letterSpacing: 0.5 }}>
-                        {card.label}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+                <StatCardGrid cards={statCards} />
               )}
 
               {/* Goalie stats */}
               {goalieCards.length > 0 && (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                    marginTop: statCards.length > 0 ? 8 : 0,
-                  }}
-                >
-                  {goalieCards.map((card) => (
-                    <View
-                      key={`g-${card.label}`}
-                      style={{
-                        flex: 1,
-                        minWidth: 60,
-                        backgroundColor: card.isHighlight
-                          ? 'rgba(15,30,53,0.9)'
-                          : 'rgba(15,23,42,0.7)',
-                        borderRadius: 16,
-                        padding: 14,
-                        alignItems: 'center',
-                        borderWidth: 1,
-                        borderColor: card.isHighlight
-                          ? `${card.color}30`
-                          : 'rgba(255,255,255,0.05)',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: card.color,
-                          fontSize: card.isHighlight ? 26 : 22,
-                          fontWeight: '900',
-                          letterSpacing: -0.5,
-                        }}
-                      >
-                        {card.value}
-                      </Text>
-                      <Text style={{ color: '#475569', fontSize: 10, fontWeight: '700', marginTop: 2, letterSpacing: 0.5 }}>
-                        {card.label}
-                      </Text>
-                    </View>
-                  ))}
+                <View style={{ marginTop: statCards.length > 0 ? 8 : 0 }}>
+                  <StatCardGrid cards={goalieCards} />
                 </View>
               )}
             </Animated.View>
