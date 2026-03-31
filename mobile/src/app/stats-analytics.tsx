@@ -387,8 +387,8 @@ export default function StatsAnalyticsScreen() {
               }}
               className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
             >
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: hexToRgba(teamColor, 0.2), alignItems: 'center', justifyContent: 'center' }}>
-                <UserCheck size={20} color={teamColor} />
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(103,232,249,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                <UserCheck size={20} color="#67e8f9" />
               </View>
               <View className="flex-1 ml-3">
                 <Text className="font-semibold text-white">Attendance</Text>
@@ -408,8 +408,8 @@ export default function StatsAnalyticsScreen() {
                 }}
                 className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
               >
-                <View className="w-10 h-10 rounded-full items-center justify-center bg-amber-500/20">
-                  <Trophy size={20} color="#f59e0b" />
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(103,232,249,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Trophy size={20} color="#67e8f9" />
                 </View>
                 <View className="flex-1 ml-3">
                   <Text className="font-semibold text-white">Team Records</Text>
@@ -430,8 +430,8 @@ export default function StatsAnalyticsScreen() {
                 }}
                 className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
               >
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: hexToRgba(teamColor, 0.2), alignItems: 'center', justifyContent: 'center' }}>
-                  <BarChart3 size={20} color={teamColor} />
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(103,232,249,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <BarChart3 size={20} color="#67e8f9" />
                 </View>
                 <View className="flex-1 ml-3">
                   <Text className="font-semibold text-white">Player Statistics</Text>
@@ -452,8 +452,8 @@ export default function StatsAnalyticsScreen() {
                 }}
                 className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
               >
-                <View className="w-10 h-10 rounded-full items-center justify-center bg-green-500/20">
-                  <Zap size={20} color="#22c55e" />
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(103,232,249,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Zap size={20} color="#67e8f9" />
                 </View>
                 <View className="flex-1 ml-3">
                   <Text className="font-semibold text-white">Season Summary</Text>
@@ -474,8 +474,8 @@ export default function StatsAnalyticsScreen() {
                 }}
                 className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
               >
-                <View className="w-10 h-10 rounded-full items-center justify-center bg-purple-500/20">
-                  <Calendar size={20} color="#a78bfa" />
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(103,232,249,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Calendar size={20} color="#67e8f9" />
                 </View>
                 <View className="flex-1 ml-3">
                   <Text className="font-semibold text-white">Season History</Text>
