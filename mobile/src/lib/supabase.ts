@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_PUBLIC_URL || '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLIC_ANON || '';
@@ -8,22 +10,66 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase credentials not found. Please add SUPABASE_PUBLIC_URL and SUPABASE_PUBLIC_ANON to your environment variables.');
 }
 
+// Auth keys are stored in SecureStore (encrypted keychain/keystore).
+// All other keys fall back to AsyncStorage.
+const isAuthKey = (key: string) =>
+  key.includes('auth-token') || key.startsWith('sb-');
+
+async function secureGet(key: string): Promise<string | null> {
+  if (Platform.OS === 'web') return AsyncStorage.getItem(key);
+  try {
+    const value = await SecureStore.getItemAsync(key);
+    if (value !== null) return value;
+    // Migration: check AsyncStorage for existing sessions and move them over
+    const legacy = await AsyncStorage.getItem(key);
+    if (legacy) {
+      try {
+        await SecureStore.setItemAsync(key, legacy);
+        await AsyncStorage.removeItem(key);
+      } catch { /* ignore migration errors */ }
+      return legacy;
+    }
+    return null;
+  } catch {
+    return AsyncStorage.getItem(key);
+  }
+}
+
+async function secureSet(key: string, value: string): Promise<void> {
+  if (Platform.OS === 'web') { await AsyncStorage.setItem(key, value); return; }
+  try {
+    await SecureStore.setItemAsync(key, value);
+  } catch {
+    // Value may exceed SecureStore limits — fall back to AsyncStorage
+    await AsyncStorage.setItem(key, value);
+  }
+}
+
+async function secureRemove(key: string): Promise<void> {
+  if (Platform.OS !== 'web') {
+    await SecureStore.deleteItemAsync(key).catch(() => {});
+  }
+  await AsyncStorage.removeItem(key).catch(() => {});
+}
+
 /**
- * Custom storage adapter that validates session data before returning it.
- * If the stored session's refresh_token is missing or the session is expired,
- * we wipe it so Supabase never attempts a doomed token refresh (which would
- * throw an unhandled AuthApiError on startup).
+ * Custom storage adapter that:
+ * - Uses SecureStore (encrypted) for auth token keys on native
+ * - Validates session data before returning (prevents stale token refresh loops)
+ * - Falls back to AsyncStorage on web or if SecureStore fails
  */
 const safeStorage = {
   getItem: async (key: string): Promise<string | null> => {
     try {
-      const value = await AsyncStorage.getItem(key);
+      const value = isAuthKey(key)
+        ? await secureGet(key)
+        : await AsyncStorage.getItem(key);
+
       if (!value) return null;
 
       // Validate session data before handing it to Supabase
       try {
         const parsed = JSON.parse(value);
-        // Supabase stores the session under the key that ends with 'auth-token'
         if (key.includes('auth-token') && parsed) {
           const session = parsed.currentSession || parsed;
           const hasRefreshToken = !!session?.refresh_token;
@@ -32,7 +78,7 @@ const safeStorage = {
 
           if (!hasRefreshToken || isExpired) {
             console.log('Supabase: clearing stale/expired session from storage');
-            await AsyncStorage.removeItem(key);
+            await secureRemove(key);
             return null;
           }
         }
@@ -47,14 +93,22 @@ const safeStorage = {
   },
   setItem: async (key: string, value: string): Promise<void> => {
     try {
-      await AsyncStorage.setItem(key, value);
+      if (isAuthKey(key)) {
+        await secureSet(key, value);
+      } else {
+        await AsyncStorage.setItem(key, value);
+      }
     } catch {
       // Ignore storage errors
     }
   },
   removeItem: async (key: string): Promise<void> => {
     try {
-      await AsyncStorage.removeItem(key);
+      if (isAuthKey(key)) {
+        await secureRemove(key);
+      } else {
+        await AsyncStorage.removeItem(key);
+      }
     } catch {
       // Ignore storage errors
     }
@@ -76,6 +130,12 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth token refreshed');
   } else if (event === 'SIGNED_OUT') {
     try {
+      // Clear from SecureStore (native)
+      if (Platform.OS !== 'web') {
+        const authKey = `sb-${supabaseUrl.split('//')[1]?.split('.')[0]}-auth-token`;
+        await SecureStore.deleteItemAsync(authKey).catch(() => {});
+      }
+      // Also sweep AsyncStorage for any legacy keys
       const keys = await AsyncStorage.getAllKeys();
       const supabaseKeys = keys.filter(key => key.startsWith('sb-') || key.startsWith('supabase'));
       if (supabaseKeys.length > 0) {
@@ -93,14 +153,18 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 export async function clearInvalidSession(): Promise<void> {
   try {
     await supabase.auth.signOut();
-    // Also clear any cached auth data
+    // Clear from SecureStore (native)
+    if (Platform.OS !== 'web') {
+      const authKey = `sb-${supabaseUrl.split('//')[1]?.split('.')[0]}-auth-token`;
+      await SecureStore.deleteItemAsync(authKey).catch(() => {});
+    }
+    // Also clear any legacy AsyncStorage keys
     const keys = await AsyncStorage.getAllKeys();
     const supabaseKeys = keys.filter(key => key.startsWith('sb-') || key.startsWith('supabase'));
     if (supabaseKeys.length > 0) {
       await AsyncStorage.multiRemove(supabaseKeys);
     }
   } catch (e) {
-    // Ignore errors during cleanup
     console.warn('Error clearing invalid session:', e);
   }
 }
