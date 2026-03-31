@@ -48,26 +48,29 @@ export default function TabLayout() {
           backgroundColor: '#0f172a',
           borderTopColor: '#1e293b',
           borderTopWidth: 1,
-          height: 64,
-          paddingTop: 0,
-          paddingBottom: 8,
+          height: 60,
+          paddingTop: 8,
+          paddingBottom: 10,
         },
         tabBarActiveTintColor: '#67e8f9',
         tabBarInactiveTintColor: '#475569',
+        tabBarItemStyle: {
+          paddingHorizontal: 0,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Events',
-          tabBarIcon: ({ color }) => <Calendar size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Calendar size={27} color={color} />,
         }}
       />
       <Tabs.Screen
         name="roster"
         options={{
           title: 'Roster',
-          tabBarIcon: ({ color }) => <Users size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Users size={27} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -77,7 +80,7 @@ export default function TabLayout() {
           href: showTeamChat && (!isParentUser || teamIsPremium) ? undefined : null,
           tabBarIcon: ({ color }) => (
             <View style={{ position: 'relative' }}>
-              <MessageSquare size={24} color={color} />
+              <MessageSquare size={27} color={color} />
               {unreadChatCount > 0 && (
                 <View
                   style={{
@@ -107,7 +110,7 @@ export default function TabLayout() {
         options={{
           title: 'Photos',
           href: showPhotos && (!isParentUser || teamIsPremium) ? undefined : null,
-          tabBarIcon: ({ color }) => <ImageIcon size={24} color={color} />,
+          tabBarIcon: ({ color }) => <ImageIcon size={27} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -115,7 +118,7 @@ export default function TabLayout() {
         options={{
           title: 'Payments',
           href: showPayments ? undefined : null,
-          tabBarIcon: ({ color }) => <DollarSign size={24} color={color} />,
+          tabBarIcon: ({ color }) => <DollarSign size={27} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -124,7 +127,7 @@ export default function TabLayout() {
           title: 'More',
           tabBarIcon: ({ color }) => (
             <View style={{ position: 'relative' }}>
-              <MoreHorizontal size={24} color={color} />
+              <MoreHorizontal size={27} color={color} />
               {unreadNotificationCount > 0 && (
                 <View
                   style={{
@@ -154,7 +157,7 @@ export default function TabLayout() {
         options={{
           title: 'Admin',
           href: isAdminUser ? undefined : null,
-          tabBarIcon: ({ color }) => <Shield size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Shield size={27} color={color} />,
         }}
       />
       <Tabs.Screen
