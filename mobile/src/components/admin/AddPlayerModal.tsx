@@ -571,9 +571,9 @@ export function AddPlayerModal({ visible, onClose }: AddPlayerModalProps) {
               <View className="mb-3">
                 <Text className="text-slate-400 text-sm mb-1.5">Roles</Text>
                 {(() => {
-                  const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent'];
+                  const enabledRoles = teamSettings.enabledRoles ?? ['player', 'reserve', 'coach'];
                   const showCoach = enabledRoles.includes('coach');
-                  const showParent = enabledRoles.includes('parent');
+                  const showParent = enabledRoles.includes('parent') && (teamSettings?.isPremium ?? false);
 
                   return (
                     <View className="flex-row flex-wrap">
