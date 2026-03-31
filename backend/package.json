@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@hono/node-server": "1.12.0",
+    "@hono/zod-validator": "^0.7.6",
     "@parse/node-apn": "^7.1.0",
     "@supabase/supabase-js": "^2.97.0",
     "@vibecodeapp/backend-sdk": "^1.0.1",

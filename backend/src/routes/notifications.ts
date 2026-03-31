@@ -1,6 +1,36 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import apn from "@parse/node-apn";
+
+const SaveTokenSchema = z.object({
+  playerId: z.string().min(1, "playerId is required"),
+  pushToken: z.string().min(1, "pushToken is required"),
+  platform: z.enum(["ios", "android"]).default("ios"),
+  appBuild: z.string().nullable().optional(),
+});
+
+const SendToPlayersSchema = z.object({
+  playerIds: z.array(z.string()).min(1, "At least one playerId is required"),
+  title: z.string().min(1, "title is required"),
+  body: z.string().min(1, "body is required"),
+  data: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
+const TestApnsSchema = z.object({
+  token: z.string().min(1, "token is required"),
+  title: z.string().optional().default("Test"),
+  body: z.string().optional().default("APNs test from backend"),
+});
+
+const ScheduleBeerDutySchema = z.object({
+  playerId: z.string().min(1, "playerId is required"),
+  gameId: z.string().min(1, "gameId is required"),
+  opponent: z.string().optional().default(""),
+  gameDateTime: z.string().datetime("gameDateTime must be a valid ISO datetime"),
+  is21Plus: z.boolean().optional().default(false),
+});
 
 const notificationsRouter = new Hono();
 
@@ -219,19 +249,8 @@ async function removeStaleTokens(staleTokens: string[]): Promise<void> {
  * POST /api/notifications/save-token
  * Upserts a push token. Accepts both raw APNs hex tokens and Expo-format tokens.
  */
-notificationsRouter.post("/save-token", async (c) => {
-  let playerId = "", pushToken = "", platform = "ios", appBuild: string | null = null;
-  try {
-    const req = await c.req.json();
-    playerId = req.playerId || "";
-    pushToken = req.pushToken || "";
-    platform = req.platform || "ios";
-    appBuild = req.appBuild || null;
-  } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  if (!playerId || !pushToken) return c.json({ error: "playerId and pushToken required" }, 400);
+notificationsRouter.post("/save-token", zValidator("json", SaveTokenSchema), async (c) => {
+  const { playerId, pushToken, platform, appBuild = null } = c.req.valid("json");
 
   console.log(`[push] save-token: player=${playerId} platform=${platform} token=${pushToken.substring(0, 20)}...`);
 
@@ -281,22 +300,8 @@ notificationsRouter.post("/save-token", async (c) => {
  * POST /api/notifications/send-to-players
  * Looks up push tokens for given player IDs and sends via APNs directly.
  */
-notificationsRouter.post("/send-to-players", async (c) => {
-  let playerIds: string[] = [], title = "", body = "", data: Record<string, any> = {};
-
-  try {
-    const req = await c.req.json();
-    playerIds = req.playerIds || [];
-    title = req.title || "";
-    body = req.body || "";
-    data = req.data || {};
-  } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  if (!playerIds.length || !title || !body) {
-    return c.json({ error: "playerIds, title, and body are required" }, 400);
-  }
+notificationsRouter.post("/send-to-players", zValidator("json", SendToPlayersSchema), async (c) => {
+  const { playerIds, title, body, data } = c.req.valid("json");
 
   console.log(`[push] send-to-players: ${playerIds.length} players, title: "${title}"`);
 
@@ -382,13 +387,8 @@ notificationsRouter.get("/debug-tokens", async (c) => {
  * Sends a test notification to a specific token via node-apn (proper HTTP/2).
  * Body: { token: string, title?: string, body?: string }
  */
-notificationsRouter.post("/test-apns", async (c) => {
-  const req = await c.req.json() as { token?: string; title?: string; body?: string };
-  const token = req.token || "";
-  const title = req.title || "Test";
-  const body = req.body || "APNs test from backend";
-
-  if (!token) return c.json({ error: "token required" }, 400);
+notificationsRouter.post("/test-apns", zValidator("json", TestApnsSchema), async (c) => {
+  const { token, title, body } = c.req.valid("json");
 
   const bundleId = process.env.APNS_BUNDLE_ID || "com.vibecode.alignsports-jy5wjr";
 
@@ -481,16 +481,8 @@ notificationsRouter.get("/registration-diagnostics", async (c) => {
  * Uses in-memory setTimeout — best-effort; lost on server restart.
  * Body: { playerId, gameId, opponent, gameDateTime (ISO string), is21Plus }
  */
-notificationsRouter.post("/schedule-beer-duty", async (c) => {
-  let body: any = {};
-  try { body = await c.req.json(); } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  const { playerId, gameId, opponent, gameDateTime, is21Plus } = body;
-  if (!playerId || !gameId || !gameDateTime) {
-    return c.json({ error: "playerId, gameId, and gameDateTime are required" }, 400);
-  }
+notificationsRouter.post("/schedule-beer-duty", zValidator("json", ScheduleBeerDutySchema), async (c) => {
+  const { playerId, gameId, opponent, gameDateTime, is21Plus } = c.req.valid("json");
 
   const gameTime = new Date(gameDateTime);
   const now = new Date();

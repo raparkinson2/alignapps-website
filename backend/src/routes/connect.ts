@@ -1,8 +1,14 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
 const connectRouter = new Hono();
+
+const DisconnectSchema = z.object({
+  teamId: z.string().min(1, "teamId is required"),
+});
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -144,10 +150,9 @@ connectRouter.get("/callback", async (c) => {
  * Removes the Stripe Connect account from a team.
  * Body: { teamId }
  */
-connectRouter.post("/disconnect", async (c) => {
+connectRouter.post("/disconnect", zValidator("json", DisconnectSchema), async (c) => {
   try {
-    const { teamId } = await c.req.json<{ teamId: string }>();
-    if (!teamId) return c.json({ error: "teamId required" }, 400);
+    const { teamId } = c.req.valid("json");
 
     const supabase = getSupabase();
     const { error } = await supabase

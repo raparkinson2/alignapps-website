@@ -1,32 +1,43 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { createHash } from "crypto";
 
 const authRouter = new Hono();
+
+const VerifyPasswordSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const DeleteAccountSchema = z.object({
+  playerId: z.string().optional(),
+  email: z.string().email("Invalid email format").optional(),
+}).refine((d) => d.playerId || d.email, {
+  message: "playerId or email is required",
+});
+
+const EraseTeamDataSchema = z.object({
+  teamId: z.string().min(1, "teamId is required"),
+});
+
+const DeleteTeamSchema = z.object({
+  teamId: z.string().min(1, "teamId is required"),
+});
 
 /**
  * POST /api/auth/verify-password
  * Verifies a player's password using the service role key (bypasses RLS).
  * Returns player+team rows if the password matches.
  */
-authRouter.post("/verify-password", async (c) => {
+authRouter.post("/verify-password", zValidator("json", VerifyPasswordSchema), async (c) => {
   const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
   if (!supabaseUrl || !serviceKey) {
     return c.json({ error: "Supabase admin not configured" }, 503);
   }
 
-  let email: string | undefined;
-  let password: string | undefined;
-  try {
-    const body = await c.req.json();
-    email = body.email?.toLowerCase().trim();
-    password = body.password;
-  } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  if (!email || !password) {
-    return c.json({ error: "email and password are required" }, 400);
-  }
+  const { email: rawEmail, password } = c.req.valid("json");
+  const email = rawEmail.toLowerCase().trim();
 
   // Compute the SHA-256 hash the same way the mobile app does
   const SHARED_SALT = "align_sports_shared_salt_v1";
@@ -120,25 +131,13 @@ async function getAuthUserByEmail(supabaseUrl: string, serviceKey: string, email
  * "Delete Account" — removes the player from Supabase players table
  * and deletes their auth account. Uses playerId + email from the request.
  */
-authRouter.post("/delete-account", async (c) => {
+authRouter.post("/delete-account", zValidator("json", DeleteAccountSchema), async (c) => {
   const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
   if (!supabaseUrl || !serviceKey) {
     return c.json({ error: "Supabase admin not configured" }, 503);
   }
 
-  let playerId: string | undefined;
-  let email: string | undefined;
-  try {
-    const body = await c.req.json();
-    playerId = body.playerId;
-    email = body.email;
-  } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  if (!playerId && !email) {
-    return c.json({ error: "playerId or email is required" }, 400);
-  }
+  const { playerId, email } = c.req.valid("json");
 
   try {
     // 1. Delete player row from Supabase (this handles all other teams too via the players table)
@@ -176,23 +175,13 @@ authRouter.post("/delete-account", async (c) => {
  * payments, polls, links, notifications) but leaves the team row and players intact.
  * All data is fetched from Supabase server-side — no client data trusted.
  */
-authRouter.post("/erase-team-data", async (c) => {
+authRouter.post("/erase-team-data", zValidator("json", EraseTeamDataSchema), async (c) => {
   const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
   if (!supabaseUrl || !serviceKey) {
     return c.json({ error: "Supabase admin not configured" }, 503);
   }
 
-  let teamId: string | undefined;
-  try {
-    const body = await c.req.json();
-    teamId = body.teamId;
-  } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  if (!teamId) {
-    return c.json({ error: "teamId is required" }, 400);
-  }
+  const { teamId } = c.req.valid("json");
 
   const headers = {
     Authorization: `Bearer ${serviceKey}`,
@@ -214,7 +203,7 @@ authRouter.post("/erase-team-data", async (c) => {
   try {
     await Promise.all(
       tables.map((table) =>
-        fetch(`${supabaseUrl}/rest/v1/${table}?team_id=eq.${encodeURIComponent(teamId!)}`, {
+        fetch(`${supabaseUrl}/rest/v1/${table}?team_id=eq.${encodeURIComponent(teamId)}`, {
           method: "DELETE",
           headers,
         })
@@ -236,23 +225,13 @@ authRouter.post("/erase-team-data", async (c) => {
  * 3. Deletes their auth accounts.
  * 4. Deletes the team row (CASCADE removes all content).
  */
-authRouter.post("/delete-team", async (c) => {
+authRouter.post("/delete-team", zValidator("json", DeleteTeamSchema), async (c) => {
   const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
   if (!supabaseUrl || !serviceKey) {
     return c.json({ error: "Supabase admin not configured" }, 503);
   }
 
-  let teamId: string | undefined;
-  try {
-    const body = await c.req.json();
-    teamId = body.teamId;
-  } catch {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-
-  if (!teamId) {
-    return c.json({ error: "teamId is required" }, 400);
-  }
+  const { teamId } = c.req.valid("json");
 
   const headers = {
     Authorization: `Bearer ${serviceKey}`,
@@ -280,7 +259,7 @@ authRouter.post("/delete-team", async (c) => {
     if (teamEmails.length > 0) {
       const emailList = teamEmails.map((e) => `"${e}"`).join(",");
       const res = await fetch(
-        `${supabaseUrl}/rest/v1/players?email=in.(${encodeURIComponent(emailList)})&team_id=neq.${encodeURIComponent(teamId!)}&select=email`,
+        `${supabaseUrl}/rest/v1/players?email=in.(${encodeURIComponent(emailList)})&team_id=neq.${encodeURIComponent(teamId)}&select=email`,
         { headers }
       );
       const onOtherTeams: { email: string }[] = res.ok ? (await res.json() as { email: string }[]) : [];
@@ -293,7 +272,6 @@ authRouter.post("/delete-team", async (c) => {
     }
 
     // 3. Delete auth accounts for exclusive players.
-    // Look up each email individually — avoids fetching all users in the system (O(1) per email vs O(total users)).
     if (emailsExclusiveToThisTeam.length > 0) {
       const authUsers = await Promise.all(
         emailsExclusiveToThisTeam.map((email) => getAuthUserByEmail(supabaseUrl!, serviceKey!, email))

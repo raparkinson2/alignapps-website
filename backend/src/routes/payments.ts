@@ -1,7 +1,30 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import Stripe from "stripe";
 
 const paymentsRouter = new Hono();
+
+const CreatePaymentIntentSchema = z.object({
+  amount: z.number().int("Amount must be an integer").min(50, "Amount must be at least 50 cents ($0.50)"),
+  playerName: z.string().optional(),
+  teamName: z.string().optional(),
+  paymentPeriodId: z.string().optional(),
+  playerId: z.string().optional(),
+  teamStripeAccountId: z.string().optional(),
+});
+
+const CreateCheckoutSessionSchema = z.object({
+  amount: z.number().int("Amount must be an integer").min(50, "Amount must be at least 50 cents ($0.50)"),
+  playerName: z.string().optional(),
+  teamName: z.string().optional(),
+  paymentPeriodTitle: z.string().optional(),
+  paymentPeriodId: z.string().optional(),
+  playerId: z.string().optional(),
+  successUrl: z.string().url("successUrl must be a valid URL").optional(),
+  cancelUrl: z.string().url("cancelUrl must be a valid URL").optional(),
+  teamStripeAccountId: z.string().optional(),
+});
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -24,22 +47,9 @@ function getStripe(): Stripe {
  *
  * Returns: { clientSecret, paymentIntentId }
  */
-paymentsRouter.post("/create-payment-intent", async (c) => {
+paymentsRouter.post("/create-payment-intent", zValidator("json", CreatePaymentIntentSchema), async (c) => {
   try {
-    const body = await c.req.json<{
-      amount: number;
-      playerName?: string;
-      teamName?: string;
-      paymentPeriodId?: string;
-      playerId?: string;
-      teamStripeAccountId?: string;
-    }>();
-
-    const { amount, playerName, teamName, paymentPeriodId, playerId, teamStripeAccountId } = body;
-
-    if (!amount || amount < 50) {
-      return c.json({ error: "Amount must be at least 50 cents ($0.50)" }, 400);
-    }
+    const { amount, playerName, teamName, paymentPeriodId, playerId, teamStripeAccountId } = c.req.valid("json");
 
     const stripe = getStripe();
 
@@ -104,9 +114,9 @@ paymentsRouter.post("/webhook", async (c) => {
       // Bun uses Web Crypto API which requires the async variant
       event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
     } else {
-      // In development without a webhook secret, parse directly
-      event = JSON.parse(rawBody) as Stripe.Event;
-      console.warn("[payments] webhook: no secret configured, skipping signature verification");
+      // Hard fail if webhook secret is not configured — never allow unauthenticated webhooks
+      console.error("[payments] webhook: STRIPE_WEBHOOK_SECRET is not configured — rejecting request");
+      return c.json({ error: "Webhook not configured" }, 500);
     }
   } catch (err: any) {
     console.error("[payments] webhook signature verification failed:", err?.message);
@@ -221,20 +231,8 @@ async function handlePaymentSucceeded({
  *
  * Returns: { url } - the Stripe Checkout URL to open in WebView
  */
-paymentsRouter.post("/create-checkout-session", async (c) => {
+paymentsRouter.post("/create-checkout-session", zValidator("json", CreateCheckoutSessionSchema), async (c) => {
   try {
-    const body = await c.req.json<{
-      amount: number;
-      playerName?: string;
-      teamName?: string;
-      paymentPeriodTitle?: string;
-      paymentPeriodId?: string;
-      playerId?: string;
-      successUrl?: string;
-      cancelUrl?: string;
-      teamStripeAccountId?: string;
-    }>();
-
     const {
       amount,
       playerName,
@@ -245,11 +243,7 @@ paymentsRouter.post("/create-checkout-session", async (c) => {
       successUrl = "alignsports://payment-success",
       cancelUrl = "alignsports://payment-cancel",
       teamStripeAccountId,
-    } = body;
-
-    if (!amount || amount < 50) {
-      return c.json({ error: "Amount must be at least 50 cents ($0.50)" }, 400);
-    }
+    } = c.req.valid("json");
 
     const stripe = getStripe();
     const feePct = parseFloat(process.env.STRIPE_PLATFORM_FEE_PERCENT ?? "0.5") / 100;
