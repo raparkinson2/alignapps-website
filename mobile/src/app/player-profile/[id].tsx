@@ -754,7 +754,7 @@ export default function PlayerProfileScreen() {
                   <View style={{
                     position: 'absolute',
                     right: 16,
-                    top: 0,
+                    top: 16,
                     bottom: 0,
                     left: '52%',
                     alignItems: 'center',
