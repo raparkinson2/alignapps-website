@@ -176,9 +176,7 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       if (localTeam) {
         console.log('SYNC: Team not in Supabase, uploading from local store:', teamId);
         await pushTeamToSupabase(teamId, localTeam.teamName, localTeam.teamSettings);
-        for (const player of localTeam.players) {
-          await pushPlayerToSupabase(player, teamId);
-        }
+        await Promise.all(localTeam.players.map((player) => pushPlayerToSupabase(player, teamId)));
         // Retry the fetch
         const { data: retryData, error: retryError } = await supabase
           .from('teams').select('*').eq('id', teamId).maybeSingle();
@@ -1182,8 +1180,8 @@ export async function pushPaymentPeriodToSupabase(period: PaymentPeriod, teamId:
     }, { onConflict: 'id' });
     if (error) { console.error('SYNC: pushPaymentPeriodToSupabase error:', error.message); return; }
 
-    // Upsert all current player payments
-    for (const pp of period.playerPayments || []) {
+    // Upsert all current player payments in parallel (each player is independent)
+    await Promise.all((period.playerPayments || []).map(async (pp) => {
       const ppId = `pp-${period.id}-${pp.playerId}`;
       const { data: existing } = await supabase.from('player_payments').select('id').eq('payment_period_id', period.id).eq('player_id', pp.playerId).single();
       const actualId = existing?.id || ppId;
@@ -1198,16 +1196,17 @@ export async function pushPaymentPeriodToSupabase(period: PaymentPeriod, teamId:
         paid_at: pp.paidAt || null,
       }, { onConflict: 'payment_period_id,player_id' });
 
-      for (const entry of pp.entries || []) {
-        await supabase.from('payment_entries').upsert({
+      // Entries depend on actualId but are independent of each other
+      await Promise.all((pp.entries || []).map((entry) =>
+        supabase.from('payment_entries').upsert({
           id: entry.id,
           player_payment_id: actualId,
           amount: entry.amount,
           date: entry.date,
           note: entry.note || null,
-        }, { onConflict: 'id' });
-      }
-    }
+        }, { onConflict: 'id' })
+      ));
+    }));
 
     // Delete any player_payments rows in Supabase that are no longer in the local list
     const currentPlayerIds = (period.playerPayments || []).map((pp) => pp.playerId);
@@ -1216,9 +1215,9 @@ export async function pushPaymentPeriodToSupabase(period: PaymentPeriod, teamId:
       .select('id, player_id')
       .eq('payment_period_id', period.id);
     const rowsToDelete = (remoteRows || []).filter((row: any) => !currentPlayerIds.includes(row.player_id));
-    for (const row of rowsToDelete) {
-      await supabase.from('player_payments').delete().eq('id', row.id);
-    }
+    await Promise.all(rowsToDelete.map((row: any) =>
+      supabase.from('player_payments').delete().eq('id', row.id)
+    ));
   } catch (err) {
     console.error('SYNC: pushPaymentPeriodToSupabase error:', err);
   }
