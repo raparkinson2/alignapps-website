@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, Pressable, Modal, Alert, Platform, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { withErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -70,7 +71,7 @@ import { TeamSettingsModal } from '@/components/admin/TeamSettingsModal';
 import { JuiceBoxIcon } from '@/components/JuiceBoxIcon';
 import { ParentChildIcon } from '@/components/ParentChildIcon';
 
-export default function AdminScreen() {
+function AdminScreen() {
   const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const addPlayer = useTeamStore((s) => s.addPlayer);
@@ -1068,3 +1069,5 @@ export default function AdminScreen() {
     </View>
   );
 }
+
+export default withErrorBoundary(AdminScreen);

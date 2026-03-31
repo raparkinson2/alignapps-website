@@ -43,3 +43,21 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     return this.props.children;
   }
 }
+
+/**
+ * HOC that wraps a screen component with ErrorBoundary.
+ * Usage: export default withErrorBoundary(MyScreen);
+ */
+export function withErrorBoundary<P extends object>(
+  WrappedComponent: React.ComponentType<P>
+): React.FC<P> {
+  const displayName = WrappedComponent.displayName || WrappedComponent.name || 'Component';
+  const WithBoundary: React.FC<P> = (props) => (
+    <ErrorBoundary>
+      <WrappedComponent {...props} />
+    </ErrorBoundary>
+  );
+  WithBoundary.displayName = `WithErrorBoundary(${displayName})`;
+  return WithBoundary;
+}
+

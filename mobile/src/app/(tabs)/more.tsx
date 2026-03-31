@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, Pressable, Alert, Platform, Modal, TextInput, KeyboardAvoidingView, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { withErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -1019,7 +1020,7 @@ function TeamLinksModal({ visible, onClose, links, onAdd, onUpdate, onRemove, ca
   );
 }
 
-export default function MoreScreen() {
+function MoreScreen() {
   const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
@@ -1833,3 +1834,5 @@ export default function MoreScreen() {
     </View>
   );
 }
+
+export default withErrorBoundary(MoreScreen);

@@ -1,5 +1,6 @@
 import { View, Text, FlatList, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { withErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useRef, useCallback } from 'react';
 import {
@@ -35,7 +36,7 @@ import { EditDueDateModal } from '@/components/payments/EditDueDateModal';
 import { PaymentInfoModal } from '@/components/payments/PaymentInfoModal';
 import { StripeDisclosureModal } from '@/components/payments/StripeModals';
 
-export default function PaymentsScreen() {
+function PaymentsScreen() {
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore(useShallow((s) => s.teamSettings));
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
@@ -400,3 +401,5 @@ export default function PaymentsScreen() {
     </View>
   );
 }
+
+export default withErrorBoundary(PaymentsScreen);

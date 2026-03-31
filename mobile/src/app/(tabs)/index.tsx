@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Pressable, Alert, FlatList } from 'react-native';
 import * as Device from 'expo-device';
 import { LinearGradient } from 'expo-linear-gradient';
+import { withErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
@@ -78,7 +79,7 @@ type ListItem =
   | { kind: 'game'; game: Game; gameIndex: number }
   | { kind: 'event'; event: Event; eventIndex: number };
 
-export default function ScheduleScreen() {
+function ScheduleScreen() {
   const router = useRouter();
   const teamName = useTeamStore((s) => s.teamName);
   const games = useTeamStore((s) => s.games);
@@ -531,3 +532,5 @@ export default function ScheduleScreen() {
     </View>
   );
 }
+
+export default withErrorBoundary(ScheduleScreen);
