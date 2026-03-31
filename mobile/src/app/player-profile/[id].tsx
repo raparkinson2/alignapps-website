@@ -39,8 +39,8 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CONTENT_WIDTH = SCREEN_WIDTH - 40; // 20px outer padding each side
-const TABLE_INNER_H_PAD = 14; // 14px inner padding each side inside the table card
-const TABLE_SEASON_COL = 90;
+const TABLE_INNER_H_PAD = 10; // inner padding each side inside the table card
+const TABLE_SEASON_COL = 76; // season name column — keep narrow so stat cols have room
 
 // ─── Stat helpers ─────────────────────────────────────────────────────────────
 
@@ -248,39 +248,39 @@ function buildSkaterTable(
   );
 
   if (sport === 'hockey') {
-    type R = { gp: number; g: number; a: number; pm: number };
+    type R = { gp: number; g: number; a: number; pim: number; pm: number };
     const extract = (s: PlayerStats | undefined | null): R | null => {
       if (!s) return null;
       const gp = getStatValue(s, 'gamesPlayed') || getStatValue(s, 'games');
       const g = getStatValue(s, 'goals'), a = getStatValue(s, 'assists');
-      const pm = getStatValue(s, 'plusMinus');
+      const pim = getStatValue(s, 'pim'), pm = getStatValue(s, 'plusMinus');
       if (gp === 0 && g === 0 && a === 0) return null;
-      return { gp, g, a, pm };
+      return { gp, g, a, pim, pm };
     };
     const fmt = (r: R): (string | number)[] => [
-      r.gp, r.g, r.a, r.g + r.a,
+      r.gp, r.g, r.a, r.g + r.a, r.pim,
       r.pm >= 0 ? `+${r.pm}` : `${r.pm}`,
     ];
     const rows: StatsRow[] = [];
-    let c: R = { gp: 0, g: 0, a: 0, pm: 0 };
+    let c: R = { gp: 0, g: 0, a: 0, pim: 0, pm: 0 };
     let n = 0;
     const curr = extract(player.stats);
     if (curr) {
       rows.push({ label: currentSeasonName || 'Current', values: fmt(curr), isCurrent: true });
-      c.gp += curr.gp; c.g += curr.g; c.a += curr.a; c.pm += curr.pm; n++;
+      c.gp += curr.gp; c.g += curr.g; c.a += curr.a; c.pim += curr.pim; c.pm += curr.pm; n++;
     }
     for (const season of sorted) {
       const r = extract(getArchivedPlayerStats(season, player.id)?.stats);
       if (!r) continue;
       rows.push({ label: season.seasonName, values: fmt(r) });
-      c.gp += r.gp; c.g += r.g; c.a += r.a; c.pm += r.pm; n++;
+      c.gp += r.gp; c.g += r.g; c.a += r.a; c.pim += r.pim; c.pm += r.pm; n++;
     }
     if (n === 0) return null;
     if (n > 1) rows.push({ label: 'CAREER', values: fmt(c), isCareer: true });
     return {
-      headers: ['GP', 'G', 'A', 'PTS', '+/-'],
+      headers: ['GP', 'G', 'A', 'PTS', 'PIM', '+/-'],
       rows,
-      colors: ['#94a3b8', '#22c55e', '#67e8f9', '#f59e0b', '#94a3b8'],
+      colors: ['#94a3b8', '#22c55e', '#67e8f9', '#f59e0b', '#ef4444', '#94a3b8'],
       highlightIndices: [1, 2, 3],
     };
   }
@@ -367,7 +367,7 @@ function buildSkaterTable(
       const ppg = r.gp > 0 ? (r.pts / r.gp).toFixed(1) : '0.0';
       const rpg = r.gp > 0 ? (r.reb / r.gp).toFixed(1) : '0.0';
       const apg = r.gp > 0 ? (r.ast / r.gp).toFixed(1) : '0.0';
-      return [r.gp, ppg, rpg, apg, r.stl];
+      return [r.gp, ppg, rpg, apg, r.stl, r.blk];
     };
     const rows: StatsRow[] = [];
     let c: R = { gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0 };
@@ -386,9 +386,9 @@ function buildSkaterTable(
     if (n === 0) return null;
     if (n > 1) rows.push({ label: 'CAREER', values: fmt(c), isCareer: true });
     return {
-      headers: ['GP', 'PPG', 'RPG', 'APG', 'STL'],
+      headers: ['GP', 'PPG', 'RPG', 'APG', 'STL', 'BLK'],
       rows,
-      colors: ['#94a3b8', '#f59e0b', '#22c55e', '#67e8f9', '#a78bfa'],
+      colors: ['#94a3b8', '#f59e0b', '#22c55e', '#67e8f9', '#a78bfa', '#ef4444'],
       highlightIndices: [1, 2, 3],
     };
   }
@@ -405,7 +405,7 @@ function buildSkaterTable(
     };
     const fmt = (r: R): (string | number)[] => {
       const avg = r.ab > 0 ? (r.h / r.ab).toFixed(3).replace('0.', '.') : '.000';
-      return [r.gp, avg, r.h, r.hr, r.rbi];
+      return [r.gp, avg, r.h, r.hr, r.rbi, r.k];
     };
     const rows: StatsRow[] = [];
     let c: R = { gp: 0, ab: 0, h: 0, hr: 0, rbi: 0, k: 0 };
@@ -424,9 +424,9 @@ function buildSkaterTable(
     if (n === 0) return null;
     if (n > 1) rows.push({ label: 'CAREER', values: fmt(c), isCareer: true });
     return {
-      headers: ['GP', 'AVG', 'H', 'HR', 'RBI'],
+      headers: ['GP', 'AVG', 'H', 'HR', 'RBI', 'K'],
       rows,
-      colors: ['#94a3b8', '#f59e0b', '#22c55e', '#ef4444', '#67e8f9'],
+      colors: ['#94a3b8', '#f59e0b', '#22c55e', '#ef4444', '#67e8f9', '#94a3b8'],
       highlightIndices: [1, 2, 3],
     };
   }
@@ -490,6 +490,9 @@ function StatsTable({ data, title }: { data: StatsTableData; title?: string }) {
   const numCols = data.headers.length;
   // Account for inner horizontal padding when computing column widths
   const statColWidth = (CONTENT_WIDTH - TABLE_INNER_H_PAD * 2 - TABLE_SEASON_COL) / numCols;
+  // Slightly smaller font for 6-column tables to ensure all values fit
+  const valueFontSize = numCols >= 6 ? 12 : 13;
+  const careerFontSize = numCols >= 6 ? 13 : 14;
 
   return (
     <View style={{ marginBottom: 20 }}>
@@ -589,7 +592,7 @@ function StatsTable({ data, title }: { data: StatsTableData; title?: string }) {
                     minimumFontScale={0.65}
                     style={{
                       color: isHighlight ? color : '#475569',
-                      fontSize: row.isCareer ? 14 : 13,
+                      fontSize: row.isCareer ? careerFontSize : valueFontSize,
                       fontWeight: row.isCareer ? '800' : isHighlight ? '700' : '500',
                       width: statColWidth - 4,
                       textAlign: 'center',
