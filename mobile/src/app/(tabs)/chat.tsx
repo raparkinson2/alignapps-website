@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -266,7 +267,7 @@ export default function ChatScreen() {
   const [gifs, setGifs] = useState<GiphyGif[]>([]);
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const flatListRef = useRef<FlatList<any>>(null);
+  const flatListRef = useRef<FlashList<any>>(null);
 
   // Mention autocomplete state
   const [showMentionPicker, setShowMentionPicker] = useState(false);
@@ -727,20 +728,20 @@ export default function ChatScreen() {
               </Text>
             </View>
           ) : (
-            <FlatList
-              ref={flatListRef}
-              data={flatItems}
-              keyExtractor={keyExtractor}
-              renderItem={renderChatItem}
-              inverted
-              removeClippedSubviews
-              maxToRenderPerBatch={15}
-              windowSize={10}
-              initialNumToRender={20}
-              contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: isTablet ? containerPadding : 16, maxWidth: isTablet ? 800 : undefined, alignSelf: isTablet ? 'center' as const : undefined, width: isTablet ? '100%' : undefined }}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            />
+            <View style={{ flex: 1, maxWidth: isTablet ? 800 : undefined, alignSelf: isTablet ? 'center' : undefined, width: isTablet ? '100%' : undefined }}>
+              <FlashList
+                ref={flatListRef}
+                data={flatItems}
+                keyExtractor={keyExtractor}
+                renderItem={renderChatItem}
+                inverted
+                estimatedItemSize={72}
+                removeClippedSubviews
+                contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: isTablet ? containerPadding : 16 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              />
+            </View>
           )}
 
           {/* Input Area */}

@@ -371,16 +371,18 @@ CREATE POLICY "Players can manage their responses" ON game_responses
     player_id IN (SELECT id FROM players WHERE auth_user_id = auth.uid())
   );
 
--- Chat: Allow all operations since app handles access control
--- Note: team_id is TEXT format (local app IDs), not UUID
-CREATE POLICY "Anyone can view chat" ON chat_messages
-  FOR SELECT USING (true);
+-- Chat: Restricted to team members only
+CREATE POLICY "Team members can view chat" ON chat_messages
+  FOR SELECT USING (team_id = get_my_team_id());
 
-CREATE POLICY "Anyone can send messages" ON chat_messages
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Team members can send messages" ON chat_messages
+  FOR INSERT WITH CHECK (team_id = get_my_team_id());
 
-CREATE POLICY "Anyone can delete their messages" ON chat_messages
-  FOR DELETE USING (true);
+CREATE POLICY "Team members can delete their messages" ON chat_messages
+  FOR DELETE USING (
+    team_id = get_my_team_id()
+    AND sender_id IN (SELECT id FROM players WHERE auth_user_id = auth.uid())
+  );
 
 -- Notifications: Users can view their own
 CREATE POLICY "Users can view their notifications" ON notifications
@@ -525,17 +527,27 @@ CREATE INDEX idx_team_invitations_pending ON team_invitations(accepted_at) WHERE
 -- Enable RLS
 ALTER TABLE team_invitations ENABLE ROW LEVEL SECURITY;
 
--- Allow anyone to read invitations (needed for users to check their invitations)
+-- Allow anyone to read pending invitations (needed to look up invite before joining)
 CREATE POLICY "Anyone can view pending invitations" ON team_invitations
   FOR SELECT USING (accepted_at IS NULL);
 
--- Allow anyone to create invitations (admins creating invitations for their team)
-CREATE POLICY "Anyone can create invitations" ON team_invitations
-  FOR INSERT WITH CHECK (true);
+-- Only team admins can create invitations
+CREATE POLICY "Admins can create invitations" ON team_invitations
+  FOR INSERT WITH CHECK (
+    team_id = get_my_team_id()
+    AND EXISTS (
+      SELECT 1 FROM players
+      WHERE auth_user_id = auth.uid()
+      AND 'admin' = ANY(roles)
+    )
+  );
 
--- Allow updating invitations (for marking as accepted)
-CREATE POLICY "Anyone can accept invitations" ON team_invitations
-  FOR UPDATE USING (true);
+-- Authenticated users can accept pending invitations
+CREATE POLICY "Authenticated users can accept invitations" ON team_invitations
+  FOR UPDATE USING (
+    accepted_at IS NULL
+    AND auth.uid() IS NOT NULL
+  );
 
 -- =============================================
 -- STORAGE BUCKET FOR TEAM PHOTOS
@@ -547,15 +559,20 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('team-photos', 'team-photos', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Allow anyone to upload photos (authenticated or anonymous)
-CREATE POLICY "Anyone can upload photos" ON storage.objects
-  FOR INSERT WITH CHECK (bucket_id = 'team-photos');
-
 -- Allow anyone to view photos (public bucket)
 CREATE POLICY "Anyone can view photos" ON storage.objects
   FOR SELECT USING (bucket_id = 'team-photos');
 
--- Allow anyone to delete their uploaded photos
-CREATE POLICY "Anyone can delete photos" ON storage.objects
-  FOR DELETE USING (bucket_id = 'team-photos');
+-- Only authenticated users can upload or delete photos
+CREATE POLICY "Authenticated users can upload photos" ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'team-photos'
+    AND auth.uid() IS NOT NULL
+  );
+
+CREATE POLICY "Authenticated users can delete photos" ON storage.objects
+  FOR DELETE USING (
+    bucket_id = 'team-photos'
+    AND auth.uid() IS NOT NULL
+  );
 
