@@ -126,14 +126,12 @@ export default function UpgradeScreen() {
     selectedTier === 'premium' ? premium.annual    : multiTeam.annual,
   );
 
-  const syncPremiumFlag = (active: Record<string, any>) => {
-    const isPremium = Boolean(active['premium'] || active['multi_team']);
-    if (!isPremium) return;
+  const syncPremiumFlag = async () => {
     const s = useTeamStore.getState();
     s.setTeamSettings({ isPremium: true });
     if (s.activeTeamId) {
       const latest = useTeamStore.getState();
-      pushTeamToSupabase(s.activeTeamId, latest.teamName, { ...latest.teamSettings, isPremium: true })
+      await pushTeamToSupabase(s.activeTeamId, latest.teamName, { ...latest.teamSettings, isPremium: true })
         .catch(() => {});
     }
   };
@@ -143,16 +141,19 @@ export default function UpgradeScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPurchasing(true);
     const result = await purchasePackage(activePkg);
-    setPurchasing(false);
     if (result.ok) {
+      // Await Supabase write BEFORE navigating back to prevent foreground-reload race condition
+      await syncPremiumFlag();
+      setPurchasing(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      syncPremiumFlag(result.data.entitlements.active);
       router.back();
-    } else if (result.reason === 'sdk_error') {
-      // Ignore user-cancelled purchases; show an alert for genuine errors
-      const errMsg = String((result.error as any)?.message ?? '').toLowerCase();
-      if (!errMsg.includes('cancel') && !errMsg.includes('user_cancelled') && !errMsg.includes('purchase_cancelled')) {
-        Alert.alert('Purchase Failed', 'Something went wrong. Please try again or restore your purchases.');
+    } else {
+      setPurchasing(false);
+      if (result.reason === 'sdk_error') {
+        const errMsg = String((result.error as any)?.message ?? '').toLowerCase();
+        if (!errMsg.includes('cancel') && !errMsg.includes('user_cancelled') && !errMsg.includes('purchase_cancelled')) {
+          Alert.alert('Purchase Failed', 'Something went wrong. Please try again or restore your purchases.');
+        }
       }
     }
   };
@@ -164,7 +165,7 @@ export default function UpgradeScreen() {
     const info = await getCustomerInfo();
     setRestoring(false);
     if (info.ok && Object.keys(info.data.entitlements.active).length > 0) {
-      syncPremiumFlag(info.data.entitlements.active);
+      await syncPremiumFlag();
       router.back();
     }
   };
