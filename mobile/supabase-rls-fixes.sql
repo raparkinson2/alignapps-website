@@ -4,6 +4,12 @@
 -- supabase.com → your project → SQL Editor → New Query
 -- ============================================================
 
+-- Create (or update) the helper function that returns the current user's team ID
+CREATE OR REPLACE FUNCTION get_my_team_id()
+RETURNS TEXT AS $$
+  SELECT team_id FROM players WHERE auth_user_id = auth.uid() LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER;
+
 -- 1. CHAT MESSAGES — restrict to team members only
 DROP POLICY IF EXISTS "Anyone can view chat" ON chat_messages;
 DROP POLICY IF EXISTS "Anyone can send messages" ON chat_messages;
