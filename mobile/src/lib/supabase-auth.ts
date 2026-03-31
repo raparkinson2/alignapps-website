@@ -1,5 +1,8 @@
 import { supabase, clearInvalidSession, getSafeSession } from './supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import { Platform } from 'react-native';
 
 export interface AuthResult {
   success: boolean;
@@ -343,8 +346,88 @@ export async function resendConfirmationEmail(email: string): Promise<AuthResult
 }
 
 /**
- * Sign in with Apple using expo-apple-authentication + Supabase
+ * Sign in with Google using expo-auth-session (native) or Supabase OAuth (web)
  */
+export async function signInWithGoogle(): Promise<AuthResult & { email?: string }> {
+  try {
+    // Web: use Supabase OAuth redirect
+    if (Platform.OS === 'web') {
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
+      if (error) return { success: false, error: error.message };
+      // Browser will redirect — keep loading
+      return { success: true };
+    }
+
+    // Native iOS/Android: use expo-auth-session with Google OAuth
+    WebBrowser.maybeCompleteAuthSession();
+
+    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+    if (!webClientId) {
+      return { success: false, error: 'Google Sign-In is not configured' };
+    }
+
+    const redirectUri = AuthSession.makeRedirectUri({ scheme: 'alignsports' });
+
+    const discovery = {
+      authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+      tokenEndpoint: 'https://oauth2.googleapis.com/token',
+    };
+
+    const clientId = Platform.OS === 'ios' && iosClientId ? iosClientId : webClientId;
+
+    const request = new AuthSession.AuthRequest({
+      clientId,
+      scopes: ['openid', 'profile', 'email'],
+      redirectUri,
+      responseType: AuthSession.ResponseType.Token,
+      usePKCE: false,
+    });
+
+    const result = await request.promptAsync(discovery);
+
+    if (result.type === 'cancel' || result.type === 'dismiss') {
+      return { success: false, error: 'cancelled' };
+    }
+
+    if (result.type !== 'success' || !result.params?.access_token) {
+      return { success: false, error: 'Google Sign-In failed' };
+    }
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: result.params.access_token,
+    });
+
+    if (error) {
+      // Fallback: try signInWithOAuth approach using the access token directly
+      const { data: userData, error: userError } = await supabase.auth.getUser(result.params.access_token);
+      if (userError || !userData.user) {
+        return { success: false, error: error.message };
+      }
+      const email = userData.user.email ?? undefined;
+      return { success: true, userId: userData.user.id, email };
+    }
+
+    if (!data.user) {
+      return { success: false, error: 'Failed to sign in with Google' };
+    }
+
+    const email = data.user.email ?? undefined;
+    return { success: true, userId: data.user.id, email };
+  } catch (err: any) {
+    if (err?.message?.includes('cancel') || err?.message?.includes('dismiss')) {
+      return { success: false, error: 'cancelled' };
+    }
+    console.error('signInWithGoogle error:', err);
+    return { success: false, error: err?.message || 'Google Sign-In failed' };
+  }
+}
 export async function signInWithApple(): Promise<AuthResult & { email?: string }> {
   try {
     const credential = await AppleAuthentication.signInAsync({

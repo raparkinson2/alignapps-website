@@ -9,7 +9,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Player, getPlayerName } from '@/lib/store';
 import { formatPhoneInput, unformatPhone } from '@/lib/phone';
-import { signInWithEmail, sendPasswordResetSMS, resendConfirmationEmail, verifySMSOtpAndResetPassword, signInWithApple } from '@/lib/supabase-auth';
+import { signInWithEmail, sendPasswordResetSMS, resendConfirmationEmail, verifySMSOtpAndResetPassword, signInWithApple, signInWithGoogle } from '@/lib/supabase-auth';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { secureLoginWithEmail, secureLoginWithPhone, secureResetPassword, verifyPlayerSecurityAnswer } from '@/lib/secure-auth';
 import { loadTeamFromSupabase } from '@/lib/realtime-sync';
@@ -85,6 +85,7 @@ export default function LoginScreen() {
   const [isResending, setIsResending] = useState(false);
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -212,6 +213,60 @@ export default function LoginScreen() {
       setIsAppleLoading(false);
     }
     // If no error, the browser will redirect to Apple — loading state stays until redirect
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    setError('');
+    try {
+      const result = await signInWithGoogle();
+      if (!result.success) {
+        if (result.error !== 'cancelled') {
+          setError(result.error ?? 'Google Sign-In failed');
+        }
+        setIsGoogleLoading(false);
+        return;
+      }
+      // On web the browser redirects — no further action needed
+      if (Platform.OS === 'web') return;
+
+      const email = result.email;
+      if (!email) {
+        setError('Could not retrieve your email from Google. Please sign in with email instead.');
+        setIsGoogleLoading(false);
+        return;
+      }
+
+      // Look up the player's team(s) in Supabase (same as Apple Sign-In)
+      const { data: playerRows } = await supabase
+        .from('players')
+        .select('team_id, id')
+        .eq('email', email.toLowerCase());
+
+      if (playerRows && playerRows.length > 0) {
+        for (const row of playerRows) {
+          await loadTeamFromSupabase(row.team_id);
+        }
+        useTeamStore.setState({
+          activeTeamId: playerRows[0].team_id,
+          userEmail: email.toLowerCase(),
+          currentPlayerId: playerRows[0].id,
+          isLoggedIn: true,
+        });
+        if (playerRows.length > 1) {
+          useTeamStore.setState({ pendingTeamIds: playerRows.map((r: { team_id: string }) => r.team_id) });
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        // New user — send them to create/join a team
+        useTeamStore.setState({ userEmail: email.toLowerCase() });
+        router.push('/create-team?fromGoogle=1');
+      }
+    } catch (err) {
+      setError('Google Sign-In failed. Please try again.');
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   // Helper to detect if input is phone or email
@@ -837,6 +892,35 @@ export default function LoginScreen() {
                 )}
               </View>
             )}
+
+            {/* Sign in with Google */}
+            <View className="mt-2 mb-2">
+              <Pressable
+                onPress={handleGoogleSignIn}
+                disabled={isGoogleLoading}
+                style={{
+                  width: '100%',
+                  height: 52,
+                  backgroundColor: '#fff',
+                  borderRadius: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: isGoogleLoading ? 0.6 : 1,
+                }}
+              >
+                {!isGoogleLoading && (
+                  <Image
+                    source={{ uri: 'https://www.google.com/favicon.ico' }}
+                    style={{ width: 20, height: 20, marginRight: 10 }}
+                    contentFit="contain"
+                  />
+                )}
+                <Text style={{ color: '#1f2937', fontSize: 17, fontWeight: '600' }}>
+                  {isGoogleLoading ? 'Signing in with Google...' : 'Sign in with Google'}
+                </Text>
+              </Pressable>
+            </View>
 
             {/* Divider */}
             <View className="flex-row items-center my-6">
