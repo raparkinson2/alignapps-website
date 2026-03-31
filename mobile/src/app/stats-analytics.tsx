@@ -34,7 +34,8 @@ export default function StatsAnalyticsScreen() {
   const otLosses = record?.otLosses ?? 0;
   const hasRecord = wins > 0 || losses > 0 || ties > 0;
   const totalPlayed = wins + losses + ties + otLosses;
-  const winPct = totalPlayed > 0 ? Math.round((wins / totalPlayed) * 100) : 0;
+  // Win percentage as sports decimal (e.g. .732)
+  const winPctDecimal = totalPlayed > 0 ? (wins / totalPlayed).toFixed(3) : null;
 
   const formatRecord = () => {
     const parts = [wins, losses];
@@ -45,6 +46,18 @@ export default function StatsAnalyticsScreen() {
     return parts.join(' — ');
   };
 
+  // Goals/Points For & Against from logged game scores
+  const { goalsFor, goalsAgainst, differential } = useMemo(() => {
+    const scored = games.filter((g) => g.finalScoreUs != null && g.finalScoreThem != null);
+    const gf = scored.reduce((s, g) => s + (g.finalScoreUs ?? 0), 0);
+    const ga = scored.reduce((s, g) => s + (g.finalScoreThem ?? 0), 0);
+    return { goalsFor: gf, goalsAgainst: ga, differential: gf - ga };
+  }, [games]);
+
+  const hasScoreData = games.some((g) => g.finalScoreUs != null);
+  const scoringLabel = sport === 'basketball' ? 'PF' : 'GF';
+  const scoringAgainstLabel = sport === 'basketball' ? 'PA' : 'GA';
+
   // Last 5 completed games (oldest → newest so left = oldest)
   const last5 = useMemo(() => {
     return [...games]
@@ -52,6 +65,38 @@ export default function StatsAnalyticsScreen() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5)
       .reverse();
+  }, [games]);
+
+  // Last 10 record + current streak
+  const { last10, currentStreak, streakType } = useMemo(() => {
+    const completed = [...games]
+      .filter((g) => g.gameResult)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const recent10 = completed.slice(0, 10);
+    const l10w = recent10.filter((g) => g.gameResult === 'win').length;
+    const l10l = recent10.filter((g) => g.gameResult === 'loss' || g.gameResult === 'otLoss').length;
+    const l10t = recent10.filter((g) => g.gameResult === 'tie').length;
+
+    let streak = 0;
+    let sType: 'W' | 'L' | null = null;
+    for (const g of completed) {
+      const isWin = g.gameResult === 'win';
+      const isLoss = g.gameResult === 'loss' || g.gameResult === 'otLoss';
+      if (sType === null) {
+        sType = isWin ? 'W' : isLoss ? 'L' : null;
+        if (sType) streak = 1;
+        else break;
+      } else if (sType === 'W' && isWin) {
+        streak++;
+      } else if (sType === 'L' && isLoss) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return { last10: recent10.length > 0 ? { w: l10w, l: l10l, t: l10t, total: recent10.length } : null, currentStreak: streak, streakType: sType };
   }, [games]);
 
   // Top performer by primary stat
@@ -198,15 +243,60 @@ export default function StatsAnalyticsScreen() {
                         borderColor: hexToRgba(teamColor, 0.3),
                       }}
                     >
-                      <Text style={{ color: teamColor, fontSize: 22, fontWeight: '800' }}>{winPct}%</Text>
-                      <Text className="text-slate-400 text-xs">Win Rate</Text>
+                      <Text style={{ color: teamColor, fontSize: 22, fontWeight: '800' }}>
+                        {winPctDecimal ? winPctDecimal.replace('0.', '.') : '—'}
+                      </Text>
+                      <Text className="text-slate-400 text-xs">Win Pct</Text>
                     </View>
                   )}
                 </View>
 
+                {/* Extra stats row: GF · GA · DIFF */}
+                {hasScoreData && (
+                  <View className="flex-row mt-4 pt-4" style={{ borderTopWidth: 1, borderTopColor: hexToRgba(teamColor, 0.15), gap: 0 }}>
+                    {[
+                      { label: scoringLabel, value: String(goalsFor) },
+                      { label: scoringAgainstLabel, value: String(goalsAgainst) },
+                      { label: 'DIFF', value: (differential > 0 ? '+' : '') + differential },
+                    ].map((stat, i) => (
+                      <View key={stat.label} style={{ flex: 1, alignItems: 'center', borderLeftWidth: i > 0 ? 1 : 0, borderLeftColor: hexToRgba(teamColor, 0.15) }}>
+                        <Text style={{ color: stat.label === 'DIFF' ? (differential > 0 ? '#22c55e' : differential < 0 ? '#ef4444' : '#94a3b8') : '#ffffff', fontWeight: '700', fontSize: 18 }}>
+                          {stat.value}
+                        </Text>
+                        <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>{stat.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Last 10 + Streak row */}
+                {(last10 || currentStreak > 0) && (
+                  <View className="flex-row mt-3" style={{ gap: 8 }}>
+                    {last10 && (
+                      <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                        <Text style={{ color: '#64748b', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Last 10</Text>
+                        <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>
+                          <Text style={{ color: '#22c55e' }}>{last10.w}W</Text>
+                          {'  '}
+                          <Text style={{ color: '#ef4444' }}>{last10.l}L</Text>
+                          {last10.t > 0 && <Text style={{ color: '#94a3b8' }}>{'  '}{last10.t}T</Text>}
+                        </Text>
+                      </View>
+                    )}
+                    {currentStreak > 0 && streakType && (
+                      <View style={{ flex: 1, backgroundColor: streakType === 'W' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                        <Text style={{ color: '#64748b', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Streak</Text>
+                        <Text style={{ color: streakType === 'W' ? '#22c55e' : '#ef4444', fontWeight: '700', fontSize: 13 }}>
+                          {streakType}{currentStreak}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+
                 {/* Last 5 W/L dots */}
                 {last5.length > 0 && (
-                  <View className="flex-row items-center mt-4" style={{ gap: 6 }}>
+                  <View className="flex-row items-center mt-3" style={{ gap: 6 }}>
                     <Text className="text-slate-500 text-xs font-medium mr-1">Last {last5.length}</Text>
                     {last5.map((g) => (
                       <View
