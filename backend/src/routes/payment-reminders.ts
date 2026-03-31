@@ -29,14 +29,82 @@ const OnCreateSchema = z.object({
   dueDate: z.string().nullable().optional(),
 });
 
-// ─── Persistent sent-milestone tracking ───────────────────────────────────────
-// Stored on disk so server restarts don't cause milestone re-fires.
-// Falls back to in-memory if the file can't be read/written.
-const LOG_PATH = join(import.meta.dir, "../../../data/payment-milestone-log.json");
+// ─── Milestone tracking via Supabase ──────────────────────────────────────────
+//
+// Table DDL (run once in Supabase SQL Editor):
+//
+//   CREATE TABLE IF NOT EXISTS payment_milestone_log (
+//     period_id  TEXT        NOT NULL,
+//     milestone  TEXT        NOT NULL,
+//     fired_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+//     PRIMARY KEY (period_id, milestone)
+//   );
+//
+// Benefits over the old file-based approach:
+//   - Survives server restarts and redeployments
+//   - No unbounded file growth
+//   - Visible and queryable from the Supabase dashboard
+//   - Works correctly with multiple backend instances
+//
+// Fallback: if the table doesn't exist yet, the code falls back to the local
+// JSON file so existing deployments keep working until the table is created.
 
 type MilestoneLog = Record<string, string[]>; // periodId → milestone keys[]
 
-function readLog(): MilestoneLog {
+// ── Supabase-backed log helpers ───────────────────────────────────────────────
+
+async function readLogFromSupabase(): Promise<MilestoneLog | null> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("payment_milestone_log")
+      .select("period_id, milestone");
+
+    if (error) {
+      // Table likely doesn't exist yet — caller will fall back to file
+      console.warn("[payment-reminders] Supabase milestone log unavailable:", error.message);
+      return null;
+    }
+
+    const log: MilestoneLog = {};
+    for (const row of data ?? []) {
+      if (!log[row.period_id]) log[row.period_id] = [];
+      log[row.period_id]!.push(row.milestone);
+    }
+    return log;
+  } catch (err) {
+    console.warn("[payment-reminders] Supabase milestone log read error:", err);
+    return null;
+  }
+}
+
+async function markSentInSupabase(periodId: string, milestones: string[]): Promise<boolean> {
+  if (milestones.length === 0) return true;
+  try {
+    const rows = milestones.map((milestone) => ({
+      period_id: periodId,
+      milestone,
+      fired_at: new Date().toISOString(),
+    }));
+    const { error } = await supabaseAdmin
+      .from("payment_milestone_log")
+      .upsert(rows, { onConflict: "period_id,milestone" });
+
+    if (error) {
+      console.warn("[payment-reminders] Supabase milestone write error:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("[payment-reminders] Supabase milestone upsert error:", err);
+    return false;
+  }
+}
+
+// ── File-based fallback (used only when Supabase table isn't available yet) ───
+
+const LOG_PATH = join(import.meta.dir, "../../../data/payment-milestone-log.json");
+
+function readLogFromFile(): MilestoneLog {
   try {
     const text = readFileSync(LOG_PATH, "utf-8");
     return JSON.parse(text) as MilestoneLog;
@@ -45,14 +113,24 @@ function readLog(): MilestoneLog {
   }
 }
 
-function writeLog(log: MilestoneLog): void {
+function writeLogToFile(log: MilestoneLog): void {
   try {
     Bun.write(LOG_PATH, JSON.stringify(log, null, 2));
   } catch (err) {
-    console.error("[payment-reminders] Failed to persist milestone log:", err);
+    console.error("[payment-reminders] Failed to persist milestone log to file:", err);
   }
 }
 
+// ── Unified read/write helpers (Supabase with file fallback) ──────────────────
+
+async function readLog(): Promise<{ log: MilestoneLog; usingSupabase: boolean }> {
+  const supabaseLog = await readLogFromSupabase();
+  if (supabaseLog !== null) {
+    return { log: supabaseLog, usingSupabase: true };
+  }
+  console.warn("[payment-reminders] Falling back to file-based milestone log.");
+  return { log: readLogFromFile(), usingSupabase: false };
+}
 
 // ─── Push notification helper ─────────────────────────────────────────────────
 async function sendReminderToPlayers(
@@ -98,9 +176,8 @@ export async function checkAndSendPaymentReminders() {
       return;
     }
 
-    // 2. Read the milestone log ONCE upfront (not per-period)
-    const log = readLog();
-    let logDirty = false;
+    // 2. Read the milestone log ONCE upfront
+    const { log, usingSupabase } = await readLog();
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -156,44 +233,53 @@ export async function checkAndSendPaymentReminders() {
       if (pp.player_id) unpaidByPeriod.get(pp.payment_period_id)!.push(pp.player_id);
     }
 
-    // 6. Second pass: send notifications using in-memory grouped data
+    // 6. Second pass: send notifications and collect all newly-fired milestones
+    // Track new milestones per period so we can write them in one batch
+    const newMilestonesByPeriod = new Map<string, string[]>();
+
     for (const { period, daysUntilDue, dueDate, milestonesToFire } of workList) {
       const unpaidPlayerIds = unpaidByPeriod.get(period.id) ?? [];
 
-      if (unpaidPlayerIds.length === 0) {
-        // All paid — mark milestones done to prevent future checks
-        for (const milestone of milestonesToFire) {
-          if (!log[period.id]) log[period.id] = [];
-          if (!log[period.id]!.includes(milestone)) {
-            log[period.id]!.push(milestone);
-            logDirty = true;
-          }
-        }
-        continue;
-      }
-
       for (const milestone of milestonesToFire) {
-        const { title, body } = buildReminderMessage(daysUntilDue, period.title, period.amount, dueDate);
-
-        console.log(`[payment-reminders] Firing milestone "${milestone}" for period "${period.title}" to ${unpaidPlayerIds.length} player(s)`);
-
-        await sendReminderToPlayers(unpaidPlayerIds, title, body, {
-          type: "payment_reminder",
-          periodId: period.id,
-          teamId: period.team_id,
-          milestone,
-        });
-
-        if (!log[period.id]) log[period.id] = [];
-        if (!log[period.id]!.includes(milestone)) {
-          log[period.id]!.push(milestone);
-          logDirty = true;
+        if (unpaidPlayerIds.length > 0) {
+          const { title, body } = buildReminderMessage(daysUntilDue, period.title, period.amount, dueDate);
+          console.log(`[payment-reminders] Firing milestone "${milestone}" for period "${period.title}" to ${unpaidPlayerIds.length} player(s)`);
+          await sendReminderToPlayers(unpaidPlayerIds, title, body, {
+            type: "payment_reminder",
+            periodId: period.id,
+            teamId: period.team_id,
+            milestone,
+          });
+        } else {
+          // All paid — still mark as sent so we stop checking
+          console.log(`[payment-reminders] Period "${period.title}" fully paid — marking "${milestone}" as sent`);
         }
+
+        if (!newMilestonesByPeriod.has(period.id)) newMilestonesByPeriod.set(period.id, []);
+        newMilestonesByPeriod.get(period.id)!.push(milestone);
       }
     }
 
-    // 7. Write the log ONCE at the end if anything changed
-    if (logDirty) writeLog(log);
+    // 7. Persist newly-fired milestones in one pass
+    if (newMilestonesByPeriod.size > 0) {
+      if (usingSupabase) {
+        // Batch upsert all new milestones in parallel (one upsert per period)
+        await Promise.all(
+          Array.from(newMilestonesByPeriod.entries()).map(([periodId, milestones]) =>
+            markSentInSupabase(periodId, milestones)
+          )
+        );
+      } else {
+        // File fallback: update the in-memory log and write once
+        for (const [periodId, milestones] of newMilestonesByPeriod) {
+          if (!log[periodId]) log[periodId] = [];
+          for (const m of milestones) {
+            if (!log[periodId]!.includes(m)) log[periodId]!.push(m);
+          }
+        }
+        writeLogToFile(log);
+      }
+    }
 
     console.log("[payment-reminders] Scheduled check complete.");
   } catch (err) {
@@ -223,12 +309,10 @@ export function startPaymentReminderScheduler() {
 /**
  * POST /api/payments/reminders/send-manual
  * Manually trigger a payment reminder for a specific period to all unpaid players.
- * Called from the admin UI when they tap "Send Reminder".
  */
 paymentRemindersRouter.post("/send-manual", zValidator("json", SendManualSchema), async (c) => {
   const { periodId, teamId } = c.req.valid("json");
 
-  // Fetch period details
   const { data: period, error: periodError } = await supabaseAdmin
     .from("payment_periods")
     .select("id, title, amount, due_date")
@@ -239,7 +323,6 @@ paymentRemindersRouter.post("/send-manual", zValidator("json", SendManualSchema)
     return c.json({ error: "Payment period not found" }, 404);
   }
 
-  // Get unpaid players
   const { data: playerPayments, error: ppError } = await supabaseAdmin
     .from("player_payments")
     .select("player_id, status")
@@ -258,7 +341,6 @@ paymentRemindersRouter.post("/send-manual", zValidator("json", SendManualSchema)
     return c.json({ message: "All players have paid — no reminders sent", sent: 0 });
   }
 
-  // Build message
   const dueDateStr = period.due_date
     ? new Date(period.due_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
     : null;
@@ -282,8 +364,7 @@ paymentRemindersRouter.post("/send-manual", zValidator("json", SendManualSchema)
 
 /**
  * POST /api/payments/reminders/on-create
- * Called when a payment period with a due date is created.
- * Sends an immediate "new payment period" notification to all assigned players.
+ * Called when a payment period is created. Sends an immediate notification.
  */
 paymentRemindersRouter.post("/on-create", zValidator("json", OnCreateSchema), async (c) => {
   const { periodId, teamId, playerIds, title, amount, dueDate = null } = c.req.valid("json");
@@ -305,12 +386,15 @@ paymentRemindersRouter.post("/on-create", zValidator("json", OnCreateSchema), as
     teamId,
   });
 
-  // Mark "created" milestone as sent (read-then-write in one pass)
-  const log = readLog();
-  if (!log[periodId]) log[periodId] = [];
-  if (!log[periodId]!.includes("created")) {
-    log[periodId]!.push("created");
-    writeLog(log);
+  // Mark "created" milestone — try Supabase first, fall back to file
+  const wrote = await markSentInSupabase(periodId, ["created"]);
+  if (!wrote) {
+    const log = readLogFromFile();
+    if (!log[periodId]) log[periodId] = [];
+    if (!log[periodId]!.includes("created")) {
+      log[periodId]!.push("created");
+      writeLogToFile(log);
+    }
   }
 
   return c.json({ message: "Creation notifications sent", sent: playerIds.length });
