@@ -1,6 +1,7 @@
 import {
   View,
   Text,
+  Image,
   ScrollView,
   Pressable,
   Share,
@@ -619,6 +620,7 @@ export default function PlayerProfileScreen() {
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const teamName = useTeamStore((s) => s.teamName);
+  const teamLogo = useTeamStore((s) => s.teamSettings?.teamLogo ?? null);
   const games = useTeamStore((s) => s.games);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
 
@@ -747,33 +749,25 @@ export default function PlayerProfileScreen() {
             >
               {/* Top section wrapper — watermark is scoped here so it centers on the player info */}
               <View>
-                {/* Jersey number watermark — centered within this section */}
-                <View style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 130,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0.07,
-                }}>
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.3}
-                    style={{
-                      color: '#67e8f9',
-                      fontSize: 130,
-                      fontWeight: '900',
-                      letterSpacing: -6,
-                      width: 120,
-                      textAlign: 'center',
-                    }}
-                  >
-                    {player.number || '0'}
-                  </Text>
-                </View>
+                {/* Team logo watermark — centered in the right section */}
+                {teamLogo ? (
+                  <View style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 130,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0.18,
+                  }}>
+                    <Image
+                      source={{ uri: teamLogo }}
+                      style={{ width: 90, height: 90 }}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ) : null}
 
                 {/* Top cyan accent line */}
                 <View style={{ height: 3, borderRadius: 3, marginHorizontal: 32, marginTop: 0, overflow: 'hidden' }}>
