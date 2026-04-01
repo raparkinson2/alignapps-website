@@ -1016,7 +1016,6 @@ export default function PlayerProfileScreen() {
             entering={FadeInDown.delay(80).springify()}
             style={{ paddingHorizontal: 20, marginBottom: 20 }}
           >
-            <View ref={cardRef} collapsable={false}>
             <LinearGradient
               colors={['#0f1e35', '#0a1628']}
               style={{
@@ -1153,7 +1152,6 @@ export default function PlayerProfileScreen() {
                 </View>
               </View>
             </LinearGradient>
-            </View>
           </Animated.View>
 
           {/* ── Stats Table ───────────────────────────────────────────────── */}
@@ -1319,6 +1317,148 @@ export default function PlayerProfileScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
+
+      {/* ── Offscreen sharing poster ─────────────────────────────────── */}
+      {player && (
+        <View
+          ref={cardRef}
+          collapsable={false}
+          style={{
+            position: 'absolute',
+            left: -SCREEN_WIDTH * 3,
+            width: SCREEN_WIDTH,
+            backgroundColor: '#080c14',
+          }}
+        >
+          {/* Cyan top accent */}
+          <View style={{ height: 3, overflow: 'hidden', marginHorizontal: 32, marginTop: 24 }}>
+            <LinearGradient
+              colors={['transparent', '#67e8f9', 'transparent']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={{ height: 3 }}
+            />
+          </View>
+
+          {/* Hero card */}
+          <LinearGradient
+            colors={['#0f1e35', '#0a1628']}
+            style={{
+              margin: 20, marginTop: 12, borderRadius: 28, overflow: 'hidden',
+              borderWidth: 1, borderColor: 'rgba(103,232,249,0.12)',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 24, gap: 18 }}>
+              {/* Initials avatar */}
+              <View style={{
+                width: 80, height: 80, borderRadius: 40,
+                backgroundColor: '#1e3a5f',
+                borderWidth: 2.5, borderColor: '#67e8f9',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ color: '#67e8f9', fontSize: 26, fontWeight: '900' }}>
+                  {(player.firstName?.[0] ?? '') + (player.lastName?.[0] ?? '')}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>
+                  {player.firstName} {player.lastName}
+                </Text>
+                <Text style={{ color: '#67e8f9', fontSize: 13, fontWeight: '600', marginTop: 2 }}>
+                  {player.position}
+                </Text>
+                <Text style={{ color: '#475569', fontSize: 12, marginTop: 4 }}>
+                  {teamName} · #{player.number}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginHorizontal: 24 }} />
+
+            {/* Attendance row */}
+            <View style={{ flexDirection: 'row', paddingHorizontal: 24, paddingVertical: 16 }}>
+              {[
+                { value: String(totalInvited), label: 'Invited', color: '#fff' },
+                { value: String(totalCheckedIn), label: 'Games Played', color: '#fff' },
+                {
+                  value: `${attendancePct}%`, label: 'Attendance',
+                  color: attendancePct >= 80 ? '#22c55e' : attendancePct >= 50 ? '#f59e0b' : '#ef4444',
+                },
+              ].map((stat, i) => (
+                <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={{ color: stat.color, fontWeight: '800', fontSize: 20 }}>{stat.value}</Text>
+                  <Text style={{ color: '#475569', fontSize: 10, marginTop: 2 }}>{stat.label}</Text>
+                </View>
+              ))}
+            </View>
+          </LinearGradient>
+
+          {/* Season stats */}
+          {(skaterTable ?? goalieTable) !== null && (() => {
+            const table = skaterTable ?? goalieTable!;
+            const row = table.rows.find((r) => r.isCurrent) ?? table.rows[0];
+            if (!row) return null;
+            return (
+              <View style={{
+                marginHorizontal: 20, marginBottom: 16,
+                backgroundColor: '#0f172a', borderRadius: 16, padding: 16,
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+              }}>
+                <Text style={{
+                  color: '#475569', fontSize: 10, fontWeight: '700',
+                  letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 12,
+                }}>
+                  {currentSeasonName ?? 'Current Season'}
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+                  {table.headers.map((h, i) => (
+                    <View key={h} style={{ alignItems: 'center', minWidth: 44 }}>
+                      <Text style={{
+                        color: table.highlightIndices.includes(i) ? (table.colors[i] ?? '#67e8f9') : '#94a3b8',
+                        fontWeight: '700', fontSize: 18,
+                      }}>
+                        {row.values[i]}
+                      </Text>
+                      <Text style={{ color: '#475569', fontSize: 10, marginTop: 1 }}>{h}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            );
+          })()}
+
+          {/* Trophies */}
+          {trophies.length > 0 && (
+            <View style={{ marginHorizontal: 20, marginBottom: 20 }}>
+              <Text style={{
+                color: '#475569', fontSize: 10, fontWeight: '700',
+                letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10,
+              }}>
+                Trophies
+              </Text>
+              {trophies.slice(0, 4).map((trophy) => (
+                <View
+                  key={trophy.id}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center',
+                    backgroundColor: '#0f172a', borderRadius: 12,
+                    padding: 12, marginBottom: 8, borderWidth: 1, borderColor: trophy.border, gap: 10,
+                  }}
+                >
+                  <Text style={{ color: trophy.color, fontWeight: '700', fontSize: 13 }}>{trophy.title}</Text>
+                  <Text style={{ color: '#475569', fontSize: 12, flex: 1 }}>{trophy.subtitle}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Footer */}
+          <View style={{ alignItems: 'center', paddingBottom: 28, paddingTop: 4 }}>
+            <Text style={{ color: '#1e3a5f', fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }}>
+              ALIGNSPORTS
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
