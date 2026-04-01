@@ -14,6 +14,7 @@ import { supabase } from './supabase';
 import { useTeamStore } from './store';
 import type { Game, Event, Player, ChatMessage, PaymentPeriod, PlayerPayment, PaymentEntry, Photo, AppNotification, Poll, TeamLink, Team, TeamSettings } from './store';
 import { BACKEND_URL } from './config';
+import { fetchAndSaveWeather } from './weather-service';
 
 // Suppress realtime payment refetches for a short window after a local push
 // to prevent the "appear → disappear → reappear" flicker loop.
@@ -334,6 +335,20 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     // Clear the syncing flag so the UI stops showing the loading state
     useTeamStore.getState().setIsSyncing(false);
     console.log(`SYNC: Phase 1 done — ${players.length} players, ${games.length} games, ${events.length} events`);
+
+    // Proactively fetch weather for past games that haven't been fetched yet.
+    // Runs in the background — doesn't block UI. Fires regardless of whether a result is recorded.
+    const today = new Date().toISOString().split('T')[0];
+    const weatherNeeded = games.filter(
+      (g) => !g.weatherAutoFetched && g.date.split('T')[0] <= today && (g.address || g.location)
+    );
+    if (weatherNeeded.length > 0) {
+      console.log(`SYNC: Pre-fetching weather for ${weatherNeeded.length} past game(s)`);
+      // Stagger fetches to avoid hammering the API
+      weatherNeeded.forEach((g, i) => {
+        setTimeout(() => fetchAndSaveWeather(g, teamId).catch(() => {}), i * 1500);
+      });
+    }
 
     // ── PHASE 2: Background data — photos, payments, polls, links ────────────
     // These are fetched after the UI is already interactive. No loading spinner.

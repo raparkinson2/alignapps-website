@@ -1,5 +1,5 @@
 /**
- * Weather Service — auto-fetches historical weather for completed games.
+ * Weather Service — auto-fetches historical weather for past games.
  * Uses Open-Meteo (free, no API key) geocoding + archive API.
  *
  * Weather codes (WMO) → our app conditions:
@@ -9,7 +9,7 @@
  *   51-67, 80-82 → rain
  *   71-77, 85-86 → snow
  *
- * Call fetchAndSaveWeather(game, teamId) after a game score is recorded.
+ * Call fetchAndSaveWeather(game, teamId) for any past game.
  * It is a no-op if weather already fetched or game has no address.
  */
 
@@ -69,13 +69,11 @@ function cToF(c: number): number {
 /**
  * Main entry point.
  * Fetches weather for a past game and saves it to Supabase + local store.
- * No-op if: weather already fetched, game is in future, game has no address/location,
- *           or game has no final score (not yet complete).
+ * No-op if: weather already fetched, game is in future, or game has no address/location.
  */
 export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<void> {
   // Guard conditions
   if (game.weatherAutoFetched) return;
-  if (!game.gameResult) return; // Only fetch for completed games
   if (!game.date) return;
 
   const gameDate = new Date(game.date);
