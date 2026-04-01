@@ -210,6 +210,27 @@ function computeTrophies(
     }
   }
 
+  // ── Mad Hatter (hat tricks) — hockey, soccer, lacrosse ───────────────────
+  if (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') {
+    const hatTricks = (player.gameLogs ?? []).filter((l) => {
+      const s = l.stats as unknown as Record<string, number> | undefined;
+      return (s?.goals ?? 0) >= 3;
+    }).length;
+
+    if (hatTricks >= 1) {
+      const full = Math.floor(hatTricks / 5);
+      const rem = hatTricks % 5;
+      const tallyStr = '𝄿'.repeat(full) + '|'.repeat(rem);
+      trophies.push({
+        id: 'mad-hatter',
+        icon: <Text style={{ fontSize: 15 }}>🎩</Text>,
+        title: `Mad Hatter ${tallyStr}`,
+        subtitle: `${hatTricks} hat trick${hatTricks !== 1 ? 's' : ''} — 3+ goals in a single game`,
+        color: '#818cf8', bg: 'rgba(129,140,248,0.1)', border: 'rgba(129,140,248,0.3)',
+      });
+    }
+  }
+
   // ── Goalie Trophies (hockey & soccer) ────────────────────────────────────────
   const isGoalie = (sport === 'hockey' || sport === 'soccer') && player.goalieStats;
   if (isGoalie && player.goalieStats) {
