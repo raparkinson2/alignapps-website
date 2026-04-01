@@ -983,8 +983,9 @@ export default function TeamStatsScreen() {
                       <Text style={{ color: '#fff', fontSize: 13, flex: 1 }} numberOfLines={1}>
                         {formatName(player)}
                       </Text>
-                      {isLeader && <Crown size={10} color="#fbbf24" />}
-                      {isHot && <Flame size={10} color="#f97316" style={{ marginLeft: isLeader ? 2 : 0 }} />}
+                      <ChevronRight size={12} color="#475569" style={{ flexShrink: 0 }} />
+                      {isLeader && <Crown size={10} color="#fbbf24" style={{ marginLeft: 2 }} />}
+                      {isHot && <Flame size={10} color="#f97316" style={{ marginLeft: 2 }} />}
                     </Pressable>
                   );
                 })}
@@ -1037,8 +1038,13 @@ export default function TeamStatsScreen() {
                       : (sport === 'baseball' || sport === 'softball') ? sortedPlayers.some(p => playerIsPitcher(p)) : false;
                     const showBorder = index !== arr.length - 1 || hasMore;
                     return (
-                      <View
+                      <Pressable
                         key={player.id}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setViewPlayer(player);
+                          setViewStatMode(sport === 'baseball' || sport === 'softball' ? 'batter' : 'skater');
+                        }}
                         style={{
                           height: 44, flexDirection: 'row', alignItems: 'center', paddingRight: 12,
                           borderBottomWidth: showBorder ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)',
@@ -1066,7 +1072,7 @@ export default function TeamStatsScreen() {
                             </View>
                           );
                         })}
-                      </View>
+                      </Pressable>
                     );
                   })}
                 </View>
