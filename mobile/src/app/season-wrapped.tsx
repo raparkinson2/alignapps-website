@@ -6,6 +6,7 @@ import {
   Dimensions,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -168,20 +169,18 @@ export default function SeasonWrappedScreen() {
   );
   const firstName = currentPlayer?.firstName ?? 'Player';
 
-  // ── Attendance — check-in based, consistent with Attendance screen ─────────
-  const { attendancePct, gamesCheckedIn, gamesInvited, totalTeamGames } = useMemo(() => {
+  // ── Attendance — gameLogs / invited (source of truth = stats entered) ───────
+  const { attendancePct, gamesPlayed, gamesInvited, totalTeamGames } = useMemo(() => {
     const completed = games.filter((g) => g.gameResult);
     const total = completed.length;
-    if (!currentPlayer) return { attendancePct: 0, gamesCheckedIn: 0, gamesInvited: 0, totalTeamGames: total };
+    if (!currentPlayer) return { attendancePct: 0, gamesPlayed: 0, gamesInvited: 0, totalTeamGames: total };
     const invited = completed.filter((g) => g.invitedPlayers?.includes(currentPlayer.id));
-    const checkedIn = invited.filter((g) => g.checkedInPlayers?.includes(currentPlayer.id));
-    const pct = invited.length > 0 ? Math.round((checkedIn.length / invited.length) * 100) : 0;
-    return {
-      attendancePct: Math.min(100, pct),
-      gamesCheckedIn: checkedIn.length,
-      gamesInvited: invited.length,
-      totalTeamGames: total,
-    };
+    const invitedIds = new Set(invited.map((g) => g.id));
+    const played = (currentPlayer.gameLogs ?? []).filter(
+      (log) => !log.gameId || invitedIds.has(log.gameId),
+    ).length;
+    const pct = invited.length > 0 ? Math.min(100, Math.round((played / invited.length) * 100)) : 0;
+    return { attendancePct: pct, gamesPlayed: played, gamesInvited: invited.length, totalTeamGames: total };
   }, [games, currentPlayer]);
 
   // ── Team record ────────────────────────────────────────────────────────────
@@ -341,6 +340,8 @@ export default function SeasonWrappedScreen() {
   const remainingRef = useRef(SLIDE_DURATION);
   const isPausedRef = useRef(false);
   const cardRef = useRef<View>(null);
+  const posterRef = useRef<View>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const goToSlide = useCallback((index: number) => {
     if (index >= TOTAL) { router.back(); return; }
@@ -395,12 +396,15 @@ export default function SeasonWrappedScreen() {
     goToSlide(currentSlide + 1);
   }, [currentSlide, goToSlide]);
 
-  // ── Share: capture the summary card ───────────────────────────────────────
+  // ── Share: capture the full wrapped poster ────────────────────────────────
   const handleShare = useCallback(async () => {
-    if (!cardRef.current) return;
+    if (!posterRef.current) return;
     try {
+      setIsSharing(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const uri = await captureRef(cardRef, { format: 'png', quality: 1.0 });
+      // Small delay to ensure the poster is fully laid out before capture
+      await new Promise((r) => setTimeout(r, 150));
+      const uri = await captureRef(posterRef, { format: 'png', quality: 1.0 });
       const available = await Sharing.isAvailableAsync();
       if (available) {
         await Sharing.shareAsync(uri, { dialogTitle: 'My Season Wrapped', mimeType: 'image/png' });
@@ -409,6 +413,8 @@ export default function SeasonWrappedScreen() {
       }
     } catch {
       Alert.alert('Could not share', 'Try again in a moment.');
+    } finally {
+      setIsSharing(false);
     }
   }, []);
 
@@ -485,7 +491,7 @@ export default function SeasonWrappedScreen() {
             <View style={[styles.statCard, { borderColor: hexToRgba('#38bdf8', 0.3) }]}>
               <Text style={[styles.bigNumber, { color: '#38bdf8' }]}>{attendancePct}%</Text>
               <Text style={styles.statLabel}>Attendance Rate</Text>
-              <Text style={styles.statSub}>{gamesCheckedIn} of {gamesInvited} games attended</Text>
+              <Text style={styles.statSub}>{gamesPlayed} of {gamesInvited} games attended</Text>
             </View>
             {attendancePct >= 90 && (
               <Animated.View entering={FadeInUp.delay(400)} style={styles.badgeRow}>
@@ -722,7 +728,7 @@ export default function SeasonWrappedScreen() {
 
       // ── Share Card ─────────────────────────────────────────────────────────
       case 'share': {
-        const gp = currentPlayer?.gameLogs?.length ?? gamesCheckedIn;
+        const gp = currentPlayer?.gameLogs?.length ?? gamesPlayed;
         const pimVal = disciplineData?.value ?? 0;
         return (
           <Animated.View key="share" entering={FadeInDown.delay(200).springify()} style={[styles.slideContent, { justifyContent: 'flex-start', paddingTop: 10 }]}>
@@ -830,14 +836,19 @@ export default function SeasonWrappedScreen() {
             {/* Share button — high contrast, always visible */}
             <Pressable
               onPress={handleShare}
+              disabled={isSharing}
               style={({ pressed }) => [
                 styles.shareButton,
-                { opacity: pressed ? 0.85 : 1 },
+                { opacity: pressed || isSharing ? 0.75 : 1 },
               ]}
             >
-              <Share2 size={18} color="#ffffff" />
+              {isSharing ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Share2 size={18} color="#ffffff" />
+              )}
               <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 16, marginLeft: 8 }}>
-                Share to Social
+                {isSharing ? 'Preparing...' : 'Share to Social'}
               </Text>
             </Pressable>
           </Animated.View>
@@ -899,6 +910,173 @@ export default function SeasonWrappedScreen() {
           </View>
         )}
       </SafeAreaView>
+
+      {/* ── Offscreen Wrapped Poster (captured for sharing) ───────────────── */}
+      <View
+        ref={posterRef}
+        collapsable={false}
+        style={{
+          position: 'absolute',
+          left: -SCREEN_WIDTH * 3,
+          width: SCREEN_WIDTH,
+          backgroundColor: '#020617',
+        }}
+      >
+        <LinearGradient
+          colors={[hexToRgba(teamColor, 0.45), '#020617', hexToRgba(teamColor, 0.2)]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ width: '100%', padding: 28, paddingBottom: 36 }}
+        >
+          {/* Header */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+            <View>
+              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 2.5, textTransform: 'uppercase' }}>
+                Season Wrapped
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '700', marginTop: 2 }}>
+                {teamSettings.currentSeasonName ?? 'This Season'}
+              </Text>
+            </View>
+            <TrendingUp size={20} color={teamColor} />
+          </View>
+
+          {/* Player identity */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2.5, borderColor: teamColor, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: '#ffffff', fontSize: 26, fontWeight: '900' }}>{currentPlayer?.number || '—'}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#ffffff', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>
+                {currentPlayer ? getPlayerName(currentPlayer) : firstName}
+              </Text>
+              <Text style={{ color: hexToRgba(teamColor, 0.9), fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 }}>
+                {teamName}
+              </Text>
+            </View>
+          </View>
+
+          {/* Season stats grid */}
+          <View style={posterStyles.section}>
+            <Text style={posterStyles.sectionLabel}>Season Stats</Text>
+            <View style={posterStyles.statsGrid}>
+              {hasGoalsAssists ? (
+                <>
+                  <View style={posterStyles.statCell}>
+                    <Text style={[posterStyles.statNum, { color: '#f97316' }]}>{topStat.value}</Text>
+                    <Text style={posterStyles.statLbl}>PTS</Text>
+                  </View>
+                  <View style={posterStyles.divider} />
+                  <View style={posterStyles.statCell}>
+                    <Text style={posterStyles.statNum}>{goals}</Text>
+                    <Text style={posterStyles.statLbl}>G</Text>
+                  </View>
+                  <View style={posterStyles.divider} />
+                  <View style={posterStyles.statCell}>
+                    <Text style={posterStyles.statNum}>{assists}</Text>
+                    <Text style={posterStyles.statLbl}>AST</Text>
+                  </View>
+                  <View style={posterStyles.divider} />
+                </>
+              ) : (
+                <>
+                  <View style={posterStyles.statCell}>
+                    <Text style={[posterStyles.statNum, { color: '#f97316' }]}>{topStat.value}</Text>
+                    <Text style={posterStyles.statLbl}>{statAbbrev(topStat.label)}</Text>
+                  </View>
+                  <View style={posterStyles.divider} />
+                </>
+              )}
+              <View style={posterStyles.statCell}>
+                <Text style={posterStyles.statNum}>{gamesPlayed}</Text>
+                <Text style={posterStyles.statLbl}>GP</Text>
+              </View>
+              <View style={posterStyles.divider} />
+              <View style={posterStyles.statCell}>
+                <Text style={[posterStyles.statNum, { color: attendancePct >= 90 ? '#22c55e' : attendancePct >= 70 ? '#f59e0b' : '#ef4444' }]}>
+                  {attendancePct}%
+                </Text>
+                <Text style={posterStyles.statLbl}>ATT</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Team record */}
+          <View style={posterStyles.section}>
+            <Text style={posterStyles.sectionLabel}>Season Record</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+              <Text style={{ color: '#22c55e', fontSize: 36, fontWeight: '900', letterSpacing: -1 }}>{teamRecord.wins}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 24, fontWeight: '300' }}>W</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 24, marginHorizontal: 4 }}>–</Text>
+              <Text style={{ color: '#ef4444', fontSize: 36, fontWeight: '900', letterSpacing: -1 }}>{teamRecord.losses}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 24, fontWeight: '300' }}>L</Text>
+              {teamRecord.ties > 0 && (
+                <>
+                  <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 24, marginHorizontal: 4 }}>–</Text>
+                  <Text style={{ color: '#94a3b8', fontSize: 36, fontWeight: '900', letterSpacing: -1 }}>{teamRecord.ties}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 24, fontWeight: '300' }}>T</Text>
+                </>
+              )}
+            </View>
+          </View>
+
+          {/* Win streak */}
+          {longestWinStreak >= 2 && (
+            <View style={posterStyles.section}>
+              <Text style={posterStyles.sectionLabel}>Longest Win Streak</Text>
+              <Text style={{ color: '#22c55e', fontSize: 32, fontWeight: '900', letterSpacing: -0.5, marginTop: 6 }}>
+                {longestWinStreak} in a Row
+              </Text>
+            </View>
+          )}
+
+          {/* Trophies */}
+          {earnedTrophies.length > 0 && (
+            <View style={posterStyles.section}>
+              <Text style={posterStyles.sectionLabel}>Trophy Cabinet · {earnedTrophies.length}</Text>
+              <View style={{ gap: 8, marginTop: 10 }}>
+                {earnedTrophies.map((t) => (
+                  <View key={t.title} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.color }} />
+                    <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>{t.title}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>· {t.subtitle}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Best game */}
+          {bestGame && (
+            <View style={posterStyles.section}>
+              <Text style={posterStyles.sectionLabel}>Best Performance</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 }}>
+                <Text style={{ color: '#f59e0b', fontSize: 32, fontWeight: '900', letterSpacing: -0.5 }}>
+                  {bestGame.value} {sport === 'basketball' ? 'PTS' : sport === 'baseball' || sport === 'softball' ? 'H' : 'PTS'}
+                </Text>
+                {bestGame.game?.opponent ? (
+                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>vs {bestGame.game.opponent}</Text>
+                ) : null}
+              </View>
+              {hasGoalsAssists && (bestGame.goals > 0 || bestGame.assists > 0) && (
+                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 }}>
+                  {bestGame.goals}G · {bestGame.assists}A
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Footer */}
+          <View style={{ marginTop: 28, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', paddingTop: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 9, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+              Align Sports
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 9, letterSpacing: 0.5 }}>
+              alignsports.app
+            </Text>
+          </View>
+        </LinearGradient>
+      </View>
     </View>
   );
 }
@@ -1069,5 +1247,55 @@ const styles = StyleSheet.create({
     backgroundColor: '#1d4ed8',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.2)',
+  },
+});
+
+const posterStyles = StyleSheet.create({
+  section: {
+    marginTop: 22,
+    paddingTop: 18,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.07)',
+  },
+  sectionLabel: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+  statCell: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNum: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  statLbl: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginTop: 3,
+  },
+  divider: {
+    width: 1,
+    height: 36,
+    backgroundColor: 'rgba(255,255,255,0.09)',
   },
 });

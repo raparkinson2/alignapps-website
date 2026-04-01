@@ -56,22 +56,12 @@ export default function StatsAnalyticsScreen() {
   }, [currentPlayer]);
 
   const hasEnoughGames = useMemo(() => {
-    if (!currentPlayerId) return false;
-    const fromLogs = currentPlayer?.gameLogs?.length ?? 0;
-    const fromCheckins = games.filter((g) =>
-      g.gameResult && g.checkedInPlayers?.includes(currentPlayerId)
-    ).length;
-    return Math.max(fromLogs, fromCheckins) >= 5;
-  }, [currentPlayer, games, currentPlayerId]);
+    return (currentPlayer?.gameLogs?.length ?? 0) >= 5;
+  }, [currentPlayer]);
 
   const gamesAttended = useMemo(() => {
-    if (!currentPlayerId) return 0;
-    const fromLogs = currentPlayer?.gameLogs?.length ?? 0;
-    const fromCheckins = games.filter((g) =>
-      g.gameResult && g.checkedInPlayers?.includes(currentPlayerId)
-    ).length;
-    return Math.max(fromLogs, fromCheckins);
-  }, [currentPlayer, games, currentPlayerId]);
+    return currentPlayer?.gameLogs?.length ?? 0;
+  }, [currentPlayer]);
 
   // Goals/Points For & Against from logged game scores
   const { goalsFor, goalsAgainst, differential } = useMemo(() => {
