@@ -693,18 +693,14 @@ function AdminScreen() {
               </Pressable>
             )}
 
-            {/* Refreshments */}
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setIsRefreshmentModalVisible(true);
-              }}
-              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
-            >
+            {/* Refreshments Toggle */}
+            <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <View className="bg-cyan-500/20 p-2 rounded-full">
-                    <JuiceBoxIcon size={20} color="#67e8f9" />
+                    {teamSettings.showRefreshmentDuty !== false && teamSettings.refreshmentDutyIs21Plus
+                      ? <Beer size={20} color="#67e8f9" />
+                      : <JuiceBoxIcon size={20} color="#67e8f9" />}
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="text-white font-semibold">Refreshments</Text>
@@ -713,9 +709,45 @@ function AdminScreen() {
                     </Text>
                   </View>
                 </View>
-                <ChevronRight size={20} color="#64748b" />
+                <Switch
+                  value={teamSettings.showRefreshmentDuty !== false}
+                  onValueChange={(value) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTeamSettingsAndSync({ showRefreshmentDuty: value });
+                  }}
+                  trackColor={{ false: '#334155', true: '#22c55e' }}
+                  thumbColor="#ffffff"
+                />
               </View>
-            </Pressable>
+            </View>
+
+            {/* 21+ Beverages sub-toggle */}
+            {teamSettings.showRefreshmentDuty !== false && (
+              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/30 ml-4">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-amber-500/20 p-2 rounded-full">
+                      <Beer size={20} color="#f59e0b" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-white font-semibold">21+ Beverages</Text>
+                      <Text className="text-slate-400 text-sm">
+                        {teamSettings.refreshmentDutyIs21Plus ? 'Showing beer mug icon' : 'Showing juice box icon'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={teamSettings.refreshmentDutyIs21Plus === true}
+                    onValueChange={(value) => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTeamSettingsAndSync({ refreshmentDutyIs21Plus: value });
+                    }}
+                    trackColor={{ false: '#334155', true: '#f59e0b' }}
+                    thumbColor="#ffffff"
+                  />
+                </View>
+              </View>
+            )}
           </Animated.View>
 
           {/* Performance Section */}
