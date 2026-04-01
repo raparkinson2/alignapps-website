@@ -470,15 +470,8 @@ function AdminScreen() {
                 </View>
               </View>
             </Pressable>
-          </Animated.View>
 
-          {/* Team Structure Section */}
-          <Animated.View entering={FadeInDown.delay(150).springify()}>
-            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4 mt-2">
-              Team Structure
-            </Text>
-
-            {/* Manage Team Menu Item */}
+            {/* Manage Team */}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -499,8 +492,15 @@ function AdminScreen() {
                 <ChevronRight size={20} color="#64748b" />
               </View>
             </Pressable>
+          </Animated.View>
 
-            {/* Manage Roles Menu Item */}
+          {/* Configuration Section */}
+          <Animated.View entering={FadeInDown.delay(150).springify()}>
+            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4 mt-2">
+              Configuration
+            </Text>
+
+            {/* Manage Roles */}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -583,13 +583,6 @@ function AdminScreen() {
                 </View>
               </View>
             )}
-          </Animated.View>
-
-          {/* Communication Section */}
-          <Animated.View entering={FadeInDown.delay(200).springify()}>
-            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4 mt-2">
-              Communication
-            </Text>
 
             {/* Team Chat Toggle */}
             <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
@@ -617,161 +610,8 @@ function AdminScreen() {
               </View>
             </View>
 
-            {/* Email Team Button - commented out, keeping code for future use
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                const playersWithEmail = players.filter(p => p.email && p.email.trim());
-                if (playersWithEmail.length === 0) {
-                  Alert.alert('No Emails', 'No players have email addresses. Add emails to your roster to use this feature.');
-                  return;
-                }
-                setSelectedRecipients(playersWithEmail.map(p => p.id));
-                setEmailSubject('');
-                setEmailBody('');
-                setIsEmailModalVisible(true);
-              }}
-              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                  <View className="bg-blue-500/20 p-2 rounded-full">
-                    <Send size={20} color="#3b82f6" />
-                  </View>
-                  <View className="ml-3">
-                    <Text className="text-white font-semibold">Email Team</Text>
-                    <Text className="text-slate-400 text-sm">Send an email to all players</Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color="#64748b" />
-              </View>
-            </Pressable>
-            */}
-
-            {/* Text Team Button - commented out, keeping code for future use
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                const otherPlayers = players.filter(p => p.id !== currentPlayerId);
-                const playersWithPhone = otherPlayers.filter(p => p.phone && p.phone.trim());
-                if (playersWithPhone.length === 0) {
-                  const totalOthers = otherPlayers.length;
-                  Alert.alert(
-                    'No Phone Numbers',
-                    totalOthers === 0
-                      ? 'There are no other team members to text.'
-                      : `None of the ${totalOthers} other team member${totalOthers !== 1 ? 's' : ''} have phone numbers set. Add phone numbers in the Manage Team section.`
-                  );
-                  return;
-                }
-                const phoneNumbers = playersWithPhone.map(p => p.phone!);
-                const phoneList = phoneNumbers.join(', ');
-                Alert.alert(
-                  'Text Team',
-                  `Tap "Copy & Open Messages" then paste into the "To:" field.\n\n${playersWithPhone.length} team member${playersWithPhone.length !== 1 ? 's' : ''}:\n${phoneList}`,
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Copy & Open Messages',
-                      onPress: async () => {
-                        await Clipboard.setStringAsync(phoneNumbers.join(', '));
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        Linking.openURL('sms:').catch(() => {
-                          Alert.alert('Copied!', 'Phone numbers copied to clipboard. Paste them in your Messages app to create a group text.');
-                        });
-                      },
-                    },
-                  ]
-                );
-              }}
-              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                  <View className="bg-green-500/20 p-2 rounded-full">
-                    <MessageSquare size={20} color="#22c55e" />
-                  </View>
-                  <View className="ml-3">
-                    <Text className="text-white font-semibold">Text Team</Text>
-                    <Text className="text-slate-400 text-sm">Send a group text to all players</Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color="#64748b" />
-              </View>
-            </Pressable>
-            */}
-
-            {/* Send Test Push Notification Button - commented out, APNs confirmed working
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                const otherPlayers = players.filter((p) => p.id !== currentPlayerId);
-                if (otherPlayers.length === 0) {
-                  Alert.alert('No Other Players', 'There are no other team members to send a test notification to.');
-                  return;
-                }
-                const playersWithToken = otherPlayers.filter(
-                  (p) => p.notificationPreferences?.pushToken
-                );
-                Alert.alert(
-                  'Send Test Push Notification',
-                  `This will send a test notification to all ${otherPlayers.length} team member${otherPlayers.length !== 1 ? 's' : ''} (${playersWithToken.length} have registered devices).\n\nIf players aren't receiving notifications, ask them to open the app first to register their device.`,
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Send Test',
-                      onPress: async () => {
-                        try {
-                          await sendPushToPlayers(
-                            otherPlayers.map((p) => p.id),
-                            'Test Notification',
-                            `Push notifications are working! Sent by your team admin.`,
-                            { type: 'test' }
-                          );
-                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                          Alert.alert(
-                            'Test Sent',
-                            `Notification sent to ${otherPlayers.length} player${otherPlayers.length !== 1 ? 's' : ''}. Players must have opened the app at least once to receive it.`
-                          );
-                        } catch (err) {
-                          Alert.alert('Error', 'Failed to send test notification.');
-                        }
-                      },
-                    },
-                  ]
-                );
-              }}
-              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                  <View className="bg-amber-500/20 p-2 rounded-full">
-                    <Bell size={20} color="#fbbf24" />
-                  </View>
-                  <View className="ml-3">
-                    <Text className="text-white font-semibold">Test Push Notifications</Text>
-                    <Text className="text-slate-400 text-sm">Send a test alert to all players</Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color="#64748b" />
-              </View>
-            </Pressable>
-            */}
-          </Animated.View>
-
-          {/* Team Features Section */}
-          <Animated.View entering={FadeInDown.delay(250).springify()}>
-            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4 mt-2">
-              Team Features
-            </Text>
-
-            {/* Media Subsection Label */}
-            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
-              Media
-            </Text>
-
             {/* Photos Toggle */}
-            <View className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50">
+            <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <View className="bg-cyan-500/20 p-2 rounded-full">
@@ -796,13 +636,8 @@ function AdminScreen() {
               </View>
             </View>
 
-            {/* Financial Subsection Label */}
-            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
-              Financial
-            </Text>
-
             {/* Payments Toggle */}
-            <View className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50">
+            <View className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <View className="bg-cyan-500/20 p-2 rounded-full">
@@ -827,14 +662,14 @@ function AdminScreen() {
               </View>
             </View>
 
-            {/* Stripe Payments Setup - indented sub-row under Payments */}
+            {/* Stripe Payments Setup */}
             {teamSettings.showPayments !== false && (
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push('/stripe-setup');
                 }}
-                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
+                className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
@@ -842,7 +677,7 @@ function AdminScreen() {
                       <CreditCard size={20} color="#635BFF" />
                     </View>
                     <View className="ml-3 flex-1">
-                      <Text className="text-white font-semibold">Setup Stripe Payments</Text>
+                      <Text className="text-white font-semibold">Setup Stripe</Text>
                       <Text className="text-slate-400 text-sm">
                         {teamSettings.stripeAccountId && teamSettings.stripeOnboardingComplete
                           ? 'Connected · tap to manage'
@@ -858,71 +693,7 @@ function AdminScreen() {
               </Pressable>
             )}
 
-            {/* Performance Subsection Label */}
-            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
-              Performance
-            </Text>
-
-            {/* Season Management - only show when Team Stats is enabled */}
-            {teamSettings.showTeamStats !== false && (
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setIsEndSeasonModalVisible(true);
-                }}
-                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="bg-cyan-500/20 p-2 rounded-full">
-                      <Archive size={20} color="#67e8f9" />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text className="text-white font-semibold">End Season</Text>
-                      <Text className="text-slate-400 text-sm">
-                        {teamSettings.currentSeasonName
-                          ? `Archive ${teamSettings.currentSeasonName} and reset stats`
-                          : 'Archive current stats and start fresh'}
-                      </Text>
-                    </View>
-                  </View>
-                  <ChevronRight size={20} color="#64748b" />
-                </View>
-              </Pressable>
-            )}
-
-            {/* Export Stats - premium feature */}
-            {teamSettings.showTeamStats !== false && (
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setIsExportStatsModalVisible(true);
-                }}
-                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="bg-cyan-500/20 p-2 rounded-full">
-                      <Download size={20} color="#67e8f9" />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text className="text-white font-semibold">Export Stats</Text>
-                      <Text className="text-slate-400 text-sm">
-                        Download roster stats as CSV — Premium
-                      </Text>
-                    </View>
-                  </View>
-                  <ChevronRight size={20} color="#64748b" />
-                </View>
-              </Pressable>
-            )}
-
-            {/* Culture Subsection Label */}
-            <Text className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2 ml-1">
-              Culture
-            </Text>
-
-            {/* Refreshments Nav Item */}
+            {/* Refreshments */}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -947,10 +718,69 @@ function AdminScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Data Management Section */}
-          <Animated.View entering={FadeInDown.delay(300).springify()}>
+          {/* Performance Section */}
+          {teamSettings.showTeamStats !== false && (
+            <Animated.View entering={FadeInDown.delay(200).springify()}>
+              <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4 mt-2">
+                Performance
+              </Text>
+
+              {/* Export Stats */}
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsExportStatsModalVisible(true);
+                }}
+                className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-cyan-500/20 p-2 rounded-full">
+                      <Download size={20} color="#67e8f9" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-white font-semibold">Export Stats</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Download roster stats as CSV — Premium
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={20} color="#64748b" />
+                </View>
+              </Pressable>
+
+              {/* End Season */}
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsEndSeasonModalVisible(true);
+                }}
+                className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-cyan-500/20 p-2 rounded-full">
+                      <Archive size={20} color="#67e8f9" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-white font-semibold">End Season</Text>
+                      <Text className="text-slate-400 text-sm">
+                        {teamSettings.currentSeasonName
+                          ? `Archive ${teamSettings.currentSeasonName} and reset stats`
+                          : 'Archive current stats and start fresh'}
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={20} color="#64748b" />
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Management Section */}
+          <Animated.View entering={FadeInDown.delay(250).springify()}>
             <Text className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-4 mt-2">
-              Data Management
+              Management
             </Text>
 
             {/* Transfer Ownership */}
@@ -981,7 +811,7 @@ function AdminScreen() {
               </Pressable>
             )}
 
-            {/* Erase Data Nav Item */}
+            {/* Danger Zone */}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
