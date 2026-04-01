@@ -1227,10 +1227,18 @@ function AdminScreen() {
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
             {!transferConfirmStep ? (
               <>
-                <View style={{ backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)', marginBottom: 20 }}>
+                <View style={{ backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)', marginBottom: 12 }}>
                   <Text style={{ color: '#fbbf24', fontWeight: '700', fontSize: 13, marginBottom: 4 }}>Before you transfer</Text>
                   <Text style={{ color: '#94a3b8', fontSize: 13, lineHeight: 19 }}>
-                    The new owner will have full control of the team including premium settings and the ability to transfer ownership again. You will remain an admin.
+                    The new owner will have full control of the team including the ability to transfer ownership again. You will remain an admin.
+                  </Text>
+                </View>
+
+                {/* Subscription warning */}
+                <View style={{ backgroundColor: 'rgba(248,113,113,0.07)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(248,113,113,0.2)', marginBottom: 20 }}>
+                  <Text style={{ color: '#f87171', fontWeight: '700', fontSize: 13, marginBottom: 4 }}>⚠️ About your subscription</Text>
+                  <Text style={{ color: '#94a3b8', fontSize: 13, lineHeight: 19 }}>
+                    Your Premium subscription is tied to <Text style={{ color: '#ffffff', fontWeight: '600' }}>your App Store / Google Play account</Text> and cannot be transferred.{'\n\n'}The team stays Premium until your current billing term ends. After that, the new owner will need to purchase their own subscription to keep Premium active.
                   </Text>
                 </View>
 
