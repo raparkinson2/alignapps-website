@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -23,6 +23,7 @@ export default function StatsAnalyticsScreen() {
   const games = useTeamStore((s) => s.games);
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const teamColor = useTeamColor();
 
   const sport = teamSettings?.sport ?? 'hockey';
@@ -45,6 +46,15 @@ export default function StatsAnalyticsScreen() {
     }
     return parts.join(' — ');
   };
+
+  // Season Wrapped eligibility
+  const currentPlayer = useMemo(() => players.find((p) => p.id === currentPlayerId), [players, currentPlayerId]);
+  const isNonPlayer = useMemo(() => {
+    if (!currentPlayer) return true;
+    const pos = currentPlayer.position?.toLowerCase();
+    return pos === 'coach' || pos === 'parent' || currentPlayer.roles?.includes('coach' as any) || currentPlayer.roles?.includes('parent' as any);
+  }, [currentPlayer]);
+  const hasEnoughGames = (currentPlayer?.gameLogs?.length ?? 0) >= 5;
 
   // Goals/Points For & Against from logged game scores
   const { goalsFor, goalsAgainst, differential } = useMemo(() => {
@@ -197,6 +207,56 @@ export default function StatsAnalyticsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40 }}
         >
+          {/* ── Season Wrapped ── */}
+          {!isNonPlayer && (
+            <Animated.View entering={FadeInDown.delay(60).springify()} className="mb-5">
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  if (!isPremium) { router.push('/upgrade'); return; }
+                  if (!hasEnoughGames) {
+                    Alert.alert('Not enough data yet', 'You need at least 5 games logged to unlock your Season Wrapped.');
+                    return;
+                  }
+                  router.push('/season-wrapped');
+                }}
+              >
+                <LinearGradient
+                  colors={isPremium && hasEnoughGames
+                    ? [hexToRgba(teamColor, 0.75), hexToRgba(teamColor, 0.35)]
+                    : ['rgba(71,85,105,0.4)', 'rgba(30,41,59,0.4)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    borderRadius: 20, padding: 20, borderWidth: 1,
+                    borderColor: isPremium && hasEnoughGames ? hexToRgba(teamColor, 0.5) : 'rgba(71,85,105,0.3)',
+                    flexDirection: 'row', alignItems: 'center', gap: 16,
+                  }}
+                >
+                  <View style={{
+                    width: 50, height: 50, borderRadius: 25,
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <Zap size={24} color="#ffffff" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#ffffff', fontSize: 17, fontWeight: '800', marginBottom: 3 }}>
+                      Your Season Wrapped
+                    </Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, lineHeight: 18 }}>
+                      {isPremium
+                        ? (hasEnoughGames
+                            ? 'Your personalized season story is ready.'
+                            : `${5 - (currentPlayer?.gameLogs?.length ?? 0)} more games until your Wrapped unlocks.`)
+                        : 'Upgrade to unlock your personalized season review.'}
+                    </Text>
+                  </View>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+          )}
+
           {/* ── Live Season Dashboard ── */}
           {hasRecord && (
             <Animated.View entering={FadeInDown.delay(80).springify()} className="mb-5">

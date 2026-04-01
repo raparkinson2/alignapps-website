@@ -682,6 +682,10 @@ function AuthNavigator() {
         name="monthly-splits"
         options={{ headerShown: false, presentation: 'card' }}
       />
+      <Stack.Screen
+        name="season-wrapped"
+        options={{ headerShown: false, presentation: 'fullScreenModal' }}
+      />
 <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       <Stack.Screen
         name="upgrade"
