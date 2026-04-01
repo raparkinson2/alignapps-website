@@ -509,33 +509,6 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
                     </Text>
                   </Pressable>
                 </View>
-                {/* Retire row */}
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    const next = currentPlayer.status === 'retired' ? 'active' : 'retired';
-                    handleUpdateStatus(next);
-                  }}
-                  style={{
-                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                    paddingVertical: 12, borderRadius: 12, marginBottom: 8, marginTop: 8,
-                    backgroundColor: currentPlayer.status === 'retired' ? 'rgba(251,191,36,0.2)' : 'rgba(30,41,59,1)',
-                    borderWidth: 1,
-                    borderColor: currentPlayer.status === 'retired' ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.06)',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, marginRight: 6 }}>🏅</Text>
-                  <Text style={{ fontWeight: '600', color: currentPlayer.status === 'retired' ? '#fbbf24' : '#64748b', fontSize: 14 }}>
-                    {currentPlayer.status === 'retired' ? 'Retired — Tap to Reactivate' : 'Retire Player'}
-                  </Text>
-                </Pressable>
-                {currentPlayer.status === 'retired' && (
-                  <View style={{ backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)', marginBottom: 8 }}>
-                    <Text style={{ color: '#94a3b8', fontSize: 12, lineHeight: 17 }}>
-                      Retired players are hidden from rosters and game invites. Their stats and season history are preserved permanently.
-                    </Text>
-                  </View>
-                )}
                 <View className="flex-row">
                   <Pressable
                     onPress={() => {
@@ -715,8 +688,8 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
                             editPlayerIsParent ? 'bg-pink-500' : 'bg-slate-800'
                           )}
                         >
-                          <Text className={cn('font-semibold text-sm', editPlayerIsParent ? 'text-white' : 'text-slate-400')}>
-                            Parent/Guardian
+                          <Text className={cn('font-semibold text-sm text-center', editPlayerIsParent ? 'text-white' : 'text-slate-400')}>
+                            Parent/{'\n'}Guardian
                           </Text>
                         </Pressable>
                       )}
@@ -733,6 +706,32 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
               {/* Re-send Invite Button */}
               {(currentPlayer?.phone || currentPlayer?.email) && (
                 <View className="mb-6 mt-3">
+                  {/* Retire Player */}
+                  <View style={{ backgroundColor: 'rgba(251,191,36,0.06)', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.15)', marginBottom: 10, flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+                    <Text style={{ color: '#fbbf24', fontSize: 13 }}>ⓘ</Text>
+                    <Text style={{ color: '#94a3b8', fontSize: 12, lineHeight: 17, flex: 1 }}>
+                      Retiring a player hides them from the active roster and game invites. Their stats, trophies, and season history are <Text style={{ color: '#fbbf24' }}>permanently preserved</Text>.
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      const next = currentPlayer.status === 'retired' ? 'active' : 'retired';
+                      handleUpdateStatus(next);
+                    }}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                      paddingVertical: 13, borderRadius: 12, marginBottom: 16,
+                      backgroundColor: currentPlayer.status === 'retired' ? 'rgba(251,191,36,0.2)' : 'rgba(30,41,59,1)',
+                      borderWidth: 1,
+                      borderColor: currentPlayer.status === 'retired' ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <Text style={{ fontSize: 15, marginRight: 6 }}>🏅</Text>
+                    <Text style={{ fontWeight: '600', color: currentPlayer.status === 'retired' ? '#fbbf24' : '#64748b', fontSize: 14 }}>
+                      {currentPlayer.status === 'retired' ? 'Retired — Tap to Reactivate' : 'Retire Player'}
+                    </Text>
+                  </Pressable>
                   <Pressable
                     onPress={onReinvite}
                     className="flex-row items-center justify-center bg-cyan-500/20 border border-cyan-500/40 rounded-xl py-4 active:bg-cyan-500/30"
