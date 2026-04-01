@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Share } from 'react-native';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -10,7 +10,6 @@ import {
   Clock,
   Users,
   Shirt,
-  Share2,
   CheckCircle2,
   XCircle,
   Beer,
@@ -92,18 +91,6 @@ export default function GameRecapScreen() {
 
   const config = result ? resultConfig[result] : null;
 
-  const handleShare = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const dateStr = format(parseISO(game.date), 'MMM d, yyyy');
-    const scoreStr = hasScore ? `${game.finalScoreUs}-${game.finalScoreThem}` : '';
-    const resultLabel = result === 'win' ? 'Won' : result === 'loss' ? 'Lost' : result === 'tie' ? 'Tied' : 'OT Loss';
-    const shareText = `${teamName} ${resultLabel} vs ${game.opponent}${scoreStr ? ` (${scoreStr})` : ''} — ${dateStr}`;
-
-    try {
-      await Share.share({ message: shareText });
-    } catch {}
-  };
-
   const attendanceRate = invitedPlayers.length > 0
     ? Math.round((checkedInPlayers.length / invitedPlayers.length) * 100)
     : 0;
@@ -129,12 +116,7 @@ export default function GameRecapScreen() {
             <ChevronLeft size={24} color="white" />
           </Pressable>
           <Text className="text-white font-semibold text-base">Game Recap</Text>
-          <Pressable
-            onPress={handleShare}
-            className="w-10 h-10 rounded-full bg-black/30 items-center justify-center"
-          >
-            <Share2 size={20} color="white" />
-          </Pressable>
+          <View style={{ width: 40 }} />
         </Animated.View>
 
         <ScrollView
@@ -310,16 +292,6 @@ export default function GameRecapScreen() {
             </Animated.View>
           )}
 
-          {/* Share Button */}
-          <Animated.View entering={FadeInDown.delay(320).springify()}>
-            <Pressable
-              onPress={handleShare}
-              className="bg-white/10 rounded-2xl py-4 flex-row items-center justify-center border border-white/10 active:bg-white/20"
-            >
-              <Share2 size={18} color="#94a3b8" />
-              <Text className="text-slate-300 font-semibold ml-2">Share Result</Text>
-            </Pressable>
-          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </View>
