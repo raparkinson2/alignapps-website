@@ -27,36 +27,62 @@ export default function GameMomentumScreen() {
   const router = useRouter();
   const teamColor = useTeamColor();
   const games = useTeamStore((s) => s.games);
+  const players = useTeamStore((s) => s.players);
 
-  // ── RSVP vs Win Rate ─────────────────────────────────────────────────────
-  const rsvpWinData = useMemo(() => {
-    const scored = games.filter((g) => g.gameResult && g.invitedPlayers.length > 0);
+  // ── Player Count vs Win Rate ──────────────────────────────────────────────
+  const playerCountWinData = useMemo(() => {
+    const scored = games.filter((g) => g.gameResult);
     if (scored.length === 0) return null;
 
-    // Bucket by RSVP % tiers
-    const tiers = [
-      { label: '< 50%',   min: 0,   max: 0.5,  wins: 0, total: 0 },
-      { label: '50–69%',  min: 0.5, max: 0.7,  wins: 0, total: 0 },
-      { label: '70–84%',  min: 0.7, max: 0.85, wins: 0, total: 0 },
-      { label: '85%+',    min: 0.85, max: 1.01, wins: 0, total: 0 },
-    ];
+    const rosterSize = players.filter(
+      (p) =>
+        p.status === 'active' &&
+        p.position !== 'Coach' &&
+        p.position !== 'Parent' &&
+        !p.roles?.includes('coach') &&
+        !p.roles?.includes('parent'),
+    ).length;
+
+    if (rosterSize === 0) return null;
+
+    // Build bands of 3 from full roster downward, max 5 bands
+    type Band = { label: string; min: number; max: number; wins: number; total: number };
+    const bands: Band[] = [];
+
+    // Full roster band
+    bands.push({ label: `${rosterSize}/${rosterSize}`, min: rosterSize, max: Infinity, wins: 0, total: 0 });
+
+    // Bands of 3 going down
+    let top = rosterSize - 1;
+    while (top > 0 && bands.length < 4) {
+      const bandMax = top;
+      const bandMin = Math.max(1, top - 2);
+      bands.push({ label: `${bandMin}–${bandMax}`, min: bandMin, max: bandMax, wins: 0, total: 0 });
+      top = bandMin - 1;
+    }
+
+    // Catch-all bottom band
+    if (top > 0) {
+      bands.push({ label: `< ${top + 1}`, min: 0, max: top, wins: 0, total: 0 });
+    }
 
     for (const g of scored) {
-      const rsvpRate = g.checkedInPlayers.length / g.invitedPlayers.length;
-      for (const tier of tiers) {
-        if (rsvpRate >= tier.min && rsvpRate < tier.max) {
-          tier.total++;
-          if (g.gameResult === 'win') tier.wins++;
+      const count = (g.checkedInPlayers ?? []).length;
+      for (const band of bands) {
+        if (count >= band.min && count <= band.max) {
+          band.total++;
+          if (g.gameResult === 'win') band.wins++;
           break;
         }
       }
     }
 
-    return tiers.filter((t) => t.total > 0).map((t) => ({
-      ...t,
-      winPct: t.total > 0 ? Math.round((t.wins / t.total) * 100) : 0,
-    }));
-  }, [games]);
+    const activeBands = bands
+      .filter((b) => b.total > 0)
+      .map((b) => ({ ...b, winPct: Math.round((b.wins / b.total) * 100) }));
+
+    return { bands: activeBands, rosterSize };
+  }, [games, players]);
 
   // ── Weather Impact ────────────────────────────────────────────────────────
   const weatherImpact = useMemo(() => {
@@ -142,19 +168,13 @@ export default function GameMomentumScreen() {
     // RSVP trend: avg check-in rate for wins vs losses
     const winGames = completed.filter((g) => g.gameResult === 'win');
     const lossGames = completed.filter((g) => g.gameResult === 'loss');
-    const avgRsvpWin = winGames.length > 0
-      ? Math.round(winGames.reduce((s, g) => s + (g.invitedPlayers.length > 0 ? g.checkedInPlayers.length / g.invitedPlayers.length : 0), 0) / winGames.length * 100)
-      : null;
-    const avgRsvpLoss = lossGames.length > 0
-      ? Math.round(lossGames.reduce((s, g) => s + (g.invitedPlayers.length > 0 ? g.checkedInPlayers.length / g.invitedPlayers.length : 0), 0) / lossGames.length * 100)
-      : null;
 
-    return { currentStreak, streakType, avgRsvpWin, avgRsvpLoss, totalGames: completed.length };
+    return { currentStreak, streakType, totalGames: completed.length };
   }, [games]);
 
   const hasWeather = weatherImpact.length > 0;
   const hasTempData = tempRangeImpact.length > 0;
-  const hasRsvp = rsvpWinData !== null && rsvpWinData.length > 0;
+  const hasPlayerCount = playerCountWinData !== null && playerCountWinData.bands.length > 0;
   const hasMomentum = momentumData !== null;
   const bestWeather = hasWeather ? weatherImpact[0] : null;
 
@@ -230,76 +250,53 @@ export default function GameMomentumScreen() {
             </Animated.View>
           )}
 
-          {/* ── RSVP vs Win Rate ── */}
+          {/* ── Win Rate by Players Available ── */}
           <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-5">
             <View className="flex-row items-center mb-3" style={{ gap: 8 }}>
               <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: hexToRgba(teamColor, 0.2), alignItems: 'center', justifyContent: 'center' }}>
                 <Users size={14} color={teamColor} />
               </View>
-              <Text className="text-white font-bold text-base">RSVP vs Win Rate</Text>
+              <View className="flex-1">
+                <Text className="text-white font-bold text-base">Win Rate by Players Available</Text>
+              </View>
+              {playerCountWinData && (
+                <Text className="text-slate-500 text-xs">Roster: {playerCountWinData.rosterSize}</Text>
+              )}
             </View>
 
             <View style={{ backgroundColor: 'rgba(30,41,59,0.7)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-              {!hasRsvp ? (
+              {!hasPlayerCount ? (
                 <EmptyState
-                  emoji="📊"
+                  emoji="👥"
                   title="Log game results to unlock"
-                  subtitle="This chart shows whether early RSVPs correlate with winning"
+                  subtitle="Shows your win rate based on how many players showed up"
                 />
               ) : (
                 <View style={{ padding: 16 }}>
                   <Text className="text-slate-400 text-xs mb-4">
-                    Win rate by team check-in percentage before game
+                    Win rate by number of players who checked in
                   </Text>
-                  {rsvpWinData!.map((tier, i) => (
-                    <View key={tier.label} style={{ marginBottom: i < rsvpWinData!.length - 1 ? 14 : 0 }}>
+                  {playerCountWinData!.bands.map((band, i) => (
+                    <View key={band.label} style={{ marginBottom: i < playerCountWinData!.bands.length - 1 ? 14 : 0 }}>
                       <View className="flex-row justify-between mb-2">
-                        <Text className="text-white font-semibold text-sm">{tier.label} checked in</Text>
+                        <Text className="text-white font-semibold text-sm">{band.label} players</Text>
                         <View className="flex-row items-center" style={{ gap: 6 }}>
-                          <Text
-                            style={{
-                              color: tier.winPct >= 60 ? '#22c55e' : tier.winPct >= 40 ? '#f59e0b' : '#ef4444',
-                              fontWeight: '700',
-                              fontSize: 14,
-                            }}
-                          >
-                            {tier.winPct}%
+                          <Text style={{ color: band.winPct >= 60 ? '#22c55e' : band.winPct >= 40 ? '#f59e0b' : '#ef4444', fontWeight: '700', fontSize: 14 }}>
+                            {band.winPct}%
                           </Text>
-                          <Text className="text-slate-500 text-xs">({tier.total}g)</Text>
+                          <Text className="text-slate-500 text-xs">({band.total}g)</Text>
                         </View>
                       </View>
                       <View style={{ height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
                         <LinearGradient
-                          colors={
-                            tier.winPct >= 60
-                              ? ['#22c55e', '#16a34a']
-                              : tier.winPct >= 40
-                              ? ['#f59e0b', '#d97706']
-                              : ['#ef4444', '#dc2626']
-                          }
+                          colors={band.winPct >= 60 ? ['#22c55e', '#16a34a'] : band.winPct >= 40 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626']}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 0 }}
-                          style={{ width: `${tier.winPct}%`, height: 10, borderRadius: 5 }}
+                          style={{ width: `${band.winPct}%`, height: 10, borderRadius: 5 }}
                         />
                       </View>
                     </View>
                   ))}
-
-                  {/* RSVP insight callout */}
-                  {momentumData?.avgRsvpWin != null && momentumData?.avgRsvpLoss != null && (
-                    <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 12, marginTop: 14 }}>
-                      <Text className="text-slate-400 text-xs leading-5">
-                        On average,{' '}
-                        <Text className="text-green-400 font-semibold">{momentumData.avgRsvpWin}%</Text>
-                        {' '}of the team checks in before wins vs{' '}
-                        <Text className="text-red-400 font-semibold">{momentumData.avgRsvpLoss}%</Text>
-                        {' '}before losses.
-                        {momentumData.avgRsvpWin > momentumData.avgRsvpLoss
-                          ? ' High early commitment correlates with winning.'
-                          : ' Interesting — your team wins even with lower early RSVP rates.'}
-                      </Text>
-                    </View>
-                  )}
                 </View>
               )}
             </View>
