@@ -5,7 +5,7 @@ import { useRouter, Stack } from 'expo-router';
 import {
   ArrowLeft, Crown, ChevronRight, Target, Zap,
   CloudRain, Ghost, Trophy, Users, TrendingUp,
-  AlertTriangle, Flame, Star, Shield,
+  AlertTriangle, Flame, Star, Shield, Calendar,
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -520,6 +520,27 @@ export default function PremiumInsightsScreen() {
                   <Text className="text-white font-bold text-base">Player Impact</Text>
                   <Text className="text-slate-400 text-sm mt-0.5">
                     Team record with vs without each player
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </LinearGradient>
+            </Pressable>
+
+            {/* Monthly Splits */}
+            <Pressable
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/monthly-splits'); }}
+            >
+              <LinearGradient
+                colors={['rgba(34,211,238,0.15)', 'rgba(34,211,238,0.05)']}
+                style={{ borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(34,211,238,0.25)', flexDirection: 'row', alignItems: 'center' }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(34,211,238,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                  <Calendar size={22} color="#22d3ee" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-white font-bold text-base">Monthly Splits</Text>
+                  <Text className="text-slate-400 text-sm mt-0.5">
+                    Team record and scoring broken down by month
                   </Text>
                 </View>
                 <ChevronRight size={20} color="#64748b" />

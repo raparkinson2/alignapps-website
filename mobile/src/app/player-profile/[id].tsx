@@ -350,6 +350,125 @@ interface StatsTableData {
   highlightIndices: number[];
 }
 
+// ─── Milestone Tracker ────────────────────────────────────────────────────────
+
+interface MilestoneItem {
+  label: string;
+  current: number;
+  target: number;
+  prevMilestone: number;
+  progress: number;
+  color: string;
+}
+
+const MILESTONE_THRESHOLDS = [10, 25, 50, 100, 150, 200, 250, 500, 750, 1000, 2000];
+
+function getNextMilestone(current: number): { target: number; prev: number } | null {
+  for (const t of MILESTONE_THRESHOLDS) {
+    if (current < t) {
+      const prevIdx = MILESTONE_THRESHOLDS.indexOf(t) - 1;
+      const prev = prevIdx >= 0 ? MILESTONE_THRESHOLDS[prevIdx] : 0;
+      return { target: t, prev };
+    }
+  }
+  return null;
+}
+
+function computeMilestones(
+  player: Player,
+  seasonHistory: ArchivedSeason[],
+  sport: Sport,
+): MilestoneItem[] {
+  const career: Record<string, number> = {};
+
+  for (const season of seasonHistory) {
+    const ps = getArchivedPlayerStats(season, player.id);
+    if (!ps) continue;
+    career['gp'] = (career['gp'] ?? 0) + (ps.gamesInvited ?? 0);
+    if (ps.stats) {
+      for (const key of ['goals', 'assists', 'points', 'rebounds', 'steals', 'hits', 'rbi', 'runs', 'groundBalls']) {
+        const v = getStatValue(ps.stats, key);
+        if (v > 0) career[key] = (career[key] ?? 0) + v;
+      }
+    }
+  }
+
+  if (player.stats) {
+    for (const key of ['goals', 'assists', 'points', 'rebounds', 'steals', 'hits', 'rbi', 'runs', 'groundBalls']) {
+      const v = getStatValue(player.stats, key);
+      if (v > 0) career[key] = (career[key] ?? 0) + v;
+    }
+  }
+  career['gp'] = (career['gp'] ?? 0) + (player.gameLogs?.length ?? 0);
+
+  type TrackedStat = { key: string; label: string; color: string };
+  let tracked: TrackedStat[] = [];
+
+  switch (sport) {
+    case 'hockey':
+      tracked = [
+        { key: 'gp', label: 'Games Played', color: '#67e8f9' },
+        { key: 'goals', label: 'Goals', color: '#f97316' },
+        { key: 'assists', label: 'Assists', color: '#22d3ee' },
+      ];
+      break;
+    case 'soccer':
+      tracked = [
+        { key: 'gp', label: 'Games Played', color: '#67e8f9' },
+        { key: 'goals', label: 'Goals', color: '#4ade80' },
+        { key: 'assists', label: 'Assists', color: '#22d3ee' },
+      ];
+      break;
+    case 'lacrosse':
+      tracked = [
+        { key: 'gp', label: 'Games Played', color: '#67e8f9' },
+        { key: 'goals', label: 'Goals', color: '#f97316' },
+        { key: 'assists', label: 'Assists', color: '#22d3ee' },
+        { key: 'groundBalls', label: 'Ground Balls', color: '#a78bfa' },
+      ];
+      break;
+    case 'basketball':
+      tracked = [
+        { key: 'gp', label: 'Games Played', color: '#67e8f9' },
+        { key: 'points', label: 'Points', color: '#f97316' },
+        { key: 'rebounds', label: 'Rebounds', color: '#22d3ee' },
+        { key: 'assists', label: 'Assists', color: '#a78bfa' },
+      ];
+      break;
+    case 'baseball':
+    case 'softball':
+      tracked = [
+        { key: 'gp', label: 'Games Played', color: '#67e8f9' },
+        { key: 'hits', label: 'Hits', color: '#f97316' },
+        { key: 'rbi', label: 'RBI', color: '#22d3ee' },
+        { key: 'runs', label: 'Runs', color: '#a78bfa' },
+      ];
+      break;
+    default:
+      tracked = [{ key: 'gp', label: 'Games Played', color: '#67e8f9' }];
+  }
+
+  const items: MilestoneItem[] = [];
+  for (const stat of tracked) {
+    const current = career[stat.key] ?? 0;
+    if (current <= 0) continue;
+    const next = getNextMilestone(current);
+    if (!next) continue;
+    const range = next.target - next.prev;
+    const progress = range > 0 ? (current - next.prev) / range : 0;
+    items.push({
+      label: stat.label,
+      current,
+      target: next.target,
+      prevMilestone: next.prev,
+      progress: Math.max(0, Math.min(1, progress)),
+      color: stat.color,
+    });
+  }
+
+  return items.sort((a, b) => b.progress - a.progress).slice(0, 4);
+}
+
 // ─── Stats table builders ──────────────────────────────────────────────────────
 
 function buildSkaterTable(
@@ -762,6 +881,11 @@ export default function PlayerProfileScreen() {
     [player, players, seasonHistory, sport, completedGames],
   );
 
+  const milestones = useMemo(
+    () => (player ? computeMilestones(player, seasonHistory, sport) : []),
+    [player, seasonHistory, sport],
+  );
+
   const totalInvited = useMemo(
     () => games.filter((g) => g.invitedPlayers?.includes(id ?? '')).length,
     [games, id],
@@ -1014,6 +1138,73 @@ export default function PlayerProfileScreen() {
                 data={goalieTable}
                 title={skaterTable ? 'Goalie Stats' : 'Stats'}
               />
+            </Animated.View>
+          )}
+
+          {/* ── Career Milestones ───────────────────────────────────────────── */}
+          {milestones.length > 0 && (
+            <Animated.View
+              entering={FadeInDown.delay(190).springify()}
+              style={{ paddingHorizontal: 20, marginBottom: 20 }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+                <Target size={14} color="#f59e0b" />
+                <Text style={{
+                  color: '#475569', fontSize: 11, fontWeight: '700',
+                  letterSpacing: 1.2, textTransform: 'uppercase',
+                }}>
+                  Career Milestones
+                </Text>
+              </View>
+
+              <View style={{ gap: 10 }}>
+                {milestones.map((m, i) => (
+                  <Animated.View
+                    key={m.label}
+                    entering={FadeInDown.delay(210 + i * 35).springify()}
+                    style={{
+                      backgroundColor: '#0f172a', borderRadius: 14,
+                      padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+                    }}
+                  >
+                    {/* Top row: label + away badge */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <Text style={{ color: '#e2e8f0', fontWeight: '600', fontSize: 13 }}>
+                        {m.label}
+                      </Text>
+                      <View style={{
+                        backgroundColor: `${m.color}18`,
+                        borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3,
+                        borderWidth: 1, borderColor: `${m.color}40`,
+                      }}>
+                        <Text style={{ color: m.color, fontSize: 12, fontWeight: '700' }}>
+                          {m.target - m.current} away
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Progress bar */}
+                    <View style={{ height: 6, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 3, overflow: 'hidden', marginBottom: 7 }}>
+                      <View style={{
+                        height: 6, borderRadius: 3,
+                        backgroundColor: m.color,
+                        width: `${Math.round(m.progress * 100)}%`,
+                        opacity: 0.85,
+                      }} />
+                    </View>
+
+                    {/* Bottom row: current / target */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ color: '#64748b', fontSize: 11 }}>
+                        <Text style={{ color: m.color, fontWeight: '700' }}>{m.current}</Text> career
+                      </Text>
+                      <Text style={{ color: '#334155', fontSize: 11, fontWeight: '600' }}>
+                        {m.target} milestone
+                      </Text>
+                    </View>
+                  </Animated.View>
+                ))}
+              </View>
             </Animated.View>
           )}
 
