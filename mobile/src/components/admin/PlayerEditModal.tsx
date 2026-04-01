@@ -40,6 +40,7 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
   const updatePlayer = useTeamStore((s) => s.updatePlayer);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
+  const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
 
   const positions = SPORT_POSITIONS[teamSettings.sport];
 
@@ -223,6 +224,20 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
     if (currentRoles.includes(role)) {
       // Trying to REMOVE a role
       if (role === 'admin') {
+        // Block removing admin from the team owner
+        const teamOwnerId = teamSettings.teamOwnerId;
+        const isTargetOwner = teamOwnerId
+          ? selectedPlayer.id === teamOwnerId
+          : selectedPlayer.id === currentPlayerId && currentRoles.includes('admin');
+        if (isTargetOwner) {
+          Alert.alert(
+            'Cannot Remove Admin',
+            'This player is the team owner. Ownership must be transferred before their admin role can be removed.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+
         // Check if this would leave zero admins
         const currentAdminCount = players.filter((p) => p.roles?.includes('admin')).length;
         const playerIsCurrentlyAdmin = selectedPlayer.roles?.includes('admin') ?? false;

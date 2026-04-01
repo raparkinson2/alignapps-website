@@ -92,7 +92,7 @@ function AdminScreen() {
   // Ownership: if no teamOwnerId set yet, first admin is effectively the owner
   const teamOwnerId = teamSettings.teamOwnerId;
   const adminPlayers = players.filter(
-    (p) => p.status !== 'retired' && (p.roles?.includes('admin') || p.roles?.includes('captain') || p.roles?.includes('coach'))
+    (p) => p.status !== 'retired' && p.roles?.includes('admin')
   );
   const isOwner = !teamOwnerId ? isAdmin : teamOwnerId === currentPlayerId;
   const resetAllData = useTeamStore((s) => s.resetAllData);
@@ -1248,8 +1248,10 @@ function AdminScreen() {
 
                 {adminPlayers.filter((p) => p.id !== currentPlayerId).length === 0 ? (
                   <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                    <Text style={{ color: '#64748b', fontSize: 14, textAlign: 'center' }}>
-                      No eligible players found.{'\n'}Add another admin, captain, or coach first.
+                    <Text style={{ color: '#64748b', fontSize: 14, textAlign: 'center', lineHeight: 22 }}>
+                      No other admins found.{'\n\n'}To transfer ownership, first go to{' '}
+                      <Text style={{ color: '#67e8f9', fontWeight: '600' }}>Manage Players</Text>
+                      {' '}and give the person an <Text style={{ color: '#a78bfa', fontWeight: '600' }}>Admin</Text> role, then come back here.
                     </Text>
                   </View>
                 ) : (
@@ -1296,6 +1298,9 @@ function AdminScreen() {
                     <Text style={{ color: '#0f172a', fontWeight: '800', fontSize: 16 }}>Continue</Text>
                   </Pressable>
                 )}
+                <Text style={{ color: '#475569', fontSize: 12, textAlign: 'center', marginTop: 14, lineHeight: 18 }}>
+                  Only admins are shown. To transfer to someone else, give them the Admin role first.
+                </Text>
               </>
             ) : (
               <>
