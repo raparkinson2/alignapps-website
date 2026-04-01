@@ -548,6 +548,10 @@ export default function TeamStatsScreen() {
   const [gameDate, setGameDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // View game-by-game logs state (read-only)
+  const [viewPlayer, setViewPlayer] = useState<Player | null>(null);
+  const [viewStatMode, setViewStatMode] = useState<EditMode>('skater');
+
   // Get record from team settings
   const wins = teamSettings.record?.wins ?? 0;
   const losses = teamSettings.record?.losses ?? 0;
@@ -960,8 +964,13 @@ export default function TeamStatsScreen() {
                     : (sport === 'baseball' || sport === 'softball') ? sortedPlayers.some(p => playerIsPitcher(p)) : false;
                   const showBorder = index !== arr.length - 1 || hasMore;
                   return (
-                    <View
+                    <Pressable
                       key={player.id}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setViewPlayer(player);
+                        setViewStatMode(sport === 'baseball' || sport === 'softball' ? 'batter' : 'skater');
+                      }}
                       style={{
                         height: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10,
                         borderBottomWidth: showBorder ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)',
@@ -976,7 +985,7 @@ export default function TeamStatsScreen() {
                       </Text>
                       {isLeader && <Crown size={10} color="#fbbf24" />}
                       {isHot && <Flame size={10} color="#f97316" style={{ marginLeft: isLeader ? 2 : 0 }} />}
-                    </View>
+                    </Pressable>
                   );
                 })}
               </View>
@@ -1072,13 +1081,18 @@ export default function TeamStatsScreen() {
                     <Text style={{ color: '#cbd5e1', fontWeight: '600', fontSize: 13 }}>Pitchers</Text>
                   </View>
                   {sortedPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => (
-                    <View
+                    <Pressable
                       key={`pitcher-frozen-${player.id}`}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setViewPlayer(player);
+                        setViewStatMode('pitcher');
+                      }}
                       style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, borderBottomWidth: index !== arr.length - 1 ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)' }}
                     >
                       <Text style={{ color: '#67e8f9', fontSize: 11, fontWeight: '500', marginRight: 3, flexShrink: 0 }}>#{player.number}</Text>
                       <Text style={{ color: '#fff', fontSize: 13, flex: 1 }} numberOfLines={1}>{formatName(player)}</Text>
-                    </View>
+                    </Pressable>
                   ))}
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
@@ -1118,13 +1132,18 @@ export default function TeamStatsScreen() {
                     <Text style={{ color: '#cbd5e1', fontWeight: '600', fontSize: 13 }}>Goalies</Text>
                   </View>
                   {sortedPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => (
-                    <View
+                    <Pressable
                       key={`goalie-frozen-${player.id}`}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setViewPlayer(player);
+                        setViewStatMode('goalie');
+                      }}
                       style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, borderBottomWidth: index !== arr.length - 1 ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)' }}
                     >
                       <Text style={{ color: '#67e8f9', fontSize: 11, fontWeight: '500', marginRight: 3, flexShrink: 0 }}>#{player.number}</Text>
                       <Text style={{ color: '#fff', fontSize: 13, flex: 1 }} numberOfLines={1}>{formatName(player)}</Text>
-                    </View>
+                    </Pressable>
                   ))}
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
@@ -1159,11 +1178,11 @@ export default function TeamStatsScreen() {
 
           {/* Footer tip */}
           <View style={{ marginTop: 16, marginBottom: 24, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-            <Info size={14} color="#475569" style={{ marginTop: 2 }} />
-            <Text style={{ color: '#475569', fontSize: 13, flex: 1, lineHeight: 20 }}>
+            <Info size={14} color="#67e8f9" style={{ marginTop: 2 }} />
+            <Text style={{ color: '#94a3b8', fontSize: 13, flex: 1, lineHeight: 20 }}>
               To update a player's stats, log them via{' '}
               <Text
-                style={{ color: '#67e8f9', fontWeight: '600' }}
+                style={{ color: '#67e8f9', fontWeight: '700' }}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push('/(tabs)');
@@ -1417,6 +1436,170 @@ export default function TeamStatsScreen() {
             </SafeAreaView>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Game-by-Game Log Viewer Modal (read-only) ── */}
+      <Modal
+        visible={viewPlayer !== null}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setViewPlayer(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: '#0f172a' }}>
+          <LinearGradient
+            colors={['#0f172a', '#1e293b', '#0f172a']}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+          <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.5)' }}>
+              <View style={{ flex: 1 }}>
+                {viewPlayer && (
+                  <>
+                    <Text style={{ color: '#67e8f9', fontSize: 12, fontWeight: '500' }}>#{viewPlayer.number} · {getDisplayPosition(viewPlayer)}</Text>
+                    <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginTop: 1 }}>
+                      {viewPlayer.firstName} {viewPlayer.lastName}
+                    </Text>
+                  </>
+                )}
+              </View>
+              <Pressable
+                onPress={() => setViewPlayer(null)}
+                style={{ padding: 8, marginRight: -8 }}
+              >
+                <X size={24} color="#94a3b8" />
+              </Pressable>
+            </View>
+
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
+              {viewPlayer && (() => {
+                const logs = [...(viewPlayer.gameLogs ?? [])]
+                  .filter(log => {
+                    if (viewStatMode === 'goalie') return log.statType === 'goalie' || log.statType === 'lacrosse_goalie';
+                    if (viewStatMode === 'skater') return log.statType === 'skater' || log.statType === 'lacrosse';
+                    return log.statType === viewStatMode;
+                  })
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                const headers = viewStatMode === 'pitcher' ? getPitcherHeaders()
+                  : viewStatMode === 'goalie' ? getGoalieHeaders(sport)
+                  : statHeaders;
+
+                const getVals = (log: typeof logs[0]) =>
+                  viewStatMode === 'pitcher'
+                    ? getStatValues(sport, log.stats as any, 'P')
+                    : viewStatMode === 'goalie'
+                    ? getStatValues(sport, log.stats as any, (sport === 'hockey' || sport === 'lacrosse') ? 'G' : 'GK')
+                    : getStatValues(sport, log.stats as any, 'batter');
+
+                // Season totals card
+                const totals = viewStatMode === 'pitcher'
+                  ? getStatValues(sport, viewPlayer.pitcherStats as any, 'P')
+                  : viewStatMode === 'goalie'
+                  ? getStatValues(sport, viewPlayer.goalieStats as any, (sport === 'hockey' || sport === 'lacrosse') ? 'G' : 'GK')
+                  : getStatValues(sport, viewPlayer.stats as any, 'batter');
+
+                return (
+                  <>
+                    {/* Season totals summary */}
+                    <View style={{ backgroundColor: 'rgba(30,41,59,0.8)', borderRadius: 14, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(51,65,85,0.5)' }}>
+                      <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>Season Totals</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <View style={{ flexDirection: 'row', gap: 20 }}>
+                          {headers.map((header, i) => (
+                            <View key={header} style={{ alignItems: 'center', minWidth: 36 }}>
+                              <Text style={{ color: teamColor, fontSize: 22, fontWeight: '800' }}>{totals[i] ?? 0}</Text>
+                              <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>{header}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </ScrollView>
+                    </View>
+
+                    {/* Game log table */}
+                    <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
+                      Game Log · {logs.length} {logs.length === 1 ? 'Game' : 'Games'}
+                    </Text>
+
+                    {logs.length === 0 ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                        <Text style={{ fontSize: 32, marginBottom: 12 }}>📋</Text>
+                        <Text style={{ color: '#94a3b8', fontSize: 15, fontWeight: '600' }}>No game logs yet</Text>
+                        <Text style={{ color: '#475569', fontSize: 13, marginTop: 4, textAlign: 'center' }}>
+                          Stats logged via game records will appear here.
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={{ borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(51,65,85,0.5)' }}>
+                        {/* Table header */}
+                        <View style={{ flexDirection: 'row', backgroundColor: 'rgba(51,65,85,0.5)', borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.6)' }}>
+                          <View style={{ width: 72, height: 40, justifyContent: 'center', paddingLeft: 12 }}>
+                            <Text style={{ color: '#cbd5e1', fontSize: 12, fontWeight: '600' }}>Date</Text>
+                          </View>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', height: 40, paddingRight: 12 }}>
+                              {headers.map(header => (
+                                <View key={header} style={{ width: 46, alignItems: 'center' }}>
+                                  <Text style={{ color: '#cbd5e1', fontSize: 12, fontWeight: '600' }}>{header}</Text>
+                                </View>
+                              ))}
+                            </View>
+                          </ScrollView>
+                        </View>
+
+                        {/* Rows */}
+                        {logs.map((log, idx) => {
+                          const vals = getVals(log);
+                          const dateStr = new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                          const isLast = idx === logs.length - 1;
+                          return (
+                            <View
+                              key={log.id}
+                              style={{ flexDirection: 'row', borderBottomWidth: isLast ? 0 : 1, borderBottomColor: 'rgba(51,65,85,0.4)' }}
+                            >
+                              <View style={{ width: 72, height: 44, justifyContent: 'center', paddingLeft: 12 }}>
+                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>{dateStr}</Text>
+                              </View>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', height: 44, paddingRight: 12 }}>
+                                  {vals.map((value, i) => (
+                                    <View key={i} style={{ width: 46, alignItems: 'center' }}>
+                                      <Text style={{ color: '#e2e8f0', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>
+                                        {value}
+                                      </Text>
+                                    </View>
+                                  ))}
+                                </View>
+                              </ScrollView>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+
+                    <View style={{ marginTop: 20, marginBottom: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+                      <Info size={13} color="#67e8f9" style={{ marginTop: 1 }} />
+                      <Text style={{ color: '#64748b', fontSize: 12, flex: 1, lineHeight: 18 }}>
+                        Stats are logged via{' '}
+                        <Text
+                          style={{ color: '#67e8f9', fontWeight: '700' }}
+                          onPress={() => {
+                            setViewPlayer(null);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            router.push('/(tabs)');
+                          }}
+                        >
+                          Game Stats
+                        </Text>
+                        {' '}in each game record.
+                      </Text>
+                    </View>
+                  </>
+                );
+              })()}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
       </Modal>
     </View>
   );
