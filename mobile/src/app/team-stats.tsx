@@ -1504,14 +1504,14 @@ export default function TeamStatsScreen() {
                     {/* Season totals summary */}
                     <View style={{ backgroundColor: 'rgba(30,41,59,0.8)', borderRadius: 14, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(51,65,85,0.5)' }}>
                       <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>Season Totals</Text>
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', rowGap: 16 }}>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-evenly' }}>
                         {headers.map((header, i) => (
-                          <View key={header} style={{ alignItems: 'center', width: '25%', minWidth: 60 }}>
+                          <View key={header} style={{ alignItems: 'center', paddingHorizontal: 8, flex: 1 }}>
                             <Text style={{ color: teamColor, fontSize: 22, fontWeight: '800' }}>{totals[i] ?? 0}</Text>
                             <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>{header}</Text>
                           </View>
                         ))}
-                      </View>
+                      </ScrollView>
                     </View>
 
                     {/* Game log table */}
