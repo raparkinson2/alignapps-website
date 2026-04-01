@@ -4,7 +4,7 @@ import {
   Image,
   ScrollView,
   Pressable,
-  Share,
+  ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,7 +26,9 @@ import {
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useMemo } from 'react';
+import * as Sharing from 'expo-sharing';
+import { captureRef } from 'react-native-view-shot';
+import { useMemo, useRef, useState } from 'react';
 import {
   useTeamStore,
   getPlayerName,
@@ -928,18 +930,21 @@ export default function PlayerProfileScreen() {
     ? Math.min(100, Math.round((totalCheckedIn / gamesInvitedCount) * 100))
     : 0;
 
+  const cardRef = useRef<View>(null);
+  const [isSharing, setIsSharing] = useState(false);
+
   const handleShare = async () => {
-    if (!player) return;
+    if (!player || isSharing || !cardRef.current) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const currentRow = skaterTable?.rows.find((r) => r.isCurrent);
-    const statSummary = currentRow
-      ? currentRow.values.map((v, i) => `${skaterTable!.headers[i]}: ${v}`).join(' | ')
-      : '';
-    const trophyLine = trophies.length > 0
-      ? `\n🏆 ${trophies.map((t) => t.title).join(', ')}`
-      : '';
-    const message = `${getPlayerName(player)} #${player.number} — ${teamName}\n${sport.charAt(0).toUpperCase() + sport.slice(1)} · ${player.position}\n\n📊 ${statSummary}${trophyLine}\n\nTracked with AlignSports`;
-    await Share.share({ message });
+    setIsSharing(true);
+    try {
+      const uri = await captureRef(cardRef, { format: 'png', quality: 0.95 });
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share Player Card' });
+    } catch {
+      // sharing cancelled or failed — silently ignore
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   if (!player) {
@@ -989,13 +994,16 @@ export default function PlayerProfileScreen() {
 
           <Pressable
             onPress={handleShare}
+            disabled={isSharing}
             style={{
               width: 40, height: 40, borderRadius: 20,
               backgroundColor: 'rgba(255,255,255,0.07)',
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Share2 size={18} color="#67e8f9" />
+            {isSharing
+              ? <ActivityIndicator size="small" color="#67e8f9" />
+              : <Share2 size={18} color="#67e8f9" />}
           </Pressable>
         </Animated.View>
 
@@ -1008,6 +1016,7 @@ export default function PlayerProfileScreen() {
             entering={FadeInDown.delay(80).springify()}
             style={{ paddingHorizontal: 20, marginBottom: 20 }}
           >
+            <View ref={cardRef} collapsable={false}>
             <LinearGradient
               colors={['#0f1e35', '#0a1628']}
               style={{
@@ -1144,6 +1153,7 @@ export default function PlayerProfileScreen() {
                 </View>
               </View>
             </LinearGradient>
+            </View>
           </Animated.View>
 
           {/* ── Stats Table ───────────────────────────────────────────────── */}
