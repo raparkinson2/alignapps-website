@@ -165,7 +165,7 @@ export function getSportName(sport: Sport): string {
 export type PlayerRole = 'admin' | 'captain' | 'coach' | 'parent';
 
 // Player Status
-export type PlayerStatus = 'active' | 'reserve';
+export type PlayerStatus = 'active' | 'reserve' | 'retired';
 
 // Duration type for injuries/suspensions
 export type DurationUnit = 'days' | 'weeks' | 'games' | 'remainder_of_season';
@@ -736,6 +736,8 @@ export interface TeamSettings {
   stripeOnboardingComplete?: boolean; // Whether onboarding is fully complete
   // Premium subscription
   isPremium?: boolean; // True when team admin has an active premium subscription
+  // Ownership
+  teamOwnerId?: string; // Player ID of the team owner (can transfer ownership)
 }
 
 export interface Championship {

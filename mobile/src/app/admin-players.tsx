@@ -100,6 +100,11 @@ function PlayerManageCard({ player, index, onPress, isCurrentUser }: PlayerManag
                 <Text className="text-slate-400 text-xs">Reserve</Text>
               </View>
             )}
+            {player.status === 'retired' && (
+              <View style={{ backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2, marginRight: 4 }}>
+                <Text style={{ color: '#fbbf24', fontSize: 11, fontWeight: '600' }}>🏅 Retired</Text>
+              </View>
+            )}
             {!roles.includes('coach') && !roles.includes('parent') && player.number && (
               <Text className="text-slate-400 text-sm">#{player.number}</Text>
             )}
@@ -1002,6 +1007,37 @@ export default function AdminPlayersScreen() {
                       <Text className={cn('font-semibold ml-1', selectedPlayer.status === 'reserve' ? 'text-white' : 'text-slate-400')}>Reserve</Text>
                     </Pressable>
                   </View>
+                  {/* Retire row */}
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      const next = selectedPlayer.status === 'retired' ? 'active' : 'retired';
+                      handleUpdateStatus(next);
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingVertical: 12,
+                      borderRadius: 12,
+                      marginBottom: 8,
+                      backgroundColor: selectedPlayer.status === 'retired' ? 'rgba(251,191,36,0.2)' : 'rgba(30,41,59,1)',
+                      borderWidth: 1,
+                      borderColor: selectedPlayer.status === 'retired' ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, marginRight: 6 }}>🏅</Text>
+                    <Text style={{ fontWeight: '600', color: selectedPlayer.status === 'retired' ? '#fbbf24' : '#64748b', fontSize: 14 }}>
+                      {selectedPlayer.status === 'retired' ? 'Retired — Tap to Reactivate' : 'Retire Player'}
+                    </Text>
+                  </Pressable>
+                  {selectedPlayer.status === 'retired' && (
+                    <View style={{ backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)' }}>
+                      <Text style={{ color: '#94a3b8', fontSize: 12, lineHeight: 17 }}>
+                        Retired players are hidden from rosters and game invites. Their stats and season history are preserved permanently.
+                      </Text>
+                    </View>
+                  )}
                   <View className="flex-row">
                     <Pressable
                       onPress={() => {

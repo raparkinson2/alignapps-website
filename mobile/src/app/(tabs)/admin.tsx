@@ -88,6 +88,13 @@ function AdminScreen() {
   const setTeamName = useTeamStore((s) => s.setTeamName);
   const currentPlayerId = useTeamStore((s) => s.currentPlayerId);
   const isAdmin = useTeamStore((s) => s.isAdmin);
+
+  // Ownership: if no teamOwnerId set yet, first admin is effectively the owner
+  const teamOwnerId = teamSettings.teamOwnerId;
+  const adminPlayers = players.filter(
+    (p) => p.status !== 'retired' && (p.roles?.includes('admin') || p.roles?.includes('captain') || p.roles?.includes('coach'))
+  );
+  const isOwner = !teamOwnerId ? isAdmin : teamOwnerId === currentPlayerId;
   const resetAllData = useTeamStore((s) => s.resetAllData);
   const deleteCurrentTeam = useTeamStore((s) => s.deleteCurrentTeam);
   const games = useTeamStore((s) => s.games);
@@ -156,6 +163,11 @@ function AdminScreen() {
 
   // Delete team confirmation modal
   const [isDeleteTeamModalVisible, setIsDeleteTeamModalVisible] = useState(false);
+
+  // Transfer ownership modal
+  const [isTransferOwnershipModalVisible, setIsTransferOwnershipModalVisible] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
+  const [transferConfirmStep, setTransferConfirmStep] = useState(false);
 
   // Season Management modal
   const [isEndSeasonModalVisible, setIsEndSeasonModalVisible] = useState(false);
@@ -991,6 +1003,34 @@ function AdminScreen() {
               Data Management
             </Text>
 
+            {/* Transfer Ownership */}
+            {isOwner && (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setTransferTargetId(null);
+                  setTransferConfirmStep(false);
+                  setIsTransferOwnershipModalVisible(true);
+                }}
+                className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <View style={{ backgroundColor: 'rgba(251,191,36,0.15)', padding: 8, borderRadius: 20 }}>
+                      <Crown size={20} color="#fbbf24" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text className="text-white font-semibold">Transfer Ownership</Text>
+                      <Text className="text-slate-400 text-sm">
+                        Hand over team control to another admin or coach
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={20} color="#475569" />
+                </View>
+              </Pressable>
+            )}
+
             {/* Erase Data Nav Item */}
             <Pressable
               onPress={() => {
@@ -1165,6 +1205,136 @@ function AdminScreen() {
         visible={isEmailModalVisible}
         onClose={() => setIsEmailModalVisible(false)}
       />
+
+      {/* Transfer Ownership Modal */}
+      <Modal
+        visible={isTransferOwnershipModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsTransferOwnershipModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: '#0f172a' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Crown size={20} color="#fbbf24" />
+              <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 18 }}>Transfer Ownership</Text>
+            </View>
+            <Pressable onPress={() => setIsTransferOwnershipModalVisible(false)}>
+              <Text style={{ color: '#67e8f9', fontWeight: '600' }}>Cancel</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
+            {!transferConfirmStep ? (
+              <>
+                <View style={{ backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)', marginBottom: 20 }}>
+                  <Text style={{ color: '#fbbf24', fontWeight: '700', fontSize: 13, marginBottom: 4 }}>Before you transfer</Text>
+                  <Text style={{ color: '#94a3b8', fontSize: 13, lineHeight: 19 }}>
+                    The new owner will have full control of the team including premium settings and the ability to transfer ownership again. You will remain an admin.
+                  </Text>
+                </View>
+
+                <Text style={{ color: '#64748b', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                  Select new owner
+                </Text>
+
+                {adminPlayers.filter((p) => p.id !== currentPlayerId).length === 0 ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                    <Text style={{ color: '#64748b', fontSize: 14, textAlign: 'center' }}>
+                      No eligible players found.{'\n'}Add another admin, captain, or coach first.
+                    </Text>
+                  </View>
+                ) : (
+                  adminPlayers.filter((p) => p.id !== currentPlayerId).map((p) => (
+                    <Pressable
+                      key={p.id}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTransferTargetId(p.id); }}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        padding: 14,
+                        borderRadius: 14,
+                        marginBottom: 10,
+                        backgroundColor: transferTargetId === p.id ? 'rgba(251,191,36,0.15)' : 'rgba(30,41,59,0.8)',
+                        borderWidth: 1,
+                        borderColor: transferTargetId === p.id ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                        <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 15 }}>
+                          {(p.firstName || '?')[0].toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 15 }}>
+                          {`${p.firstName} ${p.lastName}`.trim() || 'Unknown'}
+                        </Text>
+                        <Text style={{ color: '#64748b', fontSize: 12 }}>
+                          {p.roles?.join(', ')} · #{p.number}
+                        </Text>
+                      </View>
+                      {transferTargetId === p.id && (
+                        <Crown size={18} color="#fbbf24" />
+                      )}
+                    </Pressable>
+                  ))
+                )}
+
+                {transferTargetId && (
+                  <Pressable
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setTransferConfirmStep(true); }}
+                    style={{ backgroundColor: '#fbbf24', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 10 }}
+                  >
+                    <Text style={{ color: '#0f172a', fontWeight: '800', fontSize: 16 }}>Continue</Text>
+                  </Pressable>
+                )}
+              </>
+            ) : (
+              <>
+                {(() => {
+                  const target = players.find((p) => p.id === transferTargetId);
+                  const targetName = target ? `${target.firstName ?? ''} ${target.lastName ?? ''}`.trim() || 'Unknown' : 'Unknown';
+                  return (
+                    <>
+                      <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(251,191,36,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                          <Crown size={34} color="#fbbf24" />
+                        </View>
+                        <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 20, marginBottom: 8, textAlign: 'center' }}>
+                          Transfer to {targetName}?
+                        </Text>
+                        <Text style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', lineHeight: 21 }}>
+                          This will make <Text style={{ color: '#fbbf24', fontWeight: '700' }}>{targetName}</Text> the new team owner. You'll remain an admin but lose owner privileges.
+                        </Text>
+                      </View>
+
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                          setTeamSettingsAndSync({ teamOwnerId: transferTargetId! } as any);
+                          setIsTransferOwnershipModalVisible(false);
+                          setTransferConfirmStep(false);
+                          setTransferTargetId(null);
+                        }}
+                        style={{ backgroundColor: '#fbbf24', borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 12 }}
+                      >
+                        <Text style={{ color: '#0f172a', fontWeight: '800', fontSize: 16 }}>Yes, Transfer Ownership</Text>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => { setTransferConfirmStep(false); }}
+                        style={{ backgroundColor: 'rgba(30,41,59,0.8)', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}
+                      >
+                        <Text style={{ color: '#94a3b8', fontWeight: '600', fontSize: 15 }}>Go Back</Text>
+                      </Pressable>
+                    </>
+                  );
+                })()}
+              </>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
