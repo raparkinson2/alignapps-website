@@ -15,8 +15,9 @@ interface AttendanceStats {
   gamesIn: number;
   gamesOut: number;
   noResponse: number;
-  totalGames: number;
-  attendanceRate: number;
+  gamesInvited: number;   // games with a result where player was invited
+  gamesPlayed: number;    // games where stats were entered (source of truth)
+  attendanceRate: number; // gamesPlayed / gamesInvited × 100
 }
 
 interface GameAttendance {
@@ -33,22 +34,29 @@ export default function AttendanceScreen() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Get games with attendance data (past games OR games where someone has responded)
+  // Completed games (source of truth — a game counts once it has a result)
+  const completedGames = useMemo(
+    () => games.filter((g) => g.gameResult),
+    [games],
+  );
+
+  // Past games (for RSVP history display in the modal)
   const gamesWithAttendance = useMemo(() => {
     const now = new Date();
     return games
       .filter((game) => {
         const isPast = new Date(game.date) < now;
         const hasResponses = (game.checkedInPlayers?.length ?? 0) > 0 || (game.checkedOutPlayers?.length ?? 0) > 0;
-        // Include past games OR games where someone has already checked in/out
         return isPast || hasResponses;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [games]);
 
   // Calculate attendance stats for each player
+  // Attendance Rate = Games Played (from stats/gameLogs) ÷ Games Invited (completed games)
   const attendanceStats = useMemo(() => {
     const stats: AttendanceStats[] = players.map((player) => {
+      // RSVP counts (informational only)
       let gamesIn = 0;
       let gamesOut = 0;
       let noResponse = 0;
@@ -65,8 +73,19 @@ export default function AttendanceScreen() {
         }
       });
 
-      const totalGames = gamesIn + gamesOut + noResponse;
-      const attendanceRate = totalGames > 0 ? (gamesIn / totalGames) * 100 : 0;
+      // Denominator: completed games where player was invited
+      const invitedCompleted = completedGames.filter((g) => g.invitedPlayers?.includes(player.id));
+      const gamesInvited = invitedCompleted.length;
+
+      // Numerator: game logs (stats entered = player actually played)
+      const invitedIds = new Set(invitedCompleted.map((g) => g.id));
+      const gamesPlayed = (player.gameLogs ?? []).filter(
+        (log) => !log.gameId || invitedIds.has(log.gameId),
+      ).length;
+
+      const attendanceRate = gamesInvited > 0
+        ? Math.min(100, Math.round((gamesPlayed / gamesInvited) * 100))
+        : 0;
 
       return {
         playerId: player.id,
@@ -74,20 +93,21 @@ export default function AttendanceScreen() {
         gamesIn,
         gamesOut,
         noResponse,
-        totalGames,
+        gamesInvited,
+        gamesPlayed,
         attendanceRate,
       };
     });
 
     return stats
-      .filter((s) => s.totalGames > 0)
+      .filter((s) => s.gamesInvited > 0)
       .sort((a, b) => {
         if (b.attendanceRate !== a.attendanceRate) {
           return b.attendanceRate - a.attendanceRate;
         }
-        return b.totalGames - a.totalGames;
+        return b.gamesInvited - a.gamesInvited;
       });
-  }, [players, gamesWithAttendance]);
+  }, [players, completedGames, gamesWithAttendance]);
 
   // Team totals
   const teamTotals = useMemo(() => {
@@ -96,14 +116,17 @@ export default function AttendanceScreen() {
         gamesIn: acc.gamesIn + stat.gamesIn,
         gamesOut: acc.gamesOut + stat.gamesOut,
         noResponse: acc.noResponse + stat.noResponse,
+        totalPlayed: acc.totalPlayed + stat.gamesPlayed,
+        totalInvited: acc.totalInvited + stat.gamesInvited,
       }),
-      { gamesIn: 0, gamesOut: 0, noResponse: 0 }
+      { gamesIn: 0, gamesOut: 0, noResponse: 0, totalPlayed: 0, totalInvited: 0 },
     );
 
-    const totalResponses = totals.gamesIn + totals.gamesOut + totals.noResponse;
-    const overallRate = totalResponses > 0 ? (totals.gamesIn / totalResponses) * 100 : 0;
+    const overallRate = totals.totalInvited > 0
+      ? Math.min(100, Math.round((totals.totalPlayed / totals.totalInvited) * 100))
+      : 0;
 
-    return { ...totals, totalResponses, overallRate };
+    return { ...totals, overallRate };
   }, [attendanceStats]);
 
   // Get game-by-game attendance for selected player
@@ -280,7 +303,7 @@ export default function AttendanceScreen() {
                       <View className="flex-1 ml-3">
                         <Text className="text-white font-semibold">{stat.playerName}</Text>
                         <Text className="text-slate-400 text-sm">
-                          {stat.totalGames} game{stat.totalGames !== 1 ? 's' : ''} invited
+                          {stat.gamesInvited} game{stat.gamesInvited !== 1 ? 's' : ''} invited
                         </Text>
                       </View>
                       <View className="items-end">

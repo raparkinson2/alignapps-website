@@ -79,10 +79,13 @@ export default function PremiumInsightsScreen() {
 
     return activePlayers
       .map((player) => {
-        // Attendance score (0-40)
-        const invited = games.filter((g) => g.invitedPlayers.includes(player.id));
-        const attended = invited.filter((g) => g.checkedInPlayers.includes(player.id));
-        const attendanceScore = invited.length > 0 ? (attended.length / invited.length) * 40 : 0;
+        // Attendance: Games Played (from stats) ÷ Games Invited (completed games)
+        const invited = games.filter((g) => g.invitedPlayers.includes(player.id) && g.gameResult);
+        const invitedIds = new Set(invited.map((g) => g.id));
+        const gamesPlayed = (player.gameLogs ?? []).filter(
+          (log) => !log.gameId || invitedIds.has(log.gameId),
+        ).length;
+        const attendanceScore = invited.length > 0 ? (gamesPlayed / invited.length) * 40 : 0;
 
         // Payment score (0-30)
         let paymentScore = 0;
@@ -103,9 +106,10 @@ export default function PremiumInsightsScreen() {
           paymentScore = 30;
         }
 
-        // RSVP speed score (0-30) — approximated: early RSVP = in checkedIn, no late flip
-        // (once responded_at data is collected from Supabase, this will become precise)
-        const rsvpScore = invited.length > 0 ? Math.min(30, (attended.length / invited.length) * 20 + 10) : 0;
+        // RSVP speed score (0-30) — uses check-ins (RSVP behaviour, not attendance)
+        const allInvited = games.filter((g) => g.invitedPlayers.includes(player.id));
+        const checkedIn = allInvited.filter((g) => g.checkedInPlayers.includes(player.id));
+        const rsvpScore = allInvited.length > 0 ? Math.min(30, (checkedIn.length / allInvited.length) * 20 + 10) : 0;
 
         const total = attendanceScore + paymentScore + rsvpScore;
 
@@ -115,9 +119,9 @@ export default function PremiumInsightsScreen() {
           paymentScore,
           rsvpScore,
           total,
-          attendanceRate: invited.length > 0 ? Math.round((attended.length / invited.length) * 100) : 0,
+          attendanceRate: invited.length > 0 ? Math.min(100, Math.round((gamesPlayed / invited.length) * 100)) : 0,
           gamesInvited: invited.length,
-          gamesAttended: attended.length,
+          gamesAttended: gamesPlayed,
         };
       })
       .sort((a, b) => b.total - a.total)

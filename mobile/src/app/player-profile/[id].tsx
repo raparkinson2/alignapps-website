@@ -86,7 +86,7 @@ function computeTrophies(
   allPlayers: Player[],
   seasonHistory: ArchivedSeason[],
   sport: Sport,
-  games: { checkedInPlayers?: string[]; gameResult?: string }[]
+  games: { invitedPlayers?: string[]; checkedInPlayers?: string[]; gameResult?: string; id: string }[]
 ): TrophyItem[] {
   const trophies: TrophyItem[] = [];
   const eligiblePlayers = allPlayers.filter((p) => {
@@ -140,7 +140,11 @@ function computeTrophies(
 
   const completedGames = games.filter((g) => g.gameResult);
   const gamesPlayed = completedGames.length;
-  const attended = completedGames.filter((g) => (g.checkedInPlayers ?? []).includes(player.id)).length;
+  const invitedGames = completedGames.filter((g) => (g.invitedPlayers ?? []).includes(player.id));
+  const invitedIds = new Set(invitedGames.map((g) => g.id));
+  const attended = (player.gameLogs ?? []).filter(
+    (log) => !log.gameId || invitedIds.has(log.gameId),
+  ).length;
 
   if (gamesPlayed >= 5 && attended === gamesPlayed) {
     trophies.push({
@@ -161,10 +165,14 @@ function computeTrophies(
   }
 
   if (attended > 0 && gamesPlayed > 0) {
+    const completedIds = new Set(completedGames.map((g) => g.id));
     const maxAttendance = Math.max(
-      ...eligiblePlayers.map((p) =>
-        completedGames.filter((g) => (g.checkedInPlayers ?? []).includes(p.id)).length
-      )
+      ...eligiblePlayers.map((p) => {
+        const pInvitedIds = new Set(
+          completedGames.filter((g) => (g.invitedPlayers ?? []).includes(p.id)).map((g) => g.id),
+        );
+        return (p.gameLogs ?? []).filter((log) => !log.gameId || pInvitedIds.has(log.gameId)).length;
+      })
     );
     if (attended === maxAttendance && attended >= 3 && !trophies.find((t) => t.id === 'iron-man')) {
       trophies.push({
@@ -904,12 +912,20 @@ export default function PlayerProfileScreen() {
     () => games.filter((g) => g.invitedPlayers?.includes(id ?? '')).length,
     [games, id],
   );
-  const totalCheckedIn = useMemo(
-    () => completedGames.filter((g) => g.checkedInPlayers?.includes(id ?? '')).length,
+  const totalCheckedIn = useMemo(() => {
+    if (!player) return 0;
+    const invitedCompleted = completedGames.filter((g) => g.invitedPlayers?.includes(id ?? ''));
+    const invitedIds = new Set(invitedCompleted.map((g) => g.id));
+    return (player.gameLogs ?? []).filter((log) => !log.gameId || invitedIds.has(log.gameId)).length;
+  }, [completedGames, id, player]);
+
+  const gamesInvitedCount = useMemo(
+    () => completedGames.filter((g) => g.invitedPlayers?.includes(id ?? '')).length,
     [completedGames, id],
   );
-  const attendancePct = completedGames.length > 0
-    ? Math.round((totalCheckedIn / completedGames.length) * 100)
+
+  const attendancePct = gamesInvitedCount > 0
+    ? Math.min(100, Math.round((totalCheckedIn / gamesInvitedCount) * 100))
     : 0;
 
   const handleShare = async () => {
