@@ -151,7 +151,7 @@ function AttendanceHeatmapScreen() {
           >
             <ChevronLeft size={22} color="#94a3b8" />
           </Pressable>
-          <Text style={{ color: '#334155', fontSize: 13, fontWeight: '600' }}>Attendance Heatmap</Text>
+          <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '600' }}>Attendance Heatmap</Text>
           <View style={{ width: 40 }} />
         </Animated.View>
 
@@ -160,7 +160,7 @@ function AttendanceHeatmapScreen() {
           {/* Title */}
           <Animated.View entering={FadeInDown.delay(60).springify()} style={{ paddingHorizontal: 20, marginBottom: 16 }}>
             <Text style={{ color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -0.5 }}>Attendance Heatmap</Text>
-            <Text style={{ color: '#475569', fontSize: 13, marginTop: 4 }}>Last {displayGames.length} of {completedGames.length} games</Text>
+            <Text style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Last {displayGames.length} of {completedGames.length} games</Text>
           </Animated.View>
 
           {/* KPI row */}
@@ -170,15 +170,15 @@ function AttendanceHeatmapScreen() {
                 <Text style={{ color: teamAvgRate !== null ? rateColor(teamAvgRate) : '#334155', fontSize: 26, fontWeight: '900' }}>
                   {teamAvgRate !== null ? `${teamAvgRate}%` : '—'}
                 </Text>
-                <Text style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Team Avg</Text>
+                <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>Team Avg</Text>
               </LinearGradient>
               <LinearGradient colors={['#0f1e35', '#0a1628']} style={{ flex: 1, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(34,197,94,0.15)' }}>
                 <Text style={{ color: '#22c55e', fontSize: 26, fontWeight: '900' }}>{topAttenders}</Text>
-                <Text style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Perfect Attendance</Text>
+                <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>Perfect Attendance</Text>
               </LinearGradient>
               <LinearGradient colors={['#0f1e35', '#0a1628']} style={{ flex: 1, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: concernPlayers > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(103,232,249,0.08)' }}>
                 <Text style={{ color: concernPlayers > 0 ? '#ef4444' : '#334155', fontSize: 26, fontWeight: '900' }}>{concernPlayers}</Text>
-                <Text style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>Below 50%</Text>
+                <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>Below 50%</Text>
               </LinearGradient>
             </View>
           </Animated.View>
@@ -189,7 +189,7 @@ function AttendanceHeatmapScreen() {
               {([['#22c55e', 'Played'], ['#ef4444', 'Missed'], ['rgba(255,255,255,0.1)', 'Not invited']] as const).map(([color, label]) => (
                 <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: color }} />
-                  <Text style={{ color: '#334155', fontSize: 11 }}>{label}</Text>
+                  <Text style={{ color: '#64748b', fontSize: 11 }}>{label}</Text>
                 </View>
               ))}
             </View>
@@ -251,7 +251,7 @@ function AttendanceHeatmapScreen() {
 
           {/* Reliability ranking */}
           <Animated.View entering={FadeInDown.delay(140).springify()} style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-            <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 }}>
+            <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 }}>
               Reliability Ranking
             </Text>
             <View style={{ backgroundColor: '#0f172a', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
@@ -268,11 +268,11 @@ function AttendanceHeatmapScreen() {
                       gap: 10,
                     }}
                   >
-                    <Text style={{ color: '#1e3a5f', fontSize: 12, fontWeight: '700', width: 22, textAlign: 'center' }}>{i + 1}</Text>
+                    <Text style={{ color: '#475569', fontSize: 12, fontWeight: '700', width: 22, textAlign: 'center' }}>{i + 1}</Text>
                     <Text style={{ color: '#94a3b8', fontSize: 13, flex: 1 }} numberOfLines={1}>
                       {item.player.firstName} {item.player.lastName}
                     </Text>
-                    <Text style={{ color: '#334155', fontSize: 11 }}>
+                    <Text style={{ color: '#64748b', fontSize: 11 }}>
                       {item.playedCount}/{item.invitedCount}
                     </Text>
                     <View style={{ width: 60, height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
