@@ -554,6 +554,7 @@ export interface Game {
   weatherTemp?: number; // Temperature in °F at game time
   weatherCondition?: 'sunny' | 'partly_cloudy' | 'cloudy' | 'rain' | 'snow' | 'indoor'; // Weather condition
   weatherAutoFetched?: boolean; // Whether weather was auto-fetched
+  weatherIsForecast?: boolean; // True when data is a forecast (future game), false/undefined for historical
 }
 
 // In-app notification types
@@ -655,6 +656,10 @@ export interface Event {
   inviteReleaseOption?: InviteReleaseOption;
   inviteReleaseDate?: string; // ISO date string for scheduled release
   invitesSent?: boolean;
+  weatherTemp?: number;
+  weatherCondition?: 'sunny' | 'partly_cloudy' | 'cloudy' | 'rain' | 'snow' | 'indoor';
+  weatherAutoFetched?: boolean;
+  weatherIsForecast?: boolean;
 }
 
 export interface Photo {

@@ -14,7 +14,7 @@ import { supabase } from './supabase';
 import { useTeamStore } from './store';
 import type { Game, Event, Player, ChatMessage, PaymentPeriod, PlayerPayment, PaymentEntry, Photo, AppNotification, Poll, TeamLink, Team, TeamSettings } from './store';
 import { BACKEND_URL } from './config';
-import { fetchAndSaveWeather } from './weather-service';
+import { fetchAndSaveWeather, fetchAndSaveEventWeather } from './weather-service';
 
 // Suppress realtime payment refetches for a short window after a local push
 // to prevent the "appear → disappear → reappear" flicker loop.
@@ -145,6 +145,10 @@ function mapEvent(e: any): Event {
     inviteReleaseOption: e.invite_release_option || 'now',
     inviteReleaseDate: e.invite_release_date || undefined,
     invitesSent: e.invites_sent || false,
+    weatherTemp: e.weather_temp ?? undefined,
+    weatherCondition: e.weather_condition || undefined,
+    weatherAutoFetched: e.weather_auto_fetched || false,
+    weatherIsForecast: e.weather_is_forecast || false,
     invitedPlayers: [],
     confirmedPlayers: [],
     declinedPlayers: [],
@@ -336,17 +340,29 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     useTeamStore.getState().setIsSyncing(false);
     console.log(`SYNC: Phase 1 done — ${players.length} players, ${games.length} games, ${events.length} events`);
 
-    // Proactively fetch weather for past games that haven't been fetched yet.
-    // Runs in the background — doesn't block UI. Fires regardless of whether a result is recorded.
+    // Proactively fetch weather for games (past = historical, up to 16 days future = forecast).
+    // Runs in the background — doesn't block UI.
     const today = new Date().toISOString().split('T')[0];
-    const weatherNeeded = games.filter(
-      (g) => !g.weatherAutoFetched && g.date.split('T')[0] <= today && (g.address || g.location)
+    const maxForecastDate = new Date();
+    maxForecastDate.setDate(maxForecastDate.getDate() + 16);
+    const maxForecastStr = maxForecastDate.toISOString().split('T')[0];
+
+    const weatherGames = games.filter(
+      (g) => !g.weatherAutoFetched && g.date.split('T')[0] <= maxForecastStr && (g.address || g.location)
     );
-    if (weatherNeeded.length > 0) {
-      console.log(`SYNC: Pre-fetching weather for ${weatherNeeded.length} past game(s)`);
-      // Stagger fetches to avoid hammering the API
-      weatherNeeded.forEach((g, i) => {
-        setTimeout(() => fetchAndSaveWeather(g, teamId).catch(() => {}), i * 1500);
+    const weatherEvents = events.filter(
+      (e) => !e.weatherAutoFetched && e.date.split('T')[0] <= maxForecastStr && (e.address || e.location)
+    );
+
+    const allWeatherItems = [
+      ...weatherGames.map((g, i) => ({ fn: () => fetchAndSaveWeather(g, teamId), i })),
+      ...weatherEvents.map((e, i) => ({ fn: () => fetchAndSaveEventWeather(e, teamId), i: weatherGames.length + i })),
+    ];
+
+    if (allWeatherItems.length > 0) {
+      console.log(`SYNC: Pre-fetching weather for ${weatherGames.length} game(s) and ${weatherEvents.length} event(s)`);
+      allWeatherItems.forEach(({ fn, i }) => {
+        setTimeout(() => fn().catch(() => {}), i * 1500);
       });
     }
 

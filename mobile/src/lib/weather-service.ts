@@ -1,6 +1,6 @@
 /**
- * Weather Service — auto-fetches historical weather for past games.
- * Uses Open-Meteo (free, no API key) geocoding + archive API.
+ * Weather Service — fetches historical and forecast weather for games and events.
+ * Uses Open-Meteo (free, no API key) geocoding + archive/forecast APIs.
  *
  * Weather codes (WMO) → our app conditions:
  *   0        → sunny
@@ -9,11 +9,12 @@
  *   51-67, 80-82 → rain
  *   71-77, 85-86 → snow
  *
- * Call fetchAndSaveWeather(game, teamId) for any past game.
- * It is a no-op if weather already fetched or game has no address.
+ * - Past dates (≤ today): uses archive API
+ * - Future dates (up to 16 days): uses forecast API
+ * - Farther than 16 days: no-op (too far out)
  */
 
-import type { Game } from './store-types';
+import type { Game, Event } from './store-types';
 import { supabase } from './supabase';
 import { useTeamStore } from './store';
 
@@ -28,7 +29,7 @@ function wmoToCondition(code: number): WeatherCondition {
   return 'cloudy';
 }
 
-/** Geocode an address string → { lat, lon } using Open-Meteo geocoding (Nominatim). */
+/** Geocode an address string → { lat, lon } using Nominatim. */
 async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
   try {
     const encoded = encodeURIComponent(address);
@@ -67,97 +68,157 @@ function cToF(c: number): number {
 }
 
 /**
- * Main entry point.
- * Fetches weather for a past game and saves it to Supabase + local store.
- * No-op if: weather already fetched, game is in future, or game has no address/location.
+ * Fetch weather for a Game (past = historical, future = forecast).
+ * No-op if: weather already fetched, game has no address, or >16 days out.
  */
 export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<void> {
-  // Guard conditions
   if (game.weatherAutoFetched) return;
   if (!game.date) return;
-
-  const gameDate = new Date(game.date);
-  const now = new Date();
-  // Only fetch if game was in the past
-  if (gameDate >= now) return;
 
   const addressToGeocode = game.address || game.location;
   if (!addressToGeocode || addressToGeocode.trim() === '') return;
 
+  const dateStr = game.date.split('T')[0];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const gameDate = new Date(dateStr + 'T00:00:00');
+  const diffDays = Math.round((gameDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Too far in the future — skip
+  if (diffDays > 16) return;
+
+  await _fetchAndSave({
+    id: game.id,
+    date: dateStr,
+    time: game.time,
+    address: addressToGeocode,
+    isFuture: diffDays > 0,
+    saveToTable: 'games',
+    localUpdate: (temp, condition, isForecast) => {
+      useTeamStore.getState().updateGame(game.id, {
+        weatherTemp: temp ?? undefined,
+        weatherCondition: condition ?? undefined,
+        weatherAutoFetched: true,
+        weatherIsForecast: isForecast,
+      });
+    },
+  });
+}
+
+/**
+ * Fetch weather for an Event (past = historical, future = forecast).
+ * No-op if: weather already fetched, event has no address, or >16 days out.
+ */
+export async function fetchAndSaveEventWeather(event: Event, teamId: string): Promise<void> {
+  if (event.weatherAutoFetched) return;
+  if (!event.date) return;
+
+  const addressToGeocode = event.address || event.location;
+  if (!addressToGeocode || addressToGeocode.trim() === '') return;
+
+  const dateStr = event.date.split('T')[0];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDate = new Date(dateStr + 'T00:00:00');
+  const diffDays = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Too far in the future — skip
+  if (diffDays > 16) return;
+
+  await _fetchAndSave({
+    id: event.id,
+    date: dateStr,
+    time: event.time,
+    address: addressToGeocode,
+    isFuture: diffDays > 0,
+    saveToTable: 'events',
+    localUpdate: (temp, condition, isForecast) => {
+      useTeamStore.getState().updateEvent(event.id, {
+        weatherTemp: temp ?? undefined,
+        weatherCondition: condition ?? undefined,
+        weatherAutoFetched: true,
+        weatherIsForecast: isForecast,
+      });
+    },
+  });
+}
+
+interface FetchParams {
+  id: string;
+  date: string; // YYYY-MM-DD
+  time?: string;
+  address: string;
+  isFuture: boolean;
+  saveToTable: 'games' | 'events';
+  localUpdate: (temp: number | null, condition: WeatherCondition | null, isForecast: boolean) => void;
+}
+
+async function _fetchAndSave(params: FetchParams): Promise<void> {
+  const { id, date, time, address, isFuture, saveToTable, localUpdate } = params;
+
   try {
-    // Step 1: Geocode
-    const coords = await geocodeAddress(addressToGeocode);
+    const coords = await geocodeAddress(address);
     if (!coords) {
-      console.log('[weather] Geocoding failed for:', addressToGeocode);
-      // Mark as fetched anyway so we don't keep retrying
-      await markWeatherFetched(game.id, null, null);
+      console.log('[weather] Geocoding failed for:', address);
+      localUpdate(null, null, isFuture);
       return;
     }
 
-    // Step 2: Fetch historical weather
-    const dateStr = game.date.split('T')[0]; // YYYY-MM-DD
-    const gameHour = parseGameHour(game.time || '12:00 PM');
+    const gameHour = parseGameHour(time || '12:00 PM');
 
-    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${coords.lat}&longitude=${coords.lon}&start_date=${dateStr}&end_date=${dateStr}&hourly=temperature_2m,weathercode&temperature_unit=celsius&timezone=auto`;
+    let tempC: number;
+    let wmoCode: number;
 
-    const res = await fetch(url);
-    const data = await res.json();
+    if (isFuture) {
+      // Forecast API (up to 16 days)
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&start_date=${date}&end_date=${date}&hourly=temperature_2m,weathercode&temperature_unit=celsius&timezone=auto`;
+      const res = await fetch(url);
+      const data = await res.json();
 
-    if (!data?.hourly?.temperature_2m || !data?.hourly?.weathercode) {
-      console.log('[weather] No data returned from Open-Meteo');
-      await markWeatherFetched(game.id, null, null);
-      return;
+      if (!data?.hourly?.temperature_2m || !data?.hourly?.weathercode) {
+        console.log('[weather] No forecast data from Open-Meteo');
+        localUpdate(null, null, true);
+        return;
+      }
+
+      tempC = data.hourly.temperature_2m[gameHour] ?? data.hourly.temperature_2m[12];
+      wmoCode = data.hourly.weathercode[gameHour] ?? data.hourly.weathercode[12];
+    } else {
+      // Historical archive API
+      const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${coords.lat}&longitude=${coords.lon}&start_date=${date}&end_date=${date}&hourly=temperature_2m,weathercode&temperature_unit=celsius&timezone=auto`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data?.hourly?.temperature_2m || !data?.hourly?.weathercode) {
+        console.log('[weather] No archive data from Open-Meteo');
+        localUpdate(null, null, false);
+        return;
+      }
+
+      tempC = data.hourly.temperature_2m[gameHour] ?? data.hourly.temperature_2m[12];
+      wmoCode = data.hourly.weathercode[gameHour] ?? data.hourly.weathercode[12];
     }
-
-    // Pick the hour closest to game time
-    const tempC = data.hourly.temperature_2m[gameHour] ?? data.hourly.temperature_2m[12];
-    const wmoCode = data.hourly.weathercode[gameHour] ?? data.hourly.weathercode[12];
 
     const tempF = cToF(tempC);
     const condition = wmoToCondition(wmoCode);
 
-    console.log(`[weather] Game ${game.id}: ${condition}, ${tempF}°F (WMO ${wmoCode})`);
+    console.log(`[weather] ${saveToTable} ${id}: ${condition}, ${tempF}°F (WMO ${wmoCode}) [${isFuture ? 'forecast' : 'historical'}]`);
 
-    // Step 3: Save to Supabase (best-effort — columns may not exist until migration is run)
-    const { error } = await supabase.from('games').update({
+    // Save to Supabase (best-effort)
+    const { error } = await supabase.from(saveToTable).update({
       weather_temp: tempF,
       weather_condition: condition,
       weather_auto_fetched: true,
-    }).eq('id', game.id);
+      weather_is_forecast: isFuture,
+    }).eq('id', id);
 
     if (error) {
-      // Columns missing = migration not run yet. Still save locally so the session works.
-      console.log('[weather] Supabase save skipped (migration pending):', error.message);
+      console.log(`[weather] Supabase save skipped (migration pending):`, error.message);
     }
 
-    // Step 4: Always update local store regardless of Supabase result
-    useTeamStore.getState().updateGame(game.id, {
-      weatherTemp: tempF,
-      weatherCondition: condition,
-      weatherAutoFetched: true,
-    });
-
-    console.log(`[weather] Saved weather for game ${game.id}`);
-  } catch (err) {
-    console.error('[weather] fetchAndSaveWeather error:', err);
-  }
-}
-
-async function markWeatherFetched(gameId: string, temp: number | null, condition: WeatherCondition | null): Promise<void> {
-  try {
-    // Best-effort Supabase save — silently skip if columns missing (migration not run yet)
-    await supabase.from('games').update({
-      weather_temp: temp,
-      weather_condition: condition,
-      weather_auto_fetched: true,
-    }).eq('id', gameId);
     // Always update local store
-    useTeamStore.getState().updateGame(gameId, {
-      weatherTemp: temp ?? undefined,
-      weatherCondition: condition ?? undefined,
-      weatherAutoFetched: true,
-    });
-  } catch {
-    // Silently ignore — migration may not be run yet
+    localUpdate(tempF, condition, isFuture);
+  } catch (err) {
+    console.error('[weather] fetch error:', err);
   }
 }
