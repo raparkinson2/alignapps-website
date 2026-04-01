@@ -305,16 +305,22 @@ export default function PremiumInsightsScreen() {
               </View>
             </View>
 
+            {/* Explainer blurb */}
+            <Text style={{ color: '#64748b', fontSize: 13, lineHeight: 19, marginBottom: 10 }}>
+              Each player is scored out of 100 based on three factors: how often they show up, whether they've paid dues, and how consistently they RSVP to games.
+            </Text>
+
             {/* Scoring explanation */}
             <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 12, marginBottom: 10, flexDirection: 'row', gap: 12 }}>
               {[
-                { label: 'Attendance', pts: '40 pts', color: '#22c55e' },
-                { label: 'Payments', pts: '30 pts', color: '#f59e0b' },
-                { label: 'RSVP Speed', pts: '30 pts', color: '#38bdf8' },
+                { label: 'Attendance', pts: '40 pts', color: '#22c55e', tip: 'Games attended' },
+                { label: 'Payments', pts: '30 pts', color: '#f59e0b', tip: 'Dues paid' },
+                { label: 'RSVP Rate', pts: '30 pts', color: '#38bdf8', tip: "Games RSVP'd" },
               ].map((item) => (
                 <View key={item.label} style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ color: item.color, fontWeight: '700', fontSize: 12 }}>{item.pts}</Text>
-                  <Text style={{ color: '#64748b', fontSize: 10, marginTop: 2, textAlign: 'center' }}>{item.label}</Text>
+                  <Text style={{ color: '#94a3b8', fontSize: 10, marginTop: 2, textAlign: 'center' }}>{item.label}</Text>
+                  <Text style={{ color: '#475569', fontSize: 9, marginTop: 1, textAlign: 'center' }}>{item.tip}</Text>
                 </View>
               ))}
             </View>
