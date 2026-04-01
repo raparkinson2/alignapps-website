@@ -996,9 +996,6 @@ export default function TeamStatsScreen() {
                 <View>
                   {/* Header row */}
                   <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingRight: 12, backgroundColor: 'rgba(51,65,85,0.5)', borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.6)' }}>
-                    <View style={{ width: 50, alignItems: 'center' }}>
-                      <Text style={{ color: '#cbd5e1', fontWeight: '600', fontSize: 12 }}>Pos</Text>
-                    </View>
                     {statHeaders.map((header, colIdx) => (
                       <Pressable
                         key={header}
@@ -1051,9 +1048,6 @@ export default function TeamStatsScreen() {
                           backgroundColor: isLeader ? hexToRgba(teamColor, 0.07) : undefined,
                         }}
                       >
-                        <View style={{ width: 50, alignItems: 'center' }}>
-                          <Text style={{ color: '#94a3b8', fontSize: 12 }}>{getDisplayPosition(player)}</Text>
-                        </View>
                         {statValues.map((value, i) => {
                           const numVal = typeof value === 'string' ? parseFloat(value) || 0 : (value ?? 0);
                           const maxVal = colMaxValues[i] ?? 0;
