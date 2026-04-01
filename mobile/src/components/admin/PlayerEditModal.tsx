@@ -494,6 +494,33 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
                     </Text>
                   </Pressable>
                 </View>
+                {/* Retire row */}
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    const next = currentPlayer.status === 'retired' ? 'active' : 'retired';
+                    handleUpdateStatus(next);
+                  }}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                    paddingVertical: 12, borderRadius: 12, marginBottom: 8, marginTop: 8,
+                    backgroundColor: currentPlayer.status === 'retired' ? 'rgba(251,191,36,0.2)' : 'rgba(30,41,59,1)',
+                    borderWidth: 1,
+                    borderColor: currentPlayer.status === 'retired' ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <Text style={{ fontSize: 14, marginRight: 6 }}>🏅</Text>
+                  <Text style={{ fontWeight: '600', color: currentPlayer.status === 'retired' ? '#fbbf24' : '#64748b', fontSize: 14 }}>
+                    {currentPlayer.status === 'retired' ? 'Retired — Tap to Reactivate' : 'Retire Player'}
+                  </Text>
+                </Pressable>
+                {currentPlayer.status === 'retired' && (
+                  <View style={{ backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)', marginBottom: 8 }}>
+                    <Text style={{ color: '#94a3b8', fontSize: 12, lineHeight: 17 }}>
+                      Retired players are hidden from rosters and game invites. Their stats and season history are preserved permanently.
+                    </Text>
+                  </View>
+                )}
                 <View className="flex-row">
                   <Pressable
                     onPress={() => {
@@ -625,27 +652,16 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
                   const showParent = enabledRoles.includes('parent') && (teamSettings?.isPremium ?? false);
 
                   return (
-                    <View className="flex-row flex-wrap">
+                    <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                       {/* Captain */}
                       <Pressable
                         onPress={() => handleToggleRole('captain')}
                         className={cn(
-                          'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                          'flex-1 py-3 px-2 rounded-xl items-center justify-center',
                           selectedRoles.includes('captain') ? 'bg-amber-500' : 'bg-slate-800'
                         )}
                       >
-                        <View className="w-5 h-5 rounded-full bg-amber-500/30 items-center justify-center mb-1">
-                          <Text className={cn(
-                            'text-xs font-black',
-                            selectedRoles.includes('captain') ? 'text-white' : 'text-amber-500'
-                          )}>C</Text>
-                        </View>
-                        <Text
-                          className={cn(
-                            'font-semibold text-sm',
-                            selectedRoles.includes('captain') ? 'text-white' : 'text-slate-400'
-                          )}
-                        >
+                        <Text className={cn('font-semibold text-sm', selectedRoles.includes('captain') ? 'text-white' : 'text-slate-400')}>
                           Captain
                         </Text>
                       </Pressable>
@@ -653,17 +669,11 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
                       <Pressable
                         onPress={() => handleToggleRole('admin')}
                         className={cn(
-                          'flex-1 py-3 px-2 rounded-xl mr-2 items-center justify-center',
+                          'flex-1 py-3 px-2 rounded-xl items-center justify-center',
                           selectedRoles.includes('admin') ? 'bg-purple-500' : 'bg-slate-800'
                         )}
                       >
-                        <Shield size={16} color={selectedRoles.includes('admin') ? 'white' : '#a78bfa'} />
-                        <Text
-                          className={cn(
-                            'font-semibold text-sm mt-1',
-                            selectedRoles.includes('admin') ? 'text-white' : 'text-slate-400'
-                          )}
-                        >
+                        <Text className={cn('font-semibold text-sm', selectedRoles.includes('admin') ? 'text-white' : 'text-slate-400')}>
                           Admin
                         </Text>
                       </Pressable>
@@ -673,17 +683,10 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
                           onPress={handleToggleEditCoach}
                           className={cn(
                             'flex-1 py-3 px-2 rounded-xl items-center justify-center',
-                            showParent && 'mr-2',
                             editPlayerIsCoach ? 'bg-cyan-500' : 'bg-slate-800'
                           )}
                         >
-                          <UserCog size={16} color={editPlayerIsCoach ? 'white' : '#67e8f9'} />
-                          <Text
-                            className={cn(
-                              'font-semibold text-sm mt-1',
-                              editPlayerIsCoach ? 'text-white' : 'text-slate-400'
-                            )}
-                          >
+                          <Text className={cn('font-semibold text-sm', editPlayerIsCoach ? 'text-white' : 'text-slate-400')}>
                             Coach
                           </Text>
                         </Pressable>
@@ -697,13 +700,7 @@ export function PlayerEditModal({ visible, onClose, playerId, onReinvite }: Play
                             editPlayerIsParent ? 'bg-pink-500' : 'bg-slate-800'
                           )}
                         >
-                          <ParentChildIcon size={16} color={editPlayerIsParent ? 'white' : '#ec4899'} />
-                          <Text
-                            className={cn(
-                              'font-semibold text-sm mt-1',
-                              editPlayerIsParent ? 'text-white' : 'text-slate-400'
-                            )}
-                          >
+                          <Text className={cn('font-semibold text-sm', editPlayerIsParent ? 'text-white' : 'text-slate-400')}>
                             Parent/Guardian
                           </Text>
                         </Pressable>
