@@ -78,8 +78,7 @@ export default function GameMomentumScreen() {
     }
 
     const activeBands = bands
-      .filter((b) => b.total > 0)
-      .map((b) => ({ ...b, winPct: Math.round((b.wins / b.total) * 100) }));
+      .map((b) => ({ ...b, winPct: b.total > 0 ? Math.round((b.wins / b.total) * 100) : null }));
 
     return { bands: activeBands, rosterSize };
   }, [games, players]);
@@ -281,19 +280,27 @@ export default function GameMomentumScreen() {
                       <View className="flex-row justify-between mb-2">
                         <Text className="text-white font-semibold text-sm">{band.label} players</Text>
                         <View className="flex-row items-center" style={{ gap: 6 }}>
-                          <Text style={{ color: band.winPct >= 60 ? '#22c55e' : band.winPct >= 40 ? '#f59e0b' : '#ef4444', fontWeight: '700', fontSize: 14 }}>
-                            {band.winPct}%
-                          </Text>
-                          <Text className="text-slate-500 text-xs">({band.total}g)</Text>
+                          {band.winPct === null ? (
+                            <Text className="text-slate-500 text-xs italic">No data</Text>
+                          ) : (
+                            <>
+                              <Text style={{ color: band.winPct >= 60 ? '#22c55e' : band.winPct >= 40 ? '#f59e0b' : '#ef4444', fontWeight: '700', fontSize: 14 }}>
+                                {band.winPct}%
+                              </Text>
+                              <Text className="text-slate-500 text-xs">({band.total}g)</Text>
+                            </>
+                          )}
                         </View>
                       </View>
                       <View style={{ height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-                        <LinearGradient
-                          colors={band.winPct >= 60 ? ['#22c55e', '#16a34a'] : band.winPct >= 40 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={{ width: `${band.winPct}%`, height: 10, borderRadius: 5 }}
-                        />
+                        {band.winPct !== null && (
+                          <LinearGradient
+                            colors={band.winPct >= 60 ? ['#22c55e', '#16a34a'] : band.winPct >= 40 ? ['#f59e0b', '#d97706'] : ['#ef4444', '#dc2626']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={{ width: `${band.winPct}%`, height: 10, borderRadius: 5 }}
+                          />
+                        )}
                       </View>
                     </View>
                   ))}
