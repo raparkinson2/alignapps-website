@@ -5,7 +5,7 @@ import { useRouter, Stack } from 'expo-router';
 import {
   ArrowLeft, Crown, ChevronRight, Target, Zap,
   CloudRain, Ghost, Trophy, Users, TrendingUp,
-  AlertTriangle, Flame, Star, Shield, Calendar,
+  AlertTriangle, Flame, Star, Shield, Calendar, BarChart3, Grid3x3,
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -546,6 +546,50 @@ export default function PremiumInsightsScreen() {
                   <Text className="text-white font-bold text-base">Monthly Splits</Text>
                   <Text className="text-slate-400 text-sm mt-0.5">
                     Team record and scoring broken down by month
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </LinearGradient>
+            </Pressable>
+
+            {/* Attendance Heatmap */}
+            <Pressable
+              style={{ marginTop: 12 }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/attendance-heatmap'); }}
+            >
+              <LinearGradient
+                colors={['rgba(34,197,94,0.15)', 'rgba(34,197,94,0.05)']}
+                style={{ borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(34,197,94,0.25)', flexDirection: 'row', alignItems: 'center' }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(34,197,94,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                  <Grid3x3 size={22} color="#22c55e" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-white font-bold text-base">Attendance Heatmap</Text>
+                  <Text className="text-slate-400 text-sm mt-0.5">
+                    Visualize who shows up and who flakes across every game
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </LinearGradient>
+            </Pressable>
+
+            {/* Payment Analytics */}
+            <Pressable
+              style={{ marginTop: 12 }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/payment-analytics'); }}
+            >
+              <LinearGradient
+                colors={['rgba(245,158,11,0.15)', 'rgba(245,158,11,0.05)']}
+                style={{ borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)', flexDirection: 'row', alignItems: 'center' }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(245,158,11,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                  <BarChart3 size={22} color="#f59e0b" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-white font-bold text-base">Payment Analytics</Text>
+                  <Text className="text-slate-400 text-sm mt-0.5">
+                    Collection rates, avg days to pay & player reliability
                   </Text>
                 </View>
                 <ChevronRight size={20} color="#64748b" />

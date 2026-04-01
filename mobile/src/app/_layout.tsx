@@ -686,6 +686,14 @@ function AuthNavigator() {
         name="season-wrapped"
         options={{ headerShown: false, presentation: 'fullScreenModal' }}
       />
+      <Stack.Screen
+        name="payment-analytics"
+        options={{ headerShown: false, presentation: 'card' }}
+      />
+      <Stack.Screen
+        name="attendance-heatmap"
+        options={{ headerShown: false, presentation: 'card' }}
+      />
 <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       <Stack.Screen
         name="upgrade"

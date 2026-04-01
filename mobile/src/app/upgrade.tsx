@@ -5,6 +5,7 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -496,6 +497,22 @@ export default function UpgradeScreen() {
               ))}
             </View>
           </Animated.View>
+
+          {/* Legal footer */}
+          <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16, alignItems: 'center', gap: 6 }}>
+            <Text style={{ color: '#334155', fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
+              Subscription auto-renews until cancelled. Cancel anytime in your App Store settings.
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 2 }}>
+              <Pressable onPress={() => Linking.openURL('https://alignsports.app/privacy')}>
+                <Text style={{ color: '#475569', fontSize: 11, textDecorationLine: 'underline' }}>Privacy Policy</Text>
+              </Pressable>
+              <Text style={{ color: '#1e293b', fontSize: 11 }}>·</Text>
+              <Pressable onPress={() => Linking.openURL('https://alignsports.app/terms')}>
+                <Text style={{ color: '#475569', fontSize: 11, textDecorationLine: 'underline' }}>Terms of Use</Text>
+              </Pressable>
+            </View>
+          </View>
 
         </ScrollView>
       </SafeAreaView>

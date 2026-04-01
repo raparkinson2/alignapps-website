@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { withErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useRef, useCallback } from 'react';
+import { useRouter } from 'expo-router';
 import {
   DollarSign,
   Plus,
@@ -12,6 +13,7 @@ import {
   ExternalLink,
   Info,
   GripVertical,
+  BarChart3,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -37,6 +39,7 @@ import { PaymentInfoModal } from '@/components/payments/PaymentInfoModal';
 import { StripeDisclosureModal } from '@/components/payments/StripeModals';
 
 function PaymentsScreen() {
+  const router = useRouter();
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore(useShallow((s) => s.teamSettings));
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
@@ -149,7 +152,16 @@ function PaymentsScreen() {
       <SafeAreaView className="flex-1" edges={['top']}>
         {/* Header */}
         <Animated.View entering={FadeIn.delay(50)} className="px-5 pt-2 pb-4">
-          <Text className="text-white text-3xl font-bold">Team Finances</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text className="text-white text-3xl font-bold">Team Finances</Text>
+            <Pressable
+              onPress={() => router.push('/payment-analytics')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(103,232,249,0.08)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: 'rgba(103,232,249,0.15)' }}
+            >
+              <BarChart3 size={14} color="#67e8f9" />
+              <Text style={{ color: '#67e8f9', fontSize: 12, fontWeight: '700' }}>Analytics</Text>
+            </Pressable>
+          </View>
         </Animated.View>
 
         <FlatList
