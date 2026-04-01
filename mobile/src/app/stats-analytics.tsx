@@ -230,7 +230,6 @@ export default function StatsAnalyticsScreen() {
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  if (!isPremium) { router.push('/upgrade'); return; }
                   if (!hasEnoughGames) {
                     Alert.alert('Not enough data yet', 'You need at least 5 games logged to unlock your Season Wrapped.');
                     return;
@@ -239,14 +238,14 @@ export default function StatsAnalyticsScreen() {
                 }}
               >
                 <LinearGradient
-                  colors={isPremium && hasEnoughGames
+                  colors={hasEnoughGames
                     ? [hexToRgba(teamColor, 0.75), hexToRgba(teamColor, 0.35)]
                     : ['rgba(71,85,105,0.4)', 'rgba(30,41,59,0.4)']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
                     borderRadius: 20, padding: 20, borderWidth: 1,
-                    borderColor: isPremium && hasEnoughGames ? hexToRgba(teamColor, 0.5) : 'rgba(71,85,105,0.3)',
+                    borderColor: hasEnoughGames ? hexToRgba(teamColor, 0.5) : 'rgba(71,85,105,0.3)',
                     flexDirection: 'row', alignItems: 'center', gap: 16,
                   }}
                 >
@@ -262,11 +261,9 @@ export default function StatsAnalyticsScreen() {
                       Your Season Wrapped
                     </Text>
                     <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, lineHeight: 18 }}>
-                      {isPremium
-                        ? (hasEnoughGames
-                            ? 'Your personalized season story is ready.'
-                            : `${5 - gamesAttended} more games until your Wrapped unlocks.`)
-                        : 'Upgrade to unlock your personalized season review.'}
+                      {hasEnoughGames
+                        ? 'Your personalized season story is ready.'
+                        : `${5 - gamesAttended} more games until your Wrapped unlocks.`}
                     </Text>
                   </View>
                 </LinearGradient>
