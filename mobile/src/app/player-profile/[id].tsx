@@ -1053,7 +1053,7 @@ export default function PlayerProfileScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: trophy.color, fontWeight: '700', fontSize: 14 }}>{trophy.title}</Text>
-                      <Text style={{ color: '#475569', fontSize: 12, marginTop: 1 }}>{trophy.subtitle}</Text>
+                      <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 1 }}>{trophy.subtitle}</Text>
                     </View>
                   </Animated.View>
                 ))}
