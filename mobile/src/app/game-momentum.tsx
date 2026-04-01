@@ -81,7 +81,10 @@ export default function GameMomentumScreen() {
         winPct: Math.round((d.wins / d.total) * 100),
         avgTemp: d.tempCount > 0 ? Math.round(d.avgTemp / d.tempCount) : null,
       }))
-      .sort((a, b) => b.winPct - a.winPct);
+      .sort((a, b) => {
+        const order: WeatherCondition[] = ['sunny', 'partly_cloudy', 'cloudy', 'rain', 'snow', 'indoor'];
+        return order.indexOf(a.condition) - order.indexOf(b.condition);
+      });
   }, [games]);
 
   // ── Temperature Range Impact ──────────────────────────────────────────────
