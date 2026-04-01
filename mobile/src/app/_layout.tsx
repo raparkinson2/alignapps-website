@@ -674,6 +674,10 @@ function AuthNavigator() {
         name="game-momentum"
         options={{ headerShown: false, presentation: 'card' }}
       />
+      <Stack.Screen
+        name="player-impact"
+        options={{ headerShown: false, presentation: 'card' }}
+      />
 <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       <Stack.Screen
         name="upgrade"

@@ -486,6 +486,7 @@ export default function PremiumInsightsScreen() {
             {/* Game Momentum */}
             <Pressable
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/game-momentum'); }}
+              className="mb-3"
             >
               <LinearGradient
                 colors={['rgba(20,184,166,0.15)', 'rgba(20,184,166,0.05)']}
@@ -498,6 +499,27 @@ export default function PremiumInsightsScreen() {
                   <Text className="text-white font-bold text-base">Game Momentum</Text>
                   <Text className="text-slate-400 text-sm mt-0.5">
                     RSVP trends, weather impact & win patterns
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#64748b" />
+              </LinearGradient>
+            </Pressable>
+
+            {/* Player Impact */}
+            <Pressable
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/player-impact'); }}
+            >
+              <LinearGradient
+                colors={['rgba(52,211,153,0.15)', 'rgba(52,211,153,0.05)']}
+                style={{ borderRadius: 18, padding: 16, borderWidth: 1, borderColor: 'rgba(52,211,153,0.25)', flexDirection: 'row', alignItems: 'center' }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(52,211,153,0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                  <Users size={22} color="#34d399" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-white font-bold text-base">Player Impact</Text>
+                  <Text className="text-slate-400 text-sm mt-0.5">
+                    Team record with vs without each player
                   </Text>
                 </View>
                 <ChevronRight size={20} color="#64748b" />
