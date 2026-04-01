@@ -1391,7 +1391,7 @@ export default function TeamStatsScreen() {
                       <View className="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden">
                         {/* Header Row */}
                         <View className="flex-row items-center px-3 py-1.5 bg-slate-700/50 border-b border-slate-700">
-                          <Text className="text-slate-400 text-[10px] font-semibold w-12">Date</Text>
+                          <Text className="text-slate-400 text-[10px] font-semibold w-20">Date</Text>
                           <View className="flex-row flex-1 justify-around">
                             {logHeaders.map((header) => (
                               <Text key={header} className="text-slate-400 text-[10px] font-semibold w-8 text-center">
@@ -1404,14 +1404,14 @@ export default function TeamStatsScreen() {
                         {/* Data Rows */}
                         {playerLogs.map((log, index) => {
                           const logStats = log.stats as unknown as Record<string, number>;
-                          const dateStr = new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                          const dateStr = new Date(log.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
                           return (
                             <View
                               key={log.id}
                               className={`flex-row items-center px-3 py-2 ${index !== playerLogs.length - 1 ? 'border-b border-slate-700/50' : ''}`}
                             >
-                              <Text className="text-cyan-400 text-xs font-medium w-12">{dateStr}</Text>
+                              <Text className="text-cyan-400 text-xs font-medium w-20">{dateStr}</Text>
                               <View className="flex-row flex-1 justify-around">
                                 {logHeaders.map((header) => {
                                   const key = getStatKey(header);
@@ -1539,7 +1539,7 @@ export default function TeamStatsScreen() {
                       <View style={{ borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(51,65,85,0.5)' }}>
                         {/* Table header */}
                         <View style={{ flexDirection: 'row', backgroundColor: 'rgba(51,65,85,0.5)', borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.6)' }}>
-                          <View style={{ width: 72, height: 40, justifyContent: 'center', paddingLeft: 12 }}>
+                          <View style={{ width: 100, height: 40, justifyContent: 'center', paddingLeft: 12 }}>
                             <Text style={{ color: '#cbd5e1', fontSize: 12, fontWeight: '600' }}>Date</Text>
                           </View>
                           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
@@ -1556,14 +1556,14 @@ export default function TeamStatsScreen() {
                         {/* Rows */}
                         {logs.map((log, idx) => {
                           const vals = getVals(log);
-                          const dateStr = new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                          const dateStr = new Date(log.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
                           const isLast = idx === logs.length - 1;
                           return (
                             <View
                               key={log.id}
                               style={{ flexDirection: 'row', borderBottomWidth: isLast ? 0 : 1, borderBottomColor: 'rgba(51,65,85,0.4)' }}
                             >
-                              <View style={{ width: 72, height: 44, justifyContent: 'center', paddingLeft: 12 }}>
+                              <View style={{ width: 100, height: 44, justifyContent: 'center', paddingLeft: 12 }}>
                                 <Text style={{ color: '#94a3b8', fontSize: 12 }}>{dateStr}</Text>
                               </View>
                               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
