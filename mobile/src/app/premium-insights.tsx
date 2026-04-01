@@ -131,7 +131,9 @@ export default function PremiumInsightsScreen() {
   // ── Compute Flake Factor ──────────────────────────────────────────────────
   // A flake: player checked IN to a game but then checked OUT on game day
   const flakeData = useMemo(() => {
-    const pastGames = games.filter((g) => new Date(g.date) < new Date());
+    const todayStr = new Date().toISOString().split('T')[0];
+    // Include today's games (e.g. a 9pm game counts even if it hasn't started yet)
+    const pastGames = games.filter((g) => g.date.split('T')[0] <= todayStr);
     const activePlayers = players.filter(
       (p) =>
         p.status === 'active' &&
@@ -141,14 +143,20 @@ export default function PremiumInsightsScreen() {
 
     return activePlayers
       .map((player) => {
-        // Games where the player checked IN first, then checked OUT
-        const gamesDayBails = pastGames.filter(
-          (g) => (g.lateCancelPlayers ?? []).includes(player.id)
-        );
+        // Games where the player bailed:
+        // - lateCancelPlayers: new tracking (checked in → checked out)
+        // - fall back to checkedOutPlayers for older games without lateCancelPlayers history
+        const gamesDayBails = pastGames.filter((g) => {
+          if (g.lateCancelPlayers !== undefined) {
+            return g.lateCancelPlayers.includes(player.id);
+          }
+          return (g.checkedOutPlayers ?? []).includes(player.id);
+        });
         const checkedIn = pastGames.filter(
           (g) =>
             (g.checkedInPlayers ?? []).includes(player.id) ||
-            (g.lateCancelPlayers ?? []).includes(player.id)
+            (g.lateCancelPlayers ?? []).includes(player.id) ||
+            (g.lateCancelPlayers === undefined && (g.checkedOutPlayers ?? []).includes(player.id))
         );
         return {
           player,

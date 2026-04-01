@@ -567,18 +567,20 @@ export function startRealtimeSync(teamId: string): void {
         let invited = [...(game.invitedPlayers || [])];
         let viewed = [...(game.viewedBy || [])];
         const notes = { ...(game.checkoutNotes || {}) };
+        let lateCancels = [...(game.lateCancelPlayers || [])];
 
+        const wasIn = checkedIn.includes(playerId);
         checkedIn = checkedIn.filter((id) => id !== playerId);
         checkedOut = checkedOut.filter((id) => id !== playerId);
         invited = invited.filter((id) => id !== playerId);
         delete notes[playerId];
 
-        if (response === 'in') { checkedIn.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); }
-        else if (response === 'out') { checkedOut.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); if (note) notes[playerId] = note; }
+        if (response === 'in') { checkedIn.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); lateCancels = lateCancels.filter((id) => id !== playerId); }
+        else if (response === 'out') { checkedOut.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); if (note) notes[playerId] = note; if (wasIn && !lateCancels.includes(playerId)) lateCancels.push(playerId); }
         else if (response === 'invited') { if (!invited.includes(playerId)) invited.push(playerId); }
         else if (response === 'viewed') { if (!viewed.includes(playerId)) viewed.push(playerId); if (!invited.includes(playerId)) invited.push(playerId); }
 
-        return { ...game, checkedInPlayers: checkedIn, checkedOutPlayers: checkedOut, invitedPlayers: invited, checkoutNotes: notes, viewedBy: viewed };
+        return { ...game, checkedInPlayers: checkedIn, checkedOutPlayers: checkedOut, invitedPlayers: invited, checkoutNotes: notes, viewedBy: viewed, lateCancelPlayers: lateCancels };
       });
       useTeamStore.setState({ games });
     })
