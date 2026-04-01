@@ -15,6 +15,7 @@ import {
   Flame,
   ChevronUp,
   ChevronDown,
+  Info,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -938,225 +939,241 @@ export default function TeamStatsScreen() {
 
           <Animated.View
             entering={FadeInDown.delay(200).springify()}
-            className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden"
+            style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(51,65,85,0.5)' }}
           >
-            {/* Table Header for Skaters */}
-            <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
-              <Text className="text-slate-300 font-semibold" style={{ flex: 1 }}>Player</Text>
-              <Text className="text-slate-300 font-semibold text-center text-xs" style={{ width: 40 }}>Pos</Text>
-              <View style={{ flexDirection: 'row', marginLeft: 8 }}>
-                {statHeaders.map((header, colIdx) => (
-                  <Pressable
-                    key={header}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      if (sortCol === colIdx) {
-                        setSortDir((d) => d === 'desc' ? 'asc' : 'desc');
-                      } else {
-                        setSortCol(colIdx);
-                        setSortDir('desc');
-                      }
-                    }}
-                    style={{ width: 36, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
-                  >
-                    <Text
-                      className="font-semibold text-center text-xs"
-                      style={{ color: sortCol === colIdx ? teamColor : '#cbd5e1' }}
+            {/* ── Skater / Batter Table ── */}
+            <View style={{ flexDirection: 'row' }}>
+              {/* Frozen left column */}
+              <View style={{ width: 145, borderRightWidth: 1, borderRightColor: 'rgba(51,65,85,0.4)' }}>
+                <View style={{ height: 44, justifyContent: 'center', paddingHorizontal: 12, backgroundColor: 'rgba(51,65,85,0.5)', borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.6)' }}>
+                  <Text style={{ color: '#cbd5e1', fontWeight: '600', fontSize: 13 }}>Player</Text>
+                </View>
+                {sortedPlayers.filter(p => {
+                  if (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') return playerHasNonGoaliePositions(p);
+                  if (sport === 'baseball' || sport === 'softball') return playerHasNonPitcherPositions(p);
+                  return true;
+                }).map((player, index, arr) => {
+                  const isLeader = index === 0;
+                  const isHot = heatingUpIds.has(player.id);
+                  const hasMore = (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse')
+                    ? sortedPlayers.some(p => playerIsGoalie(p))
+                    : (sport === 'baseball' || sport === 'softball') ? sortedPlayers.some(p => playerIsPitcher(p)) : false;
+                  const showBorder = index !== arr.length - 1 || hasMore;
+                  return (
+                    <View
+                      key={player.id}
+                      style={{
+                        height: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10,
+                        borderBottomWidth: showBorder ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)',
+                        backgroundColor: isLeader ? hexToRgba(teamColor, 0.07) : undefined,
+                      }}
                     >
-                      {header}
-                    </Text>
-                    {sortCol === colIdx && (
-                      sortDir === 'desc'
-                        ? <ChevronDown size={9} color={teamColor} style={{ marginLeft: 1 }} />
-                        : <ChevronUp size={9} color={teamColor} style={{ marginLeft: 1 }} />
-                    )}
-                  </Pressable>
-                ))}
+                      <Text style={{ color: '#67e8f9', fontSize: 11, fontWeight: '500', marginRight: 3, flexShrink: 0 }}>
+                        #{player.number}
+                      </Text>
+                      <Text style={{ color: '#fff', fontSize: 13, flex: 1 }} numberOfLines={1}>
+                        {formatName(player)}
+                      </Text>
+                      {isLeader && <Crown size={10} color="#fbbf24" />}
+                      {isHot && <Flame size={10} color="#f97316" style={{ marginLeft: isLeader ? 2 : 0 }} />}
+                    </View>
+                  );
+                })}
               </View>
-              <View style={{ width: 16 }} />
+
+              {/* Scrollable stats columns */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+                <View>
+                  {/* Header row */}
+                  <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingRight: 12, backgroundColor: 'rgba(51,65,85,0.5)', borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.6)' }}>
+                    <View style={{ width: 50, alignItems: 'center' }}>
+                      <Text style={{ color: '#cbd5e1', fontWeight: '600', fontSize: 12 }}>Pos</Text>
+                    </View>
+                    {statHeaders.map((header, colIdx) => (
+                      <Pressable
+                        key={header}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          if (sortCol === colIdx) {
+                            setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+                          } else {
+                            setSortCol(colIdx);
+                            setSortDir('desc');
+                          }
+                        }}
+                        style={{ width: 44, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                      >
+                        <Text style={{ color: sortCol === colIdx ? teamColor : '#cbd5e1', fontWeight: '600', fontSize: 12 }}>
+                          {header}
+                        </Text>
+                        {sortCol === colIdx && (
+                          sortDir === 'desc'
+                            ? <ChevronDown size={9} color={teamColor} style={{ marginLeft: 1 }} />
+                            : <ChevronUp size={9} color={teamColor} style={{ marginLeft: 1 }} />
+                        )}
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  {/* Data rows */}
+                  {sortedPlayers.filter(p => {
+                    if (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') return playerHasNonGoaliePositions(p);
+                    if (sport === 'baseball' || sport === 'softball') return playerHasNonPitcherPositions(p);
+                    return true;
+                  }).map((player, index, arr) => {
+                    const statValues = getStatValues(sport, player.stats, 'batter');
+                    const isLeader = index === 0;
+                    const hasMore = (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse')
+                      ? sortedPlayers.some(p => playerIsGoalie(p))
+                      : (sport === 'baseball' || sport === 'softball') ? sortedPlayers.some(p => playerIsPitcher(p)) : false;
+                    const showBorder = index !== arr.length - 1 || hasMore;
+                    return (
+                      <View
+                        key={player.id}
+                        style={{
+                          height: 44, flexDirection: 'row', alignItems: 'center', paddingRight: 12,
+                          borderBottomWidth: showBorder ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)',
+                          backgroundColor: isLeader ? hexToRgba(teamColor, 0.07) : undefined,
+                        }}
+                      >
+                        <View style={{ width: 50, alignItems: 'center' }}>
+                          <Text style={{ color: '#94a3b8', fontSize: 12 }}>{getDisplayPosition(player)}</Text>
+                        </View>
+                        {statValues.map((value, i) => {
+                          const numVal = typeof value === 'string' ? parseFloat(value) || 0 : (value ?? 0);
+                          const maxVal = colMaxValues[i] ?? 0;
+                          const pct = maxVal > 0 ? numVal / maxVal : 0;
+                          const isActiveCol = sortCol === i;
+                          return (
+                            <View key={i} style={{ width: 44, alignItems: 'center' }}>
+                              <Text style={{ color: isActiveCol ? teamColor : '#cbd5e1', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>
+                                {value}
+                              </Text>
+                              {isActiveCol && maxVal > 0 && (
+                                <View style={{ width: 28, height: 3, backgroundColor: 'rgba(51,65,85,0.8)', borderRadius: 2, marginTop: 2, overflow: 'hidden' }}>
+                                  <View style={{ width: `${Math.round(pct * 100)}%`, height: '100%', backgroundColor: teamColor, borderRadius: 2, opacity: 0.8 }} />
+                                </View>
+                              )}
+                            </View>
+                          );
+                        })}
+                      </View>
+                    );
+                  })}
+                </View>
+              </ScrollView>
             </View>
 
-            {/* Table Rows - Non-Goalies/Non-Pitchers (includes players with multiple positions that have batting positions) */}
-            {sortedPlayers.filter(p => {
-              // For hockey/soccer/lacrosse: show if player has any non-goalie position
-              if (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') {
-                return playerHasNonGoaliePositions(p);
-              }
-              // For baseball/softball: show if player has any non-pitcher position
-              if (sport === 'baseball' || sport === 'softball') {
-                return playerHasNonPitcherPositions(p);
-              }
-              return true;
-            }).map((player, index, arr) => {
-              // For batting stats, always use non-pitcher position stats
-              const statValues = getStatValues(sport, player.stats, 'batter');
-              const showBorder = index !== arr.length - 1 ||
-                (sport === 'hockey' || sport === 'soccer') ||
-                (sport === 'baseball' && sortedPlayers.some(p => playerIsPitcher(p)));
-              const canEdit = canEditPlayer(player.id);
-              const isLeader = index === 0;
-              const isHot = heatingUpIds.has(player.id);
-              return (
-                <Pressable
-                  key={player.id}
-                  onPress={() => openEditModal(player, sport === 'baseball' ? 'batter' : 'skater')}
-                  disabled={!canEdit}
-                  className={`flex-row items-center px-3 py-2.5 ${canEdit ? 'active:bg-slate-700/50' : ''} ${
-                    showBorder ? 'border-b border-slate-700/50' : ''
-                  }`}
-                  style={isLeader ? { backgroundColor: hexToRgba(teamColor, 0.07) } : undefined}
-                >
-                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 0 }}>
-                    <Text className="text-cyan-400 font-medium text-xs mr-1" style={{ flexShrink: 0 }}>#{player.number}</Text>
-                    <Text className="text-white text-sm" style={{ flexShrink: 1, flexGrow: 1 }} numberOfLines={1}>{formatName(player)}</Text>
-                    {isLeader && (
-                      <View style={{ marginLeft: 4, flexShrink: 0 }}>
-                        <Crown size={11} color="#fbbf24" />
-                      </View>
-                    )}
-                    {isHot && (
-                      <View style={{ marginLeft: isLeader ? 2 : 4, flexShrink: 0 }}>
-                        <Flame size={11} color="#f97316" />
-                      </View>
-                    )}
+            {/* ── Pitcher Section (Baseball) ── */}
+            {sport === 'baseball' && sortedPlayers.some(p => playerIsPitcher(p)) && (
+              <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(51,65,85,0.6)' }}>
+                <View style={{ width: 145, borderRightWidth: 1, borderRightColor: 'rgba(51,65,85,0.4)' }}>
+                  <View style={{ height: 44, justifyContent: 'center', paddingHorizontal: 12, backgroundColor: 'rgba(51,65,85,0.5)', borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.6)' }}>
+                    <Text style={{ color: '#cbd5e1', fontWeight: '600', fontSize: 13 }}>Pitchers</Text>
                   </View>
-                  <Text className="text-slate-400 text-center text-xs" style={{ width: 40, flexShrink: 0 }}>{getDisplayPosition(player)}</Text>
-                  <View style={{ flexDirection: 'row', marginLeft: 8, flexShrink: 0 }}>
-                    {statValues.map((value, i) => {
-                      const numVal = typeof value === 'string' ? parseFloat(value) || 0 : (value ?? 0);
-                      const maxVal = colMaxValues[i] ?? 0;
-                      const pct = maxVal > 0 ? numVal / maxVal : 0;
-                      const isActiveCol = sortCol === i;
+                  {sortedPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => (
+                    <View
+                      key={`pitcher-frozen-${player.id}`}
+                      style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, borderBottomWidth: index !== arr.length - 1 ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)' }}
+                    >
+                      <Text style={{ color: '#67e8f9', fontSize: 11, fontWeight: '500', marginRight: 3, flexShrink: 0 }}>#{player.number}</Text>
+                      <Text style={{ color: '#fff', fontSize: 13, flex: 1 }} numberOfLines={1}>{formatName(player)}</Text>
+                    </View>
+                  ))}
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+                  <View>
+                    <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingRight: 12, backgroundColor: 'rgba(51,65,85,0.5)', borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.6)' }}>
+                      {getPitcherHeaders().map(header => (
+                        <View key={header} style={{ width: 44, alignItems: 'center' }}>
+                          <Text style={{ color: '#cbd5e1', fontWeight: '600', fontSize: 12 }}>{header}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    {sortedPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
+                      const statValues = getStatValues(sport, player.pitcherStats, 'P');
                       return (
-                        <View key={i} style={{ width: 36, alignItems: 'center' }}>
-                          <Text
-                            className="text-center text-sm font-semibold"
-                            style={{ color: isActiveCol ? teamColor : '#cbd5e1' }}
-                          >
-                            {value}
-                          </Text>
-                          {isActiveCol && maxVal > 0 && (
-                            <View style={{ width: 24, height: 3, backgroundColor: 'rgba(51,65,85,0.8)', borderRadius: 2, marginTop: 2, overflow: 'hidden' }}>
-                              <View
-                                style={{
-                                  width: `${Math.round(pct * 100)}%`,
-                                  height: '100%',
-                                  backgroundColor: teamColor,
-                                  borderRadius: 2,
-                                  opacity: 0.8,
-                                }}
-                              />
+                        <View
+                          key={`pitcher-${player.id}`}
+                          style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingRight: 12, borderBottomWidth: index !== arr.length - 1 ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)' }}
+                        >
+                          {statValues.map((value, i) => (
+                            <View key={i} style={{ width: 44, alignItems: 'center' }}>
+                              <Text style={{ color: '#cbd5e1', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>{value}</Text>
                             </View>
-                          )}
+                          ))}
                         </View>
                       );
                     })}
                   </View>
-                  <View style={{ width: 16, alignItems: 'center', flexShrink: 0 }}>
-                    {canEdit && <ChevronRight size={14} color="#64748b" />}
-                  </View>
-                </Pressable>
-              );
-            })}
-
-            {/* Pitcher Section for Baseball */}
-            {sport === 'baseball' && sortedPlayers.some(p => playerIsPitcher(p)) && (
-              <>
-                {/* Pitcher Header */}
-                <View className="flex-row items-center px-2 py-3 bg-slate-700/50 border-b border-slate-700">
-                  <Text className="text-slate-300 font-semibold text-xs" style={{ width: 76 }}>Pitchers</Text>
-                  <View className="flex-row flex-1 justify-between">
-                    {getPitcherHeaders().map((header) => (
-                      <Text key={header} className="text-slate-300 font-semibold text-center text-[10px]" style={{ width: 28 }}>
-                        {header}
-                      </Text>
-                    ))}
-                  </View>
-                  <View className="w-3" />
-                </View>
-
-                {/* Pitcher Rows */}
-                {sortedPlayers.filter(p => playerIsPitcher(p)).map((player, index, arr) => {
-                  const statValues = getStatValues(sport, player.pitcherStats, 'P');
-                  const canEdit = canEditPlayer(player.id);
-                  return (
-                    <Pressable
-                      key={`pitcher-${player.id}`}
-                      onPress={() => openEditModal(player, 'pitcher')}
-                      disabled={!canEdit}
-                      className={`flex-row items-center px-2 py-3 ${canEdit ? 'active:bg-slate-700/50' : ''} ${
-                        index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
-                      }`}
-                    >
-                      <View className="flex-row items-center" style={{ width: 76 }}>
-                        <Text className="text-cyan-400 font-medium text-[10px] mr-0.5">#{player.number}</Text>
-                        <Text className="text-white text-xs" numberOfLines={1}>{formatName(player)}</Text>
-                      </View>
-                      <View className="flex-row flex-1 justify-between">
-                        {statValues.map((value, i) => (
-                          <Text key={i} className="text-slate-300 text-center text-xs" style={{ width: 28 }}>
-                            {value}
-                          </Text>
-                        ))}
-                      </View>
-                      <View className="w-3 items-center">
-                        {canEdit && <ChevronRight size={12} color="#64748b" />}
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </>
+                </ScrollView>
+              </View>
             )}
 
-            {/* Goalie Section for Hockey/Soccer/Lacrosse */}
+            {/* ── Goalie Section (Hockey / Soccer / Lacrosse) ── */}
             {(sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') && sortedPlayers.some(p => playerIsGoalie(p)) && (
-              <>
-                {/* Goalie Header */}
-                <View className="flex-row items-center px-3 py-3 bg-slate-700/50 border-b border-slate-700">
-                  <Text className="text-slate-300 font-semibold flex-1">Goalies</Text>
-                  <View className="flex-row ml-2">
-                    {getGoalieHeaders(sport).map((header) => (
-                      <Text key={header} className="text-slate-300 font-semibold w-11 text-center text-xs">
-                        {header}
-                      </Text>
-                    ))}
+              <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(51,65,85,0.6)' }}>
+                <View style={{ width: 145, borderRightWidth: 1, borderRightColor: 'rgba(51,65,85,0.4)' }}>
+                  <View style={{ height: 44, justifyContent: 'center', paddingHorizontal: 12, backgroundColor: 'rgba(51,65,85,0.5)', borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.6)' }}>
+                    <Text style={{ color: '#cbd5e1', fontWeight: '600', fontSize: 13 }}>Goalies</Text>
                   </View>
-                  <View className="w-4" />
-                </View>
-
-                {/* Goalie Rows */}
-                {sortedPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => {
-                  const statValues = getStatValues(sport, player.goalieStats, (sport === 'hockey' || sport === 'lacrosse') ? 'G' : 'GK');
-                  const canEdit = canEditPlayer(player.id);
-                  return (
-                    <Pressable
-                      key={`goalie-${player.id}`}
-                      onPress={() => openEditModal(player, 'goalie')}
-                      disabled={!canEdit}
-                      className={`flex-row items-center px-3 py-3 ${canEdit ? 'active:bg-slate-700/50' : ''} ${
-                        index !== arr.length - 1 ? 'border-b border-slate-700/50' : ''
-                      }`}
+                  {sortedPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => (
+                    <View
+                      key={`goalie-frozen-${player.id}`}
+                      style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, borderBottomWidth: index !== arr.length - 1 ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)' }}
                     >
-                      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 0 }}>
-                        <Text className="text-cyan-400 font-medium text-xs mr-1" style={{ flexShrink: 0 }}>#{player.number}</Text>
-                        <Text className="text-white text-sm" style={{ flexShrink: 1, flexGrow: 1 }} numberOfLines={1}>{formatName(player)}</Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', marginLeft: 8, flexShrink: 0 }}>
-                        {statValues.map((value, i) => (
-                          <Text key={i} className="text-slate-300 text-center text-sm" style={{ width: 44 }}>
-                            {value}
-                          </Text>
-                        ))}
-                      </View>
-                      <View style={{ width: 16, alignItems: 'center', flexShrink: 0 }}>
-                        {canEdit && <ChevronRight size={14} color="#64748b" />}
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </>
+                      <Text style={{ color: '#67e8f9', fontSize: 11, fontWeight: '500', marginRight: 3, flexShrink: 0 }}>#{player.number}</Text>
+                      <Text style={{ color: '#fff', fontSize: 13, flex: 1 }} numberOfLines={1}>{formatName(player)}</Text>
+                    </View>
+                  ))}
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+                  <View>
+                    <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingRight: 12, backgroundColor: 'rgba(51,65,85,0.5)', borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.6)' }}>
+                      {getGoalieHeaders(sport).map(header => (
+                        <View key={header} style={{ width: 50, alignItems: 'center' }}>
+                          <Text style={{ color: '#cbd5e1', fontWeight: '600', fontSize: 12 }}>{header}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    {sortedPlayers.filter(p => playerIsGoalie(p)).map((player, index, arr) => {
+                      const statValues = getStatValues(sport, player.goalieStats, (sport === 'hockey' || sport === 'lacrosse') ? 'G' : 'GK');
+                      return (
+                        <View
+                          key={`goalie-${player.id}`}
+                          style={{ height: 44, flexDirection: 'row', alignItems: 'center', paddingRight: 12, borderBottomWidth: index !== arr.length - 1 ? 1 : 0, borderBottomColor: 'rgba(51,65,85,0.4)' }}
+                        >
+                          {statValues.map((value, i) => (
+                            <View key={i} style={{ width: 50, alignItems: 'center' }}>
+                              <Text style={{ color: '#cbd5e1', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>{value}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              </View>
             )}
           </Animated.View>
+
+          {/* Footer tip */}
+          <View style={{ marginTop: 16, marginBottom: 24, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+            <Info size={14} color="#475569" style={{ marginTop: 2 }} />
+            <Text style={{ color: '#475569', fontSize: 13, flex: 1, lineHeight: 20 }}>
+              To update a player's stats, log them via{' '}
+              <Text
+                style={{ color: '#67e8f9', fontWeight: '600' }}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/(tabs)');
+                }}
+              >
+                Game Stats
+              </Text>
+              {' '}in the game record after each game.
+            </Text>
+          </View>
         </ScrollView>
       </SafeAreaView>
 
