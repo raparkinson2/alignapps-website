@@ -1452,7 +1452,7 @@ export default function TeamStatsScreen() {
           />
           <SafeAreaView style={{ flex: 1 }} edges={['top']}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.5)' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 28, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(51,65,85,0.5)' }}>
               <View style={{ flex: 1 }}>
                 {viewPlayer && (
                   <>
