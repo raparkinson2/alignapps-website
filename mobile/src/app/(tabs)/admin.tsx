@@ -514,7 +514,7 @@ function AdminScreen() {
                     <UserCog size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3">
-                    <Text className="text-white font-semibold">Manage Roles</Text>
+                    <Text className="text-white font-semibold">Configure Roles</Text>
                     <Text className="text-slate-400 text-sm">
                       {(teamSettings.enabledRoles ?? ['player', 'reserve', 'coach', 'parent']).length} roles enabled
                     </Text>
