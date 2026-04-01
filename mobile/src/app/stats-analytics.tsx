@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import {
-  ArrowLeft, TrendingUp, UserCheck, BarChart3, ChevronRight,
+  ArrowLeft, TrendingUp, UserCheck, ChevronRight,
   Trophy, Calendar, Flame, Star, Zap, Crown,
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -202,7 +202,7 @@ export default function StatsAnalyticsScreen() {
           </Pressable>
           <View className="flex-1">
             <Text className="text-slate-400 text-sm font-medium">Teams</Text>
-            <Text className="text-white text-2xl font-bold">Stats & Analytics</Text>
+            <Text className="text-white text-2xl font-bold">Analytics</Text>
           </View>
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: hexToRgba(teamColor, 0.2), alignItems: 'center', justifyContent: 'center' }}>
             <TrendingUp size={20} color={teamColor} />
@@ -478,28 +478,6 @@ export default function StatsAnalyticsScreen() {
                 <View className="flex-1 ml-3">
                   <Text className="font-semibold text-white">Team Records</Text>
                   <Text className="text-slate-400 text-sm">All-time records and individual leaders</Text>
-                </View>
-                <ChevronRight size={20} color="#64748b" />
-              </Pressable>
-            </Animated.View>
-          )}
-
-          {/* View Team Stats */}
-          {showTeamStats && (
-            <Animated.View entering={FadeInDown.delay(baseDelay + 60).springify()}>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/team-stats');
-                }}
-                className="flex-row items-center py-4 px-4 bg-slate-800/60 rounded-xl mb-3 active:bg-slate-700/80"
-              >
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(103,232,249,0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  <BarChart3 size={20} color="#67e8f9" />
-                </View>
-                <View className="flex-1 ml-3">
-                  <Text className="font-semibold text-white">Player Statistics</Text>
-                  <Text className="text-slate-400 text-sm">Sortable leaderboard with progress bars</Text>
                 </View>
                 <ChevronRight size={20} color="#64748b" />
               </Pressable>
