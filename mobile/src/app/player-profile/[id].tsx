@@ -210,6 +210,86 @@ function computeTrophies(
     }
   }
 
+  // ── Goalie Trophies (hockey & soccer) ────────────────────────────────────────
+  const isGoalie = (sport === 'hockey' || sport === 'soccer') && player.goalieStats;
+  if (isGoalie && player.goalieStats) {
+    const gs = player.goalieStats as { games: number; wins: number; losses: number; ties: number; saves: number; shotsAgainst: number; goalsAgainst: number };
+
+    // Brickwall — 90%+ save percentage (min 10 shots)
+    if (gs.shotsAgainst >= 10) {
+      const savePct = gs.saves / gs.shotsAgainst;
+      if (savePct >= 0.9) {
+        trophies.push({
+          id: 'brickwall',
+          icon: <Shield size={18} color="#38bdf8" />,
+          title: 'Brickwall 🧱',
+          subtitle: `${(savePct * 100).toFixed(1)}% save percentage`,
+          color: '#38bdf8', bg: 'rgba(56,189,248,0.1)', border: 'rgba(56,189,248,0.3)',
+        });
+      }
+    }
+
+    // Reliable — 70%+ win rate (min 5 games)
+    if (gs.games >= 5) {
+      const winRate = gs.wins / gs.games;
+      if (winRate >= 0.7) {
+        trophies.push({
+          id: 'goalie-reliable',
+          icon: <Trophy size={18} color="#22c55e" />,
+          title: 'Brick & Reliable 🏆',
+          subtitle: `${gs.wins}W–${gs.losses}L — ${Math.round(winRate * 100)}% win rate`,
+          color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.25)',
+        });
+      }
+    }
+
+    // Win Streak — 3+ consecutive wins from game logs
+    const goalieLogs = (player.gameLogs ?? [])
+      .filter((l) => l.statType === 'goalie' && l.gameId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    let goalieStreak = 0;
+    let maxGoalieStreak = 0;
+    for (const log of [...goalieLogs].reverse()) {
+      const matchedGame = games.find((g) => (g as any).id === log.gameId);
+      if (matchedGame?.gameResult === 'win') {
+        goalieStreak++;
+        maxGoalieStreak = Math.max(maxGoalieStreak, goalieStreak);
+      } else {
+        goalieStreak = 0;
+      }
+    }
+    if (maxGoalieStreak >= 3) {
+      trophies.push({
+        id: 'goalie-streak',
+        icon: <Zap size={18} color="#f59e0b" />,
+        title: `${maxGoalieStreak}-Game Win Streak 🔥`,
+        subtitle: `Won ${maxGoalieStreak} straight between the pipes`,
+        color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)',
+      });
+    }
+
+    // Shutout — count games where goalsAgainst = 0 in game logs
+    const shutouts = goalieLogs.filter((l) => {
+      const s = l.stats as any;
+      return s?.goalsAgainst === 0 && (l.stats as any)?.saves >= 1;
+    });
+    if (shutouts.length >= 1) {
+      // Tally marks: up to 5 per group (e.g. |||| |)
+      const tally = shutouts.length;
+      const full = Math.floor(tally / 5);
+      const rem = tally % 5;
+      const tallyStr = '𝄿'.repeat(full) + '|'.repeat(rem); // grouped tally
+      trophies.push({
+        id: 'shutout',
+        icon: <Shield size={18} color="#a78bfa" />,
+        title: `Shutout ${tallyStr}`,
+        subtitle: `${tally} clean sheet${tally !== 1 ? 's' : ''} — zero goals allowed`,
+        color: '#a78bfa', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.3)',
+      });
+    }
+  }
+
   for (const season of seasonHistory) {
     const ps = getArchivedPlayerStats(season, player.id);
     if (!ps) continue;
