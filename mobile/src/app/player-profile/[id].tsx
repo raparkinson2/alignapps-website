@@ -218,13 +218,10 @@ function computeTrophies(
     }).length;
 
     if (hatTricks >= 1) {
-      const full = Math.floor(hatTricks / 5);
-      const rem = hatTricks % 5;
-      const tallyStr = '𝄿'.repeat(full) + '|'.repeat(rem);
       trophies.push({
         id: 'mad-hatter',
         icon: <Text style={{ fontSize: 15 }}>🎩</Text>,
-        title: `Mad Hatter ${tallyStr}`,
+        title: 'Mad Hatter',
         subtitle: `${hatTricks} hat trick${hatTricks !== 1 ? 's' : ''} — 3+ goals in a single game`,
         color: '#818cf8', bg: 'rgba(129,140,248,0.1)', border: 'rgba(129,140,248,0.3)',
       });
@@ -296,15 +293,11 @@ function computeTrophies(
       return s?.goalsAgainst === 0 && (l.stats as any)?.saves >= 1;
     });
     if (shutouts.length >= 1) {
-      // Tally marks: up to 5 per group (e.g. |||| |)
       const tally = shutouts.length;
-      const full = Math.floor(tally / 5);
-      const rem = tally % 5;
-      const tallyStr = '𝄿'.repeat(full) + '|'.repeat(rem); // grouped tally
       trophies.push({
         id: 'shutout',
         icon: <Shield size={18} color="#a78bfa" />,
-        title: `Shutout ${tallyStr}`,
+        title: 'Shutout',
         subtitle: `${tally} clean sheet${tally !== 1 ? 's' : ''} — zero goals allowed`,
         color: '#a78bfa', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.3)',
       });

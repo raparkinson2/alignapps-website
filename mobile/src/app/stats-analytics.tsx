@@ -54,7 +54,23 @@ export default function StatsAnalyticsScreen() {
     const pos = currentPlayer.position?.toLowerCase();
     return pos === 'coach' || pos === 'parent' || currentPlayer.roles?.includes('coach' as any) || currentPlayer.roles?.includes('parent' as any);
   }, [currentPlayer]);
-  const hasEnoughGames = (currentPlayer?.gameLogs?.length ?? 0) >= 5;
+  const hasEnoughGames = useMemo(() => {
+    if (!currentPlayerId) return false;
+    const fromLogs = currentPlayer?.gameLogs?.length ?? 0;
+    const fromCheckins = games.filter((g) =>
+      g.gameResult && g.checkedInPlayers?.includes(currentPlayerId)
+    ).length;
+    return Math.max(fromLogs, fromCheckins) >= 5;
+  }, [currentPlayer, games, currentPlayerId]);
+
+  const gamesAttended = useMemo(() => {
+    if (!currentPlayerId) return 0;
+    const fromLogs = currentPlayer?.gameLogs?.length ?? 0;
+    const fromCheckins = games.filter((g) =>
+      g.gameResult && g.checkedInPlayers?.includes(currentPlayerId)
+    ).length;
+    return Math.max(fromLogs, fromCheckins);
+  }, [currentPlayer, games, currentPlayerId]);
 
   // Goals/Points For & Against from logged game scores
   const { goalsFor, goalsAgainst, differential } = useMemo(() => {
@@ -248,7 +264,7 @@ export default function StatsAnalyticsScreen() {
                       {isPremium
                         ? (hasEnoughGames
                             ? 'Your personalized season story is ready.'
-                            : `${5 - (currentPlayer?.gameLogs?.length ?? 0)} more games until your Wrapped unlocks.`)
+                            : `${5 - gamesAttended} more games until your Wrapped unlocks.`)
                         : 'Upgrade to unlock your personalized season review.'}
                     </Text>
                   </View>
