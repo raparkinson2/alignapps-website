@@ -84,6 +84,36 @@ export default function GameMomentumScreen() {
       .sort((a, b) => b.winPct - a.winPct);
   }, [games]);
 
+  // ── Temperature Range Impact ──────────────────────────────────────────────
+  const tempRangeImpact = useMemo(() => {
+    const withTemp = games.filter((g) => g.weatherTemp != null && g.gameResult);
+    if (withTemp.length === 0) return [];
+
+    const buckets = [
+      { label: '40–50°F', emoji: '🧊', min: 40, max: 50, color: '#93c5fd', wins: 0, total: 0 },
+      { label: '50–60°F', emoji: '🌬️', min: 50, max: 60, color: '#60a5fa', wins: 0, total: 0 },
+      { label: '60–70°F', emoji: '🌤️',  min: 60, max: 70, color: '#34d399', wins: 0, total: 0 },
+      { label: '70–80°F', emoji: '☀️',  min: 70, max: 80, color: '#fbbf24', wins: 0, total: 0 },
+      { label: '80–90°F', emoji: '🌡️', min: 80, max: 90, color: '#fb923c', wins: 0, total: 0 },
+      { label: '90°F+',   emoji: '🔥', min: 90, max: 999, color: '#f87171', wins: 0, total: 0 },
+    ];
+
+    for (const g of withTemp) {
+      const temp = g.weatherTemp!;
+      for (const bucket of buckets) {
+        if (temp >= bucket.min && temp < bucket.max) {
+          bucket.total++;
+          if (g.gameResult === 'win') bucket.wins++;
+          break;
+        }
+      }
+    }
+
+    return buckets
+      .filter((b) => b.total > 0)
+      .map((b) => ({ ...b, winPct: Math.round((b.wins / b.total) * 100) }));
+  }, [games]);
+
   // ── Win Streak & Momentum ─────────────────────────────────────────────────
   const momentumData = useMemo(() => {
     const completed = [...games]
@@ -120,6 +150,7 @@ export default function GameMomentumScreen() {
   }, [games]);
 
   const hasWeather = weatherImpact.length > 0;
+  const hasTempData = tempRangeImpact.length > 0;
   const hasRsvp = rsvpWinData !== null && rsvpWinData.length > 0;
   const hasMomentum = momentumData !== null;
   const bestWeather = hasWeather ? weatherImpact[0] : null;
@@ -281,7 +312,7 @@ export default function GameMomentumScreen() {
             </View>
 
             <View style={{ backgroundColor: 'rgba(30,41,59,0.7)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-              {!hasWeather ? (
+              {!hasWeather && !hasTempData ? (
                 <EmptyState
                   emoji="🌤️"
                   title="No weather data yet"
@@ -289,6 +320,7 @@ export default function GameMomentumScreen() {
                 />
               ) : (
                 <View style={{ padding: 16 }}>
+                  {/* Best conditions banner */}
                   {bestWeather && (
                     <View
                       style={{
@@ -314,6 +346,7 @@ export default function GameMomentumScreen() {
                     </View>
                   )}
 
+                  {/* Condition rows */}
                   {weatherImpact.map((item) => {
                     const meta = WEATHER_META[item.condition];
                     return (
@@ -346,6 +379,47 @@ export default function GameMomentumScreen() {
                       </View>
                     );
                   })}
+
+                  {/* Temperature Range section */}
+                  {hasTempData && (
+                    <>
+                      <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginBottom: 14, marginTop: hasWeather ? 2 : 0 }} />
+                      <View className="flex-row items-center mb-3" style={{ gap: 6 }}>
+                        <Text style={{ fontSize: 14 }}>🌡️</Text>
+                        <Text className="text-slate-300 font-bold text-sm">Temperature Impact</Text>
+                      </View>
+                      {tempRangeImpact.map((bucket) => (
+                        <View key={bucket.label} className="mb-3">
+                          <View className="flex-row items-center justify-between mb-1.5">
+                            <View className="flex-row items-center" style={{ gap: 7 }}>
+                              <Text style={{ fontSize: 13 }}>{bucket.emoji}</Text>
+                              <Text className="text-white text-sm" style={{ fontWeight: '600' }}>{bucket.label}</Text>
+                            </View>
+                            <View className="flex-row items-center" style={{ gap: 5 }}>
+                              <Text
+                                style={{
+                                  color: bucket.winPct >= 60 ? '#22c55e' : bucket.winPct >= 40 ? '#f59e0b' : '#ef4444',
+                                  fontWeight: '700',
+                                  fontSize: 13,
+                                }}
+                              >
+                                {bucket.winPct}%
+                              </Text>
+                              <Text className="text-slate-500 text-xs">({bucket.total}g)</Text>
+                            </View>
+                          </View>
+                          <View style={{ height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+                            <LinearGradient
+                              colors={[bucket.color, `${bucket.color}99`]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              style={{ width: `${bucket.winPct}%`, height: 7, borderRadius: 4 }}
+                            />
+                          </View>
+                        </View>
+                      ))}
+                    </>
+                  )}
                 </View>
               )}
             </View>
