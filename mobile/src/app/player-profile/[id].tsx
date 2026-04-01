@@ -21,7 +21,6 @@ import {
   Users,
   Calendar,
   Award,
-  Share2,
   Crosshair,
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -931,21 +930,6 @@ export default function PlayerProfileScreen() {
     : 0;
 
   const cardRef = useRef<View>(null);
-  const [isSharing, setIsSharing] = useState(false);
-
-  const handleShare = async () => {
-    if (!player || isSharing || !cardRef.current) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsSharing(true);
-    try {
-      const uri = await captureRef(cardRef, { format: 'png', quality: 0.95 });
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share Player Card' });
-    } catch {
-      // sharing cancelled or failed — silently ignore
-    } finally {
-      setIsSharing(false);
-    }
-  };
 
   if (!player) {
     return (
@@ -992,19 +976,7 @@ export default function PlayerProfileScreen() {
             {isMyCard ? 'My Card' : 'Player Card'}
           </Text>
 
-          <Pressable
-            onPress={handleShare}
-            disabled={isSharing}
-            style={{
-              width: 40, height: 40, borderRadius: 20,
-              backgroundColor: 'rgba(255,255,255,0.07)',
-              alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            {isSharing
-              ? <ActivityIndicator size="small" color="#67e8f9" />
-              : <Share2 size={18} color="#67e8f9" />}
-          </Pressable>
+          <View style={{ width: 40 }} />
         </Animated.View>
 
         <ScrollView
