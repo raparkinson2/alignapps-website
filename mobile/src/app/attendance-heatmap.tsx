@@ -202,7 +202,7 @@ function AttendanceHeatmapScreen() {
               {displayGames.map((game, i) => (
                 <View key={game.id} style={{ width: CELL_SIZE, alignItems: 'center' }}>
                   <Text style={{ color: '#334155', fontSize: 8, textAlign: 'center' }}>
-                    {new Date(game.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                    {new Date(game.date.split('T')[0] + 'T12:00:00').toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
                   </Text>
                 </View>
               ))}
