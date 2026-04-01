@@ -637,13 +637,13 @@ function StatsTable({ data, title }: { data: StatsTableData; title?: string }) {
           borderBottomColor: 'rgba(255,255,255,0.06)',
         }}>
           <View style={{ width: TABLE_SEASON_COL }}>
-            <Text style={{ color: '#1e3a52', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 }}>
+            <Text style={{ color: '#4d7fa5', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 }}>
               SEASON
             </Text>
           </View>
           {data.headers.map((h) => (
             <View key={h} style={{ width: statColWidth, alignItems: 'center' }}>
-              <Text style={{ color: '#1e3a52', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 }}>
+              <Text style={{ color: '#4d7fa5', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 }}>
                 {h}
               </Text>
             </View>
@@ -684,7 +684,7 @@ function StatsTable({ data, title }: { data: StatsTableData; title?: string }) {
                 adjustsFontSizeToFit
                 minimumFontScale={0.7}
                 style={{
-                  color: row.isCareer ? '#67e8f9' : row.isCurrent ? '#e2e8f0' : '#64748b',
+                  color: row.isCareer ? '#67e8f9' : row.isCurrent ? '#e2e8f0' : '#94a3b8',
                   fontSize: row.isCareer ? 10 : 12,
                   fontWeight: row.isCareer ? '800' : row.isCurrent ? '600' : '400',
                   letterSpacing: row.isCareer ? 1 : 0,
@@ -706,7 +706,7 @@ function StatsTable({ data, title }: { data: StatsTableData; title?: string }) {
                     adjustsFontSizeToFit
                     minimumFontScale={0.65}
                     style={{
-                      color: isHighlight ? color : '#475569',
+                      color: isHighlight ? color : '#94a3b8',
                       fontSize: row.isCareer ? careerFontSize : valueFontSize,
                       fontWeight: row.isCareer ? '800' : isHighlight ? '700' : '500',
                       width: statColWidth - 4,
