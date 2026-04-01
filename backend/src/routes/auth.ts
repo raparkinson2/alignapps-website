@@ -2,8 +2,24 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createHash } from "crypto";
+import type { Context } from "hono";
 
 const authRouter = new Hono();
+
+/**
+ * Guard for destructive admin-only endpoints.
+ * Requires the x-admin-secret header to match INTERNAL_API_SECRET env var.
+ * If the env var is not set, the check is skipped (keeps existing installs working).
+ */
+function requireInternalSecret(c: Context): Response | null {
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret) return null;
+  const provided = c.req.header("x-admin-secret");
+  if (!provided || provided !== secret) {
+    return c.json({ error: "Unauthorized" }, 401) as unknown as Response;
+  }
+  return null;
+}
 
 const VerifyPasswordSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -125,6 +141,9 @@ async function getAuthUserByEmail(supabaseUrl: string, serviceKey: string, email
  * and deletes their auth account. Uses playerId + email from the request.
  */
 authRouter.post("/delete-account", zValidator("json", DeleteAccountSchema), async (c) => {
+  const authErr = requireInternalSecret(c);
+  if (authErr) return authErr;
+
   const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
   if (!supabaseUrl || !serviceKey) {
     return c.json({ error: "Supabase admin not configured" }, 503);
@@ -169,6 +188,9 @@ authRouter.post("/delete-account", zValidator("json", DeleteAccountSchema), asyn
  * All data is fetched from Supabase server-side — no client data trusted.
  */
 authRouter.post("/erase-team-data", zValidator("json", EraseTeamDataSchema), async (c) => {
+  const authErr = requireInternalSecret(c);
+  if (authErr) return authErr;
+
   const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
   if (!supabaseUrl || !serviceKey) {
     return c.json({ error: "Supabase admin not configured" }, 503);
@@ -219,6 +241,9 @@ authRouter.post("/erase-team-data", zValidator("json", EraseTeamDataSchema), asy
  * 4. Deletes the team row (CASCADE removes all content).
  */
 authRouter.post("/delete-team", zValidator("json", DeleteTeamSchema), async (c) => {
+  const authErr = requireInternalSecret(c);
+  if (authErr) return authErr;
+
   const { url: supabaseUrl, serviceKey } = getSupabaseConfig();
   if (!supabaseUrl || !serviceKey) {
     return c.json({ error: "Supabase admin not configured" }, 503);

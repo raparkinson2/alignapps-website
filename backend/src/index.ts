@@ -3,7 +3,6 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import "./env";
-import { sampleRouter } from "./routes/sample";
 import { authRouter } from "./routes/auth";
 import { notificationsRouter } from "./routes/notifications";
 import { paymentsRouter } from "./routes/payments";
@@ -60,7 +59,6 @@ app.use("*", logger());
 app.get("/health", (c) => c.json({ status: "ok" }));
 
 // Routes
-app.route("/api/sample", sampleRouter);
 app.use("/api/auth/*", authRateLimit);
 app.route("/api/auth", authRouter);
 app.use("/api/notifications/*", notificationRateLimit);

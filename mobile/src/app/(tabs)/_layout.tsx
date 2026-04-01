@@ -162,12 +162,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Shield size={27} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="two"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }

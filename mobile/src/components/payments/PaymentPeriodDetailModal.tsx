@@ -20,7 +20,7 @@ import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { SwipeablePaymentRow } from './SwipeablePaymentRow';
 import { calculatePaymentStatus, getDueDateColor } from './paymentUtils';
 import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
-import { BACKEND_URL } from '@/lib/config';
+import { BACKEND_URL, adminHeaders } from '@/lib/config';
 import { syncError } from '@/lib/sync-error-handler';
 
 interface PaymentPeriodDetailModalProps {
@@ -251,7 +251,7 @@ export function PaymentPeriodDetailModal({ visible, onClose, periodId }: Payment
     try {
       const res = await fetch(`${BACKEND_URL}/api/payments/reminders/send-manual`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({ periodId: selectedPeriod.id, teamId: activeTeamId }),
       });
       const data = await res.json() as { message?: string; sent?: number };

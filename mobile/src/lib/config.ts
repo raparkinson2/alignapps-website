@@ -11,3 +11,13 @@ export const BACKEND_URL =
 // Log at startup so we can verify the correct URL is used in TestFlight
 console.log('[config] BACKEND_URL:', BACKEND_URL);
 console.log('[config] EXPO_PUBLIC_VIBECODE_BACKEND_URL:', process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL);
+
+/**
+ * Returns the x-admin-secret header for internal backend endpoints.
+ * Only populated when EXPO_PUBLIC_INTERNAL_API_SECRET is set.
+ */
+export function adminHeaders(): Record<string, string> {
+  const secret = process.env.EXPO_PUBLIC_INTERNAL_API_SECRET;
+  if (!secret) return {};
+  return { 'x-admin-secret': secret };
+}

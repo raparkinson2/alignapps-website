@@ -960,7 +960,7 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
       //   endpoint which writes to the dedicated push_tokens table
       // - writing notification_preferences here would overwrite the JSONB column and could
       //   corrupt any data stored there by other processes
-    stats: { ...(player.stats || {}), _associatedPlayerId: player.associatedPlayerId || undefined },
+      stats: { ...(player.stats || {}), _associatedPlayerId: player.associatedPlayerId || undefined },
       goalie_stats: player.goalieStats || {},
       pitcher_stats: player.pitcherStats || {},
       game_logs: player.gameLogs || [],

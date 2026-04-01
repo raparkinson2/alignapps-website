@@ -5,8 +5,19 @@ import { createClient } from "@supabase/supabase-js";
 import { getMilestonesToFire, buildReminderMessage } from "../lib/payment-logic";
 import { readFileSync } from "fs";
 import { join } from "path";
+import type { Context } from "hono";
 
 const paymentRemindersRouter = new Hono();
+
+function requireInternalSecret(c: Context): Response | null {
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret) return null;
+  const provided = c.req.header("x-admin-secret");
+  if (!provided || provided !== secret) {
+    return c.json({ error: "Unauthorized" }, 401) as unknown as Response;
+  }
+  return null;
+}
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
@@ -311,6 +322,9 @@ export function startPaymentReminderScheduler() {
  * Manually trigger a payment reminder for a specific period to all unpaid players.
  */
 paymentRemindersRouter.post("/send-manual", zValidator("json", SendManualSchema), async (c) => {
+  const authErr = requireInternalSecret(c);
+  if (authErr) return authErr;
+
   const { periodId, teamId } = c.req.valid("json");
 
   const { data: period, error: periodError } = await supabaseAdmin
@@ -367,6 +381,9 @@ paymentRemindersRouter.post("/send-manual", zValidator("json", SendManualSchema)
  * Called when a payment period is created. Sends an immediate notification.
  */
 paymentRemindersRouter.post("/on-create", zValidator("json", OnCreateSchema), async (c) => {
+  const authErr = requireInternalSecret(c);
+  if (authErr) return authErr;
+
   const { periodId, teamId, playerIds, title, amount, dueDate = null } = c.req.valid("json");
 
   const dueDateStr = dueDate

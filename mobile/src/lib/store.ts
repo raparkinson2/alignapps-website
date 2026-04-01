@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { v4 as uuidv4 } from 'uuid';
 import { useState, useEffect } from 'react';
 import { cancelGameInviteNotification } from './notifications';
-import { BACKEND_URL } from './config';
+import { BACKEND_URL, adminHeaders } from './config';
 
 export * from './store-types';
 import {
@@ -1132,7 +1133,7 @@ export const useTeamStore = create<TeamStore>()(
 
         // 3. Create archived season
         const archivedSeason: ArchivedSeason = {
-          id: Date.now().toString(),
+          id: uuidv4(),
           seasonName,
           sport,
           archivedAt: new Date().toISOString(),
@@ -1315,7 +1316,7 @@ export const useTeamStore = create<TeamStore>()(
           try {
             const res = await fetch(`${backendUrl}/api/auth/delete-account`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', ...adminHeaders() },
               body: JSON.stringify({ playerId: currentPlayerId, email: userEmail }),
             });
             if (!res.ok) {
@@ -1673,7 +1674,7 @@ export const useTeamStore = create<TeamStore>()(
         const roles: PlayerRole[] = isCoach ? ['admin', 'coach'] : ['admin'];
 
         const newPlayer: Player = {
-          id: Date.now().toString(),
+          id: uuidv4(),
           firstName,
           lastName,
           email: email.toLowerCase(),
@@ -1825,7 +1826,7 @@ export const useTeamStore = create<TeamStore>()(
         if (backendUrl && activeTeamId) {
           fetch(`${backendUrl}/api/auth/erase-team-data`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...adminHeaders() },
             body: JSON.stringify({ teamId: activeTeamId }),
           }).catch(err => console.error('resetAllData backend call failed:', err));
         }
@@ -1888,7 +1889,7 @@ export const useTeamStore = create<TeamStore>()(
         if (backendUrl) {
           fetch(`${backendUrl}/api/auth/delete-team`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...adminHeaders() },
             body: JSON.stringify({ teamId: activeTeamId }),
           }).catch(err => console.error('deleteCurrentTeam backend call failed:', err));
         }
@@ -2062,7 +2063,7 @@ export const useTeamStore = create<TeamStore>()(
       clearPendingTeamSelection: () => set({ pendingTeamIds: null }),
 
       createNewTeam: (teamName, sport, adminPlayer) => {
-        const teamId = `team-${Date.now()}`;
+        const teamId = `team-${uuidv4()}`;
         const newTeam: Team = {
           id: teamId,
           teamName,

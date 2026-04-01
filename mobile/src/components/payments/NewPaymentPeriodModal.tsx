@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { getPlayerName } from '@/lib/store';
 import { pushPaymentPeriodToSupabase } from '@/lib/realtime-sync';
-import { BACKEND_URL } from '@/lib/config';
+import { BACKEND_URL, adminHeaders } from '@/lib/config';
 import { syncError } from '@/lib/sync-error-handler';
 
 interface NewPaymentPeriodModalProps {
@@ -63,7 +63,7 @@ export function NewPaymentPeriodModal({ visible, onClose }: NewPaymentPeriodModa
     if (activeTeamId && selectedPlayerIds.length > 0) {
       fetch(`${BACKEND_URL}/api/payments/reminders/on-create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({
           periodId: newPeriod.id,
           teamId: activeTeamId,

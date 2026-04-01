@@ -1,7 +1,18 @@
 import { Hono } from "hono";
 import { createClient } from "@supabase/supabase-js";
+import type { Context } from "hono";
 
 const filesRouter = new Hono();
+
+function requireInternalSecret(c: Context): Response | null {
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret) return null;
+  const provided = c.req.header("x-admin-secret");
+  if (!provided || provided !== secret) {
+    return c.json({ error: "Unauthorized" }, 401) as unknown as Response;
+  }
+  return null;
+}
 
 const BUCKET = "team-files";
 
@@ -43,6 +54,9 @@ async function ensureBucket(supabase: ReturnType<typeof createClient>) {
 
 // Upload a file for a team
 filesRouter.post("/upload/:teamId", async (c) => {
+  const authErr = requireInternalSecret(c);
+  if (authErr) return authErr;
+
   const { teamId } = c.req.param();
 
   let formData: FormData;
@@ -165,6 +179,9 @@ filesRouter.get("/:teamId", async (c) => {
 
 // Delete a file by its storage path — passed as ?path= to avoid slash-in-URL issues
 filesRouter.delete("/delete", async (c) => {
+  const authErr = requireInternalSecret(c);
+  if (authErr) return authErr;
+
   const filePath = c.req.query("path");
   if (!filePath) {
     return c.json({ error: "Missing required query param: path" }, 400);

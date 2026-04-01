@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { BACKEND_URL } from './config';
+import { BACKEND_URL, adminHeaders } from './config';
 
 export type TeamFile = {
   id: string;
@@ -35,6 +35,7 @@ export async function uploadTeamFile(
 
   const response = await fetch(`${BACKEND_URL}/api/team-files/upload/${teamId}`, {
     method: 'POST',
+    headers: { ...adminHeaders() },
     body: formData,
   });
 
@@ -66,7 +67,7 @@ export async function fetchTeamFiles(teamId: string): Promise<TeamFile[]> {
 export async function deleteTeamFile(filePath: string): Promise<void> {
   const response = await fetch(
     `${BACKEND_URL}/api/team-files/delete?path=${encodeURIComponent(filePath)}`,
-    { method: 'DELETE' }
+    { method: 'DELETE', headers: { ...adminHeaders() } }
   );
   if (!response.ok) {
     const data = await response.json().catch(() => ({})) as { error?: string };
