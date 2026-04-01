@@ -523,26 +523,30 @@ export const useTeamStore = create<TeamStore>()(
                 checkedInPlayers: (g.checkedInPlayers || []).includes(playerId)
                   ? g.checkedInPlayers
                   : [...(g.checkedInPlayers || []), playerId],
-                checkedOutPlayers: (g.checkedOutPlayers || []).filter((id) => id !== playerId)
+                checkedOutPlayers: (g.checkedOutPlayers || []).filter((id) => id !== playerId),
+                lateCancelPlayers: (g.lateCancelPlayers || []).filter((id) => id !== playerId),
               }
             : g
         ),
       })),
       checkOutFromGame: (gameId, playerId, note) => set((state) => ({
-        games: state.games.map((g) =>
-          g.id === gameId
-            ? {
-                ...g,
-                checkedInPlayers: (g.checkedInPlayers || []).filter((id) => id !== playerId),
-                checkedOutPlayers: (g.checkedOutPlayers || []).includes(playerId)
-                  ? g.checkedOutPlayers
-                  : [...(g.checkedOutPlayers || []), playerId],
-                checkoutNotes: note
-                  ? { ...(g.checkoutNotes || {}), [playerId]: note }
-                  : g.checkoutNotes
-              }
-            : g
-        ),
+        games: state.games.map((g) => {
+          if (g.id !== gameId) return g;
+          const wasCheckedIn = (g.checkedInPlayers || []).includes(playerId);
+          return {
+            ...g,
+            checkedInPlayers: (g.checkedInPlayers || []).filter((id) => id !== playerId),
+            checkedOutPlayers: (g.checkedOutPlayers || []).includes(playerId)
+              ? g.checkedOutPlayers
+              : [...(g.checkedOutPlayers || []), playerId],
+            lateCancelPlayers: wasCheckedIn && !(g.lateCancelPlayers || []).includes(playerId)
+              ? [...(g.lateCancelPlayers || []), playerId]
+              : (g.lateCancelPlayers || []),
+            checkoutNotes: note
+              ? { ...(g.checkoutNotes || {}), [playerId]: note }
+              : g.checkoutNotes,
+          };
+        }),
       })),
       clearPlayerResponse: (gameId: string, playerId: string) => set((state) => ({
         games: state.games.map((g) =>
@@ -550,7 +554,8 @@ export const useTeamStore = create<TeamStore>()(
             ? {
                 ...g,
                 checkedInPlayers: (g.checkedInPlayers || []).filter((id) => id !== playerId),
-                checkedOutPlayers: (g.checkedOutPlayers || []).filter((id) => id !== playerId)
+                checkedOutPlayers: (g.checkedOutPlayers || []).filter((id) => id !== playerId),
+                lateCancelPlayers: (g.lateCancelPlayers || []).filter((id) => id !== playerId),
               }
             : g
         ),

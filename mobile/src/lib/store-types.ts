@@ -527,6 +527,7 @@ export interface Game {
   notes?: string;
   checkedInPlayers: string[]; // player ids marked as IN
   checkedOutPlayers: string[]; // player ids marked as OUT
+  lateCancelPlayers?: string[]; // player ids who checked IN then later checked OUT (flakes)
   checkoutNotes?: Record<string, string>; // playerId -> reason for checkout
   invitedPlayers: string[]; // player ids
   photos: string[];

@@ -143,11 +143,13 @@ export default function PremiumInsightsScreen() {
       .map((player) => {
         // Games where the player checked IN first, then checked OUT
         const gamesDayBails = pastGames.filter(
-          (g) =>
-            (g.checkedInPlayers ?? []).includes(player.id) &&
-            (g.checkedOutPlayers ?? []).includes(player.id)
+          (g) => (g.lateCancelPlayers ?? []).includes(player.id)
         );
-        const checkedIn = pastGames.filter((g) => (g.checkedInPlayers ?? []).includes(player.id));
+        const checkedIn = pastGames.filter(
+          (g) =>
+            (g.checkedInPlayers ?? []).includes(player.id) ||
+            (g.lateCancelPlayers ?? []).includes(player.id)
+        );
         return {
           player,
           flakeCount: gamesDayBails.length,
