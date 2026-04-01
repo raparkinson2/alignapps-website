@@ -485,7 +485,7 @@ function AdminScreen() {
                     <Users size={20} color="#67e8f9" />
                   </View>
                   <View className="ml-3">
-                    <Text className="text-white font-semibold">Manage Team</Text>
+                    <Text className="text-white font-semibold">Manage Roster</Text>
                     <Text className="text-slate-400 text-sm">{players.length} members on roster</Text>
                   </View>
                 </View>
