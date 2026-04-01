@@ -507,6 +507,7 @@ export default function PremiumInsightsScreen() {
 
             {/* Player Impact */}
             <Pressable
+              style={{ marginBottom: 12 }}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/player-impact'); }}
             >
               <LinearGradient
