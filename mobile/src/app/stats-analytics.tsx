@@ -54,6 +54,13 @@ export default function StatsAnalyticsScreen() {
     const pos = currentPlayer.position?.toLowerCase();
     return pos === 'coach' || pos === 'parent' || currentPlayer.roles?.includes('coach' as any) || currentPlayer.roles?.includes('parent' as any);
   }, [currentPlayer]);
+
+  // DEBUG — remove after fix
+  console.log('[SeasonWrapped] currentPlayerId:', currentPlayerId);
+  console.log('[SeasonWrapped] currentPlayer name:', currentPlayer ? `${currentPlayer.firstName} ${currentPlayer.lastName}` : 'NOT FOUND');
+  console.log('[SeasonWrapped] isNonPlayer:', isNonPlayer);
+  console.log('[SeasonWrapped] gameLogs count:', currentPlayer?.gameLogs?.length ?? 0);
+  console.log('[SeasonWrapped] checkins count:', currentPlayerId ? games.filter(g => g.gameResult && g.checkedInPlayers?.includes(currentPlayerId)).length : 0);
   const hasEnoughGames = useMemo(() => {
     if (!currentPlayerId) return false;
     const fromLogs = currentPlayer?.gameLogs?.length ?? 0;
