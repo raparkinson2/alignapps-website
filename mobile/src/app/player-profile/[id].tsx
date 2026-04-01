@@ -1040,7 +1040,7 @@ export default function PlayerProfileScreen() {
                     entering={FadeInDown.delay(220 + i * 40).springify()}
                     style={{
                       flexDirection: 'row', alignItems: 'center',
-                      backgroundColor: trophy.bg, borderRadius: 14,
+                      backgroundColor: '#0f172a', borderRadius: 14,
                       padding: 14, borderWidth: 1, borderColor: trophy.border, gap: 12,
                     }}
                   >
