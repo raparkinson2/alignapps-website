@@ -742,7 +742,7 @@ function AdminScreen() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setTeamSettingsAndSync({ refreshmentDutyIs21Plus: value });
                     }}
-                    trackColor={{ false: '#334155', true: '#f59e0b' }}
+                    trackColor={{ false: '#334155', true: '#22c55e' }}
                     thumbColor="#ffffff"
                   />
                 </View>
