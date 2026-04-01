@@ -129,8 +129,7 @@ export default function PremiumInsightsScreen() {
   }, [games, players, paymentPeriods]);
 
   // ── Compute Flake Factor ──────────────────────────────────────────────────
-  // A flake: player was 'in' but ended up in checkedOutPlayers for a past game
-  // (approximated locally; precise data builds from response_history going forward)
+  // A flake: player checked IN to a game but then checked OUT on game day
   const flakeData = useMemo(() => {
     const pastGames = games.filter((g) => new Date(g.date) < new Date());
     const activePlayers = players.filter(
@@ -142,19 +141,18 @@ export default function PremiumInsightsScreen() {
 
     return activePlayers
       .map((player) => {
-        // Was invited AND ended up as out for a past game (indication of late cancel)
-        const lateOuts = pastGames.filter(
+        // Games where the player checked IN first, then checked OUT
+        const gamesDayBails = pastGames.filter(
           (g) =>
-            g.invitedPlayers.includes(player.id) &&
-            g.checkedOutPlayers.includes(player.id) &&
-            (g.checkoutNotes?.[player.id] ?? '').toLowerCase().includes('') // any out = possible flake
+            (g.checkedInPlayers ?? []).includes(player.id) &&
+            (g.checkedOutPlayers ?? []).includes(player.id)
         );
-        const invited = pastGames.filter((g) => g.invitedPlayers.includes(player.id));
+        const checkedIn = pastGames.filter((g) => (g.checkedInPlayers ?? []).includes(player.id));
         return {
           player,
-          flakeCount: lateOuts.length,
-          totalGames: invited.length,
-          flakeRate: invited.length > 0 ? Math.round((lateOuts.length / invited.length) * 100) : 0,
+          flakeCount: gamesDayBails.length,
+          totalGames: checkedIn.length,
+          flakeRate: checkedIn.length > 0 ? Math.round((gamesDayBails.length / checkedIn.length) * 100) : 0,
         };
       })
       .filter((d) => d.totalGames > 0 && d.flakeCount > 0)
@@ -289,7 +287,7 @@ export default function PremiumInsightsScreen() {
                 {topFlaker ? getPlayerName(topFlaker.player) : '—'}
               </Text>
               <Text className="text-slate-400 text-xs mt-0.5">
-                {topFlaker ? `${topFlaker.flakeRate}% flake rate` : 'All reliable!'}
+                {topFlaker ? `${topFlaker.flakeRate}% game-day checkout rate` : 'All reliable!'}
               </Text>
             </LinearGradient>
           </Animated.View>
@@ -408,15 +406,15 @@ export default function PremiumInsightsScreen() {
               {!hasFlakeData ? (
                 <EmptyState
                   icon={<Ghost size={28} color="#64748b" />}
-                  title={hasGameData ? 'No late cancellations' : 'Log game results to track'}
-                  subtitle={hasGameData ? 'Your team is showing up consistently.' : 'Flake tracking builds as games are completed.'}
+                  title={hasGameData ? 'No game-day checkouts' : 'Log games to track'}
+                  subtitle={hasGameData ? 'Everyone who checked in followed through.' : 'Flake tracking builds as players check in to games.'}
                   positive={hasGameData}
                 />
               ) : (
                 <>
                   <View style={{ padding: 16, paddingBottom: 8 }}>
                     <Text className="text-slate-400 text-xs">
-                      Players who frequently cancel after confirming attendance
+                      Players who checked IN but then checked OUT on game day
                     </Text>
                   </View>
                   {flakeData.map((item, index) => (
@@ -437,7 +435,7 @@ export default function PremiumInsightsScreen() {
                           {getPlayerName(item.player)}
                         </Text>
                         <Text className="text-slate-500 text-xs mt-0.5">
-                          {item.flakeCount} late cancel{item.flakeCount !== 1 ? 's' : ''} from {item.totalGames} games
+                          Checked out {item.flakeCount} time{item.flakeCount !== 1 ? 's' : ''} after checking in ({item.totalGames} check-in{item.totalGames !== 1 ? 's' : ''} total)
                         </Text>
                       </View>
                       <View
