@@ -863,56 +863,6 @@ function AdminScreen() {
               Performance
             </Text>
 
-            {/* Team Stats Nav Item */}
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setIsTeamStatsModalVisible(true);
-              }}
-              className="bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-700/50 active:bg-slate-700/80"
-            >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View className="bg-cyan-500/20 p-2 rounded-full">
-                    <BarChart3 size={20} color="#67e8f9" />
-                  </View>
-                  <View className="ml-3 flex-1">
-                    <Text className="text-white font-semibold">Team Stats</Text>
-                    <Text className="text-slate-400 text-sm">
-                      Track player and team statistics
-                    </Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color="#64748b" />
-              </View>
-            </Pressable>
-
-            {/* Team Stats Link - only show when enabled */}
-            {teamSettings.showTeamStats !== false && (
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/team-stats');
-                }}
-                className="bg-slate-800/80 rounded-2xl p-4 mb-4 border border-slate-700/50 active:bg-slate-700/80"
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="bg-cyan-500/20 p-2 rounded-full">
-                      <BarChart3 size={20} color="#67e8f9" />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text className="text-white font-semibold">View Team Stats</Text>
-                      <Text className="text-slate-400 text-sm">
-                        View and edit player statistics
-                      </Text>
-                    </View>
-                  </View>
-                  <ChevronRight size={20} color="#64748b" />
-                </View>
-              </Pressable>
-            )}
-
             {/* Season Management - only show when Team Stats is enabled */}
             {teamSettings.showTeamStats !== false && (
               <Pressable

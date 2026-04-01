@@ -459,8 +459,16 @@ function MoreScreen() {
           </Text>
 
           <MenuItem
+            icon={<BarChart3 size={20} color="#67e8f9" />}
+            title="Stats"
+            subtitle="View and edit player statistics"
+            onPress={() => router.push('/team-stats')}
+            index={3}
+          />
+
+          <MenuItem
             icon={<TrendingUp size={20} color="#67e8f9" />}
-            title="Stats & Analytics"
+            title="Analytics"
             subtitle="Attendance and team statistics"
             onPress={() => router.push('/stats-analytics')}
             index={4}
