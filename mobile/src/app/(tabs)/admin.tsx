@@ -952,8 +952,8 @@ function AdminScreen() {
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
-                    <View className="bg-green-500/20 p-2 rounded-full">
-                      <Download size={20} color="#22c55e" />
+                    <View className="bg-cyan-500/20 p-2 rounded-full">
+                      <Download size={20} color="#67e8f9" />
                     </View>
                     <View className="ml-3 flex-1">
                       <Text className="text-white font-semibold">Export Stats</Text>
@@ -1016,8 +1016,8 @@ function AdminScreen() {
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
-                    <View style={{ backgroundColor: 'rgba(251,191,36,0.15)', padding: 8, borderRadius: 20 }}>
-                      <Crown size={20} color="#fbbf24" />
+                    <View className="bg-cyan-500/20 p-2 rounded-full">
+                      <Crown size={20} color="#67e8f9" />
                     </View>
                     <View className="ml-3 flex-1">
                       <Text className="text-white font-semibold">Transfer Ownership</Text>
