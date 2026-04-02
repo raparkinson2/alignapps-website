@@ -7,6 +7,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
 import { useTeamStore, Player, getPlayerName, Championship, ArchivedPlayerStats, ArchivedSeason } from '@/lib/store';
+import { pushTeamToSupabase } from '@/lib/realtime-sync';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { useTeamColor, hexToRgba } from '@/lib/theme';
 
@@ -40,6 +41,8 @@ export default function TeamRecordsScreen() {
   const addChampionship = useTeamStore((s) => s.addChampionship);
   const removeChampionship = useTeamStore((s) => s.removeChampionship);
   const isAdmin = useTeamStore((s) => s.isAdmin);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+  const teamName = useTeamStore((s) => s.teamName);
   const sport = teamSettings.sport || 'hockey';
   const championships = teamSettings.championships || [];
   const teamColor = useTeamColor();
@@ -555,6 +558,9 @@ export default function TeamRecordsScreen() {
     };
 
     addChampionship(championship);
+    if (activeTeamId) {
+      pushTeamToSupabase(activeTeamId, teamName, useTeamStore.getState().teamSettings).catch(() => {});
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setNewYear('');
     setNewTitle('');
@@ -564,6 +570,9 @@ export default function TeamRecordsScreen() {
   const handleRemoveChampionship = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     removeChampionship(id);
+    if (activeTeamId) {
+      pushTeamToSupabase(activeTeamId, teamName, useTeamStore.getState().teamSettings).catch(() => {});
+    }
   };
 
   const handleOpenEditStatsModal = () => {
