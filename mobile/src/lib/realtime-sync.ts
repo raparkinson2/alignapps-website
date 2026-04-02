@@ -853,6 +853,7 @@ export function startRealtimeSync(teamId: string): void {
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, (payload) => {
       const store = useTeamStore.getState();
       const n = payload.new as any;
+      if (n.to_player_id !== store.currentPlayerId) return;
       useTeamStore.setState({ notifications: store.notifications.map((notif) => notif.id === n.id ? { ...notif, read: n.read } : notif) });
     })
 

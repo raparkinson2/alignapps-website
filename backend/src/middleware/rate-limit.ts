@@ -76,5 +76,8 @@ export const paymentRateLimit = rateLimit(30, 60 * 1000);
 /** Limiter for notification sending: 60 requests per minute per IP */
 export const notificationRateLimit = rateLimit(60, 60 * 1000);
 
+/** Weather API limiter: 30 requests per minute per IP */
+export const weatherRateLimit = rateLimit(30, 60 * 1000);
+
 /** General API limiter: 200 requests per minute per IP */
 export const generalRateLimit = rateLimit(200, 60 * 1000);

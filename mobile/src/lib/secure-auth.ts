@@ -6,6 +6,7 @@
  */
 import { useTeamStore, Player } from './store';
 import { hashPassword, verifyPassword, isAlreadyHashed, hashSecurityAnswer, verifySecurityAnswer } from './crypto';
+import { supabase } from './supabase';
 
 type LoginResult = {
   success: boolean;
@@ -138,7 +139,14 @@ export async function secureLoginWithPhone(phone: string, password: string): Pro
 
   // Password verified - get fresh state and use verified login to handle team selection
   // Must get fresh state in case password migration updated the store
-  return useTeamStore.getState().loginWithPhoneVerified(phone);
+  const result = useTeamStore.getState().loginWithPhoneVerified(phone);
+
+  // Set Supabase session context so RLS policies work for phone-auth users
+  if (result.success && result.playerId) {
+    void supabase.rpc('set_player_context', { player_id: result.playerId });
+  }
+
+  return result;
 }
 
 /**

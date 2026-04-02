@@ -27,20 +27,24 @@ CREATE POLICY "Team members can delete their messages" ON chat_messages
     AND sender_id IN (SELECT id FROM players WHERE auth_user_id = auth.uid())
   );
 
--- 2. STORAGE BUCKET — require authentication to upload or delete
+-- 2. STORAGE BUCKET — require authentication and team membership to upload or delete
 DROP POLICY IF EXISTS "Anyone can upload photos" ON storage.objects;
 DROP POLICY IF EXISTS "Anyone can delete photos" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload photos" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can delete photos" ON storage.objects;
 
-CREATE POLICY "Authenticated users can upload photos" ON storage.objects
+CREATE POLICY "Team members can upload photos" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'team-photos'
     AND auth.uid() IS NOT NULL
+    AND (storage.foldername(name))[1] = get_my_team_id()
   );
 
-CREATE POLICY "Authenticated users can delete photos" ON storage.objects
+CREATE POLICY "Team members can delete photos" ON storage.objects
   FOR DELETE USING (
     bucket_id = 'team-photos'
     AND auth.uid() IS NOT NULL
+    AND (storage.foldername(name))[1] = get_my_team_id()
   );
 
 -- 3. TEAM INVITATIONS — restrict creation to admins only

@@ -313,6 +313,9 @@ notificationsRouter.post("/save-token", zValidator("json", SaveTokenSchema), asy
  * Looks up push tokens for given player IDs and sends via APNs directly.
  */
 notificationsRouter.post("/send-to-players", zValidator("json", SendToPlayersSchema), async (c) => {
+  const authError = requireAdminSecret(c);
+  if (authError) return authError;
+
   const { playerIds, title, body, data } = c.req.valid("json");
 
   console.log(`[push] send-to-players: ${playerIds.length} players, title: "${title}"`);
@@ -503,6 +506,9 @@ notificationsRouter.get("/registration-diagnostics", async (c) => {
  * Body: { playerId, gameId, opponent, gameDateTime (ISO string), is21Plus }
  */
 notificationsRouter.post("/schedule-beer-duty", zValidator("json", ScheduleBeerDutySchema), async (c) => {
+  const authError = requireAdminSecret(c);
+  if (authError) return authError;
+
   const { playerId, gameId, opponent, gameDateTime, is21Plus } = c.req.valid("json");
 
   const gameTime = new Date(gameDateTime);
