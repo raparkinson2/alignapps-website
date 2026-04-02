@@ -1321,11 +1321,8 @@ function GameDetailScreenInner() {
                         <View style={{ flex: 1 }}>
                           <Text className="text-slate-300 font-semibold text-xs">Player</Text>
                         </View>
-                        <View style={{ width: 32 }}>
-                          <Text className="text-slate-300 font-semibold text-center text-[10px]">Pos</Text>
-                        </View>
                         {getGameStatHeaders(teamSettings.sport).map((header) => (
-                          <View key={header} style={{ width: 28 }}>
+                          <View key={header} style={{ width: 34 }}>
                             <Text className="text-slate-300 font-semibold text-center text-[10px]">{header}</Text>
                           </View>
                         ))}
@@ -1371,11 +1368,8 @@ function GameDetailScreenInner() {
                                   {formatShortName(getPlayerName(player))}
                                 </Text>
                               </View>
-                              <View style={{ width: 32 }}>
-                                <Text className="text-slate-400 text-center text-xs">{getDisplayPosition(player)}</Text>
-                              </View>
                               {statValues.map((value, i) => (
-                                <View key={i} style={{ width: 28 }}>
+                                <View key={i} style={{ width: 34 }}>
                                   <Text className={cn(
                                     'text-center text-xs',
                                     hasStats ? 'text-white font-medium' : 'text-slate-500'
@@ -1397,9 +1391,8 @@ function GameDetailScreenInner() {
                             <View style={{ flex: 1 }}>
                               <Text className="text-slate-300 font-semibold text-xs">Goalies</Text>
                             </View>
-                            <View style={{ width: 32 }} />
                             {getGameGoalieHeaders(teamSettings.sport).map((header) => (
-                              <View key={header} style={{ width: 28 }}>
+                              <View key={header} style={{ width: 34 }}>
                                 <Text className="text-slate-300 font-semibold text-center text-[10px]">{header}</Text>
                               </View>
                             ))}
@@ -1432,11 +1425,8 @@ function GameDetailScreenInner() {
                                     {formatShortName(getPlayerName(player))}
                                   </Text>
                                 </View>
-                                <View style={{ width: 32 }}>
-                                  <Text className="text-slate-400 text-center text-xs">G</Text>
-                                </View>
                                 {statValues.map((value, i) => (
-                                  <View key={i} style={{ width: 28 }}>
+                                  <View key={i} style={{ width: 34 }}>
                                     <Text className={cn(
                                       'text-center text-xs',
                                       hasStats ? 'text-white font-medium' : 'text-slate-500'
@@ -1460,9 +1450,8 @@ function GameDetailScreenInner() {
                             <View style={{ flex: 1 }}>
                               <Text className="text-slate-300 font-semibold text-xs">Pitchers</Text>
                             </View>
-                            <View style={{ width: 32 }} />
                             {getGamePitcherHeaders().map((header) => (
-                              <View key={header} style={{ width: 28 }}>
+                              <View key={header} style={{ width: 34 }}>
                                 <Text className="text-slate-300 font-semibold text-center text-[10px]">{header}</Text>
                               </View>
                             ))}
@@ -1494,11 +1483,8 @@ function GameDetailScreenInner() {
                                     {formatShortName(getPlayerName(player))}
                                   </Text>
                                 </View>
-                                <View style={{ width: 32 }}>
-                                  <Text className="text-slate-400 text-center text-xs">P</Text>
-                                </View>
                                 {statValues.map((value, i) => (
-                                  <View key={i} style={{ width: 28 }}>
+                                  <View key={i} style={{ width: 34 }}>
                                     <Text className={cn(
                                       'text-center text-xs',
                                       hasStats ? 'text-white font-medium' : 'text-slate-500'

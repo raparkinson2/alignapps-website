@@ -546,8 +546,7 @@ export default function SeasonHistoryScreen() {
                             <View className="bg-slate-700/30 rounded-xl overflow-hidden">
                               {/* Table Header */}
                               <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-600/50">
-                                <Text className="text-slate-300 font-semibold text-xs w-16">Player</Text>
-                                <Text className="text-slate-300 font-semibold text-xs w-12 text-center">Pos</Text>
+                                <Text className="text-slate-300 font-semibold text-xs" style={{ flex: 2 }}>Player</Text>
                                 {statHeaders.map((header) => (
                                   <Text key={header} className="text-slate-300 font-semibold text-xs flex-1 text-center">
                                     {header}
@@ -564,11 +563,10 @@ export default function SeasonHistoryScreen() {
                                     key={player.playerId}
                                     className={`flex-row items-center px-2 py-2 ${idx !== nonGoalies.length - 1 || goalies.length > 0 ? 'border-b border-slate-600/30' : ''}`}
                                   >
-                                    <View className="w-16 flex-row items-center">
+                                    <View className="flex-row items-center" style={{ flex: 2, paddingRight: 4 }}>
                                       <Text className="text-cyan-400 text-[10px] font-bold mr-0.5">#{player.jerseyNumber}</Text>
-                                      <Text className="text-white text-[10px]" numberOfLines={1}>{player.playerName.split(' ')[0]}</Text>
+                                      <Text className="text-white text-[10px]" numberOfLines={1} style={{ flex: 1 }}>{player.playerName}</Text>
                                     </View>
-                                    <Text className="text-slate-400 text-[10px] w-12 text-center">{positions}</Text>
                                     {statValues.map((value, i) => (
                                       <Text key={i} className="text-slate-300 text-xs flex-1 text-center">
                                         {value}
@@ -583,8 +581,7 @@ export default function SeasonHistoryScreen() {
                                 <>
                                   {/* Goalie Header */}
                                   <View className="flex-row items-center px-2 py-2 bg-slate-700/50 border-b border-slate-600/50">
-                                    <Text className="text-slate-300 font-semibold text-xs w-16">Goalies</Text>
-                                    <Text className="text-slate-300 font-semibold text-xs w-12 text-center">Pos</Text>
+                                    <Text className="text-slate-300 font-semibold text-xs" style={{ flex: 2 }}>Goalies</Text>
                                     {goalieHeaders.map((header) => (
                                       <Text key={header} className="text-slate-300 font-semibold text-xs flex-1 text-center">
                                         {header}
@@ -601,11 +598,10 @@ export default function SeasonHistoryScreen() {
                                         key={player.playerId}
                                         className={`flex-row items-center px-2 py-2 ${idx !== goalies.length - 1 ? 'border-b border-slate-600/30' : ''}`}
                                       >
-                                        <View className="w-16 flex-row items-center">
+                                        <View className="flex-row items-center" style={{ flex: 2, paddingRight: 4 }}>
                                           <Text className="text-cyan-400 text-[10px] font-bold mr-0.5">#{player.jerseyNumber}</Text>
-                                          <Text className="text-white text-[10px]" numberOfLines={1}>{player.playerName.split(' ')[0]}</Text>
+                                          <Text className="text-white text-[10px]" numberOfLines={1} style={{ flex: 1 }}>{player.playerName}</Text>
                                         </View>
-                                        <Text className="text-slate-400 text-[10px] w-12 text-center">{positions}</Text>
                                         {statValues.map((value, i) => (
                                           <Text key={i} className="text-slate-300 text-xs flex-1 text-center">
                                             {value}
