@@ -1322,7 +1322,7 @@ function GameDetailScreenInner() {
                           <Text className="text-slate-300 font-semibold text-xs">Player</Text>
                         </View>
                         {getGameStatHeaders(teamSettings.sport).map((header) => (
-                          <View key={header} style={{ width: 34 }}>
+                          <View key={header} style={{ width: 46 }}>
                             <Text className="text-slate-300 font-semibold text-center text-[10px]">{header}</Text>
                           </View>
                         ))}
@@ -1369,7 +1369,7 @@ function GameDetailScreenInner() {
                                 </Text>
                               </View>
                               {statValues.map((value, i) => (
-                                <View key={i} style={{ width: 34 }}>
+                                <View key={i} style={{ width: 46 }}>
                                   <Text className={cn(
                                     'text-center text-xs',
                                     hasStats ? 'text-white font-medium' : 'text-slate-500'
@@ -1392,7 +1392,7 @@ function GameDetailScreenInner() {
                               <Text className="text-slate-300 font-semibold text-xs">Goalies</Text>
                             </View>
                             {getGameGoalieHeaders(teamSettings.sport).map((header) => (
-                              <View key={header} style={{ width: 34 }}>
+                              <View key={header} style={{ width: 46 }}>
                                 <Text className="text-slate-300 font-semibold text-center text-[10px]">{header}</Text>
                               </View>
                             ))}
@@ -1426,7 +1426,7 @@ function GameDetailScreenInner() {
                                   </Text>
                                 </View>
                                 {statValues.map((value, i) => (
-                                  <View key={i} style={{ width: 34 }}>
+                                  <View key={i} style={{ width: 46 }}>
                                     <Text className={cn(
                                       'text-center text-xs',
                                       hasStats ? 'text-white font-medium' : 'text-slate-500'
@@ -1451,7 +1451,7 @@ function GameDetailScreenInner() {
                               <Text className="text-slate-300 font-semibold text-xs">Pitchers</Text>
                             </View>
                             {getGamePitcherHeaders().map((header) => (
-                              <View key={header} style={{ width: 34 }}>
+                              <View key={header} style={{ width: 46 }}>
                                 <Text className="text-slate-300 font-semibold text-center text-[10px]">{header}</Text>
                               </View>
                             ))}
@@ -1484,7 +1484,7 @@ function GameDetailScreenInner() {
                                   </Text>
                                 </View>
                                 {statValues.map((value, i) => (
-                                  <View key={i} style={{ width: 34 }}>
+                                  <View key={i} style={{ width: 46 }}>
                                     <Text className={cn(
                                       'text-center text-xs',
                                       hasStats ? 'text-white font-medium' : 'text-slate-500'
