@@ -20,7 +20,6 @@ type WeatherCondition = 'sunny' | 'partly_cloudy' | 'cloudy' | 'rain' | 'snow' |
  * No-op if: weather already fetched AND has data, no address, or >16 days out.
  */
 export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<void> {
-  if (game.weatherAutoFetched && (game.weatherTemp != null || game.weatherCondition)) return;
   if (!game.date) return;
 
   const address = game.address || game.location;
@@ -33,6 +32,10 @@ export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<v
     (new Date(dateStr + 'T00:00:00').getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
   );
   if (diffDays > 16) return;
+
+  // For past games with data already fetched, skip re-fetch (historical data doesn't change)
+  const isPast = diffDays < 0;
+  if (isPast && game.weatherAutoFetched && (game.weatherTemp != null || game.weatherCondition)) return;
 
   await _fetchAndSave({
     id: game.id,
@@ -56,7 +59,6 @@ export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<v
  * No-op if: weather already fetched AND has data, no address, or >16 days out.
  */
 export async function fetchAndSaveEventWeather(event: Event, teamId: string): Promise<void> {
-  if (event.weatherAutoFetched && (event.weatherTemp != null || event.weatherCondition)) return;
   if (!event.date) return;
 
   const address = event.address || event.location;
@@ -69,6 +71,10 @@ export async function fetchAndSaveEventWeather(event: Event, teamId: string): Pr
     (new Date(dateStr + 'T00:00:00').getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
   );
   if (diffDays > 16) return;
+
+  // For past events with data already fetched, skip re-fetch (historical data doesn't change)
+  const isPast = diffDays < 0;
+  if (isPast && event.weatherAutoFetched && (event.weatherTemp != null || event.weatherCondition)) return;
 
   await _fetchAndSave({
     id: event.id,
