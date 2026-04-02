@@ -74,6 +74,22 @@ export function EventCard({ event, index, onPress, skipAnimation = false, hideDa
               <Calendar size={14} color={iconColor} strokeWidth={2} />
               <Text className="text-slate-300 text-sm ml-1.5">{isPractice ? 'Practice' : 'Event'}</Text>
             </View>
+            {(event.weatherCondition || event.weatherTemp != null) && (
+              <View className="flex-row items-center ml-2" style={{ gap: 3 }}>
+                <Text style={{ fontSize: 14 }}>
+                  {event.weatherCondition === 'sunny' ? '☀️'
+                    : event.weatherCondition === 'partly_cloudy' ? '⛅'
+                    : event.weatherCondition === 'cloudy' ? '☁️'
+                    : event.weatherCondition === 'rain' ? '🌧️'
+                    : event.weatherCondition === 'snow' ? '❄️'
+                    : event.weatherCondition === 'indoor' ? '🏟️'
+                    : '🌡️'}
+                </Text>
+                {event.weatherTemp != null && (
+                  <Text className="text-slate-300 text-sm font-medium">{event.weatherTemp}°F</Text>
+                )}
+              </View>
+            )}
           </View>
 
           {/* Location */}
