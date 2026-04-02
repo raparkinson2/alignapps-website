@@ -9,6 +9,7 @@ import { paymentsRouter } from "./routes/payments";
 import { connectRouter } from "./routes/connect";
 import { filesRouter } from "./routes/files";
 import { paymentRemindersRouter, startPaymentReminderScheduler } from "./routes/payment-reminders";
+import { weatherRouter } from "./routes/weather";
 import { logger } from "hono/logger";
 import { authRateLimit, paymentRateLimit, notificationRateLimit, generalRateLimit } from "./middleware/rate-limit";
 
@@ -69,6 +70,7 @@ app.route("/api/payments", paymentsRouter);
 app.route("/api/payments/connect", connectRouter);
 app.route("/api/payments/reminders", paymentRemindersRouter);
 app.route("/api/team-files", filesRouter);
+app.route("/api/weather", weatherRouter);
 
 // Start background scheduler for payment reminders
 startPaymentReminderScheduler();
