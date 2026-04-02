@@ -177,17 +177,35 @@ export function GameCard({ game, index, onPress, onViewLines, skipAnimation = fa
           </View>
 
           {/* Info Grid */}
-          <View className="flex-row items-center mb-2">
+          <View className="flex-row items-center justify-between mb-2">
             <View className="flex-row items-center">
-              <Clock size={14} color="#67e8f9" strokeWidth={2} />
-              <Text className="text-slate-300 text-sm ml-1.5">{game.time}</Text>
+              <View className="flex-row items-center">
+                <Clock size={14} color="#67e8f9" strokeWidth={2} />
+                <Text className="text-slate-300 text-sm ml-1.5">{game.time}</Text>
+              </View>
+              <View className="flex-row items-center ml-4">
+                <JerseyIcon size={14} color={jerseyColorHex} />
+                <Text className="text-slate-300 text-sm ml-1.5">
+                  {jerseyColorName}
+                </Text>
+              </View>
             </View>
-            <View className="flex-row items-center ml-4">
-              <JerseyIcon size={14} color={jerseyColorHex} />
-              <Text className="text-slate-300 text-sm ml-1.5">
-                {jerseyColorName}
-              </Text>
-            </View>
+            {(game.weatherCondition || game.weatherTemp != null) && (
+              <View className="flex-row items-center" style={{ gap: 3 }}>
+                <Text style={{ fontSize: 14 }}>
+                  {game.weatherCondition === 'sunny' ? '☀️'
+                    : game.weatherCondition === 'partly_cloudy' ? '⛅'
+                    : game.weatherCondition === 'cloudy' ? '☁️'
+                    : game.weatherCondition === 'rain' ? '🌧️'
+                    : game.weatherCondition === 'snow' ? '❄️'
+                    : game.weatherCondition === 'indoor' ? '🏟️'
+                    : '🌡️'}
+                </Text>
+                {game.weatherTemp != null && (
+                  <Text className="text-slate-300 text-sm font-medium">{game.weatherTemp}°F</Text>
+                )}
+              </View>
+            )}
           </View>
 
           {/* Location */}
