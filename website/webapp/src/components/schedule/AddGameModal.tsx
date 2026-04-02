@@ -25,6 +25,9 @@ const emptyForm = {
   notes: '',
   showBeerDuty: false,
   beerDutyPlayerId: '' as string,
+  scoreUs: '' as string,
+  scoreThem: '' as string,
+  gameResult: '' as '' | 'win' | 'loss' | 'tie' | 'otLoss',
 };
 
 function formToTimeStr(value: string, period: 'AM' | 'PM'): string {
@@ -68,6 +71,9 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
         notes: existingGame.notes ?? '',
         showBeerDuty: existingGame.showBeerDuty ?? false,
         beerDutyPlayerId: existingGame.beerDutyPlayerId ?? '',
+        scoreUs: existingGame.finalScoreUs != null ? String(existingGame.finalScoreUs) : '',
+        scoreThem: existingGame.finalScoreThem != null ? String(existingGame.finalScoreThem) : '',
+        gameResult: existingGame.gameResult ?? '',
       };
     }
     return emptyForm;
@@ -90,6 +96,9 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
         notes: existingGame.notes ?? '',
         showBeerDuty: existingGame.showBeerDuty ?? false,
         beerDutyPlayerId: existingGame.beerDutyPlayerId ?? '',
+        scoreUs: existingGame.finalScoreUs != null ? String(existingGame.finalScoreUs) : '',
+        scoreThem: existingGame.finalScoreThem != null ? String(existingGame.finalScoreThem) : '',
+        gameResult: existingGame.gameResult ?? '',
       });
     } else {
       setForm(emptyForm);
@@ -124,10 +133,10 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
         checkedOutPlayers: existingGame?.checkedOutPlayers ?? [],
         invitedPlayers: existingGame?.invitedPlayers ?? [],
         photos: existingGame?.photos ?? [],
-        finalScoreUs: existingGame?.finalScoreUs,
-        finalScoreThem: existingGame?.finalScoreThem,
-        gameResult: existingGame?.gameResult,
-        resultRecorded: existingGame?.resultRecorded ?? false,
+        finalScoreUs: form.scoreUs !== '' ? Number(form.scoreUs) : existingGame?.finalScoreUs,
+        finalScoreThem: form.scoreThem !== '' ? Number(form.scoreThem) : existingGame?.finalScoreThem,
+        gameResult: form.gameResult || existingGame?.gameResult,
+        resultRecorded: (form.scoreUs !== '' && form.scoreThem !== '') ? true : (existingGame?.resultRecorded ?? false),
       };
 
       if (existingGame) {
@@ -274,6 +283,58 @@ export default function AddGameModal({ isOpen, onClose, existingGame }: AddGameM
                 </select>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Score & Result — only show when editing an existing game */}
+        {existingGame && (
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Final Score <span className="text-slate-500">(optional)</span></label>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Us</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.scoreUs}
+                  onChange={(e) => set('scoreUs', e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-center text-lg font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Them</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.scoreThem}
+                  onChange={(e) => set('scoreThem', e.target.value)}
+                  placeholder="0"
+                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-center text-lg font-bold"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {(['win', 'loss', 'tie', 'otLoss'] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => set('gameResult', form.gameResult === r ? '' : r)}
+                  className={cn(
+                    'py-2 rounded-xl text-xs font-semibold border transition-all',
+                    form.gameResult === r
+                      ? r === 'win'
+                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                        : r === 'loss' || r === 'otLoss'
+                        ? 'bg-rose-500/20 border-rose-500/50 text-rose-400'
+                        : 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                      : 'border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/20'
+                  )}
+                >
+                  {r === 'otLoss' ? 'OTL' : r.charAt(0).toUpperCase() + r.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
