@@ -275,6 +275,7 @@ export function CalendarView({ games, events, onSelectGame, onSelectEvent, onVie
                 onViewLines={() => onViewLines(game)}
                 skipAnimation
                 hideDateBadge
+                hideWeather
               />
             ))}
             {/* Practices */}

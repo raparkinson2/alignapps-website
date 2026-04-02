@@ -113,9 +113,10 @@ export interface GameCardProps {
   onViewLines: () => void;
   skipAnimation?: boolean;
   hideDateBadge?: boolean;
+  hideWeather?: boolean;
 }
 
-export function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hideDateBadge = false }: GameCardProps) {
+export function GameCard({ game, index, onPress, onViewLines, skipAnimation = false, hideDateBadge = false, hideWeather = false }: GameCardProps) {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const players = useTeamStore((s) => s.players);
   const checkedInCount = game.checkedInPlayers?.length ?? 0;
@@ -186,7 +187,7 @@ export function GameCard({ game, index, onPress, onViewLines, skipAnimation = fa
               <JerseyIcon size={14} color={jerseyColorHex} />
               <Text className="text-slate-300 text-sm ml-1.5">{jerseyColorName}</Text>
             </View>
-            {(game.weatherCondition || game.weatherTemp != null) && (
+            {!hideWeather && (game.weatherCondition || game.weatherTemp != null) && (
               <View className="flex-row items-center ml-4" style={{ gap: 3 }}>
                 <Text style={{ fontSize: 14 }}>
                   {game.weatherCondition === 'sunny' ? '☀️'
