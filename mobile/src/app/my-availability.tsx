@@ -14,6 +14,8 @@ import {
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Game, Event } from '@/lib/store';
+import { pushPlayerToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 import { cn } from '@/lib/cn';
 
 export default function MyAvailabilityScreen() {
@@ -24,6 +26,13 @@ export default function MyAvailabilityScreen() {
   const events = useTeamStore((s) => s.events);
   const addUnavailableDate = useTeamStore((s) => s.addUnavailableDate);
   const removeUnavailableDate = useTeamStore((s) => s.removeUnavailableDate);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+
+  const syncCurrentPlayer = () => {
+    if (!currentPlayerId || !activeTeamId) return;
+    const p = useTeamStore.getState().players.find((pl) => pl.id === currentPlayerId);
+    if (p) pushPlayerToSupabase(p, activeTeamId).catch(syncError('sync'));
+  };
 
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const unavailableDates = currentPlayer?.unavailableDates || [];
@@ -66,6 +75,7 @@ export default function MyAvailabilityScreen() {
           style: 'destructive',
           onPress: () => {
             removeUnavailableDate(currentPlayerId, dateStr);
+            syncCurrentPlayer();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           },
         },
@@ -154,6 +164,7 @@ export default function MyAvailabilityScreen() {
           addUnavailableDate(currentPlayerId, dateStr);
         }
       });
+      syncCurrentPlayer();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCalendarSelectedDates([]);
       setIsSelectionMode(false);
