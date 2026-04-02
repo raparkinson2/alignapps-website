@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createHash } from "crypto";
+import bcrypt from "bcryptjs";
 import type { Context } from "hono";
 
 const authRouter = new Hono();
@@ -55,9 +56,9 @@ authRouter.post("/verify-password", zValidator("json", VerifyPasswordSchema), as
   const { email: rawEmail, password } = c.req.valid("json");
   const email = rawEmail.toLowerCase().trim();
 
-  // Compute the SHA-256 hash the same way the mobile app does
+  // Legacy SHA-256 hash (for accounts not yet migrated to bcrypt)
   const SHARED_SALT = process.env.AUTH_SHARED_SALT ?? "align_sports_shared_salt_v1";
-  const passwordHash = createHash("sha256")
+  const legacyHash = createHash("sha256")
     .update(`${SHARED_SALT}:${password}`)
     .digest("hex");
 
@@ -84,10 +85,19 @@ authRouter.post("/verify-password", zValidator("json", VerifyPasswordSchema), as
     return c.json({ error: "No account found" }, 404);
   }
 
-  // Find any player row with a matching password
-  const matchedPlayer = players.find(
-    (p) => p.password && p.password === passwordHash
-  );
+  // Find any player row whose password matches — handles bcrypt and legacy SHA-256
+  let matchedPlayer: typeof players[0] | undefined;
+  for (const p of players) {
+    if (!p.password) continue;
+    const isBcrypt = p.password.startsWith("$2b$") || p.password.startsWith("$2a$");
+    const matches = isBcrypt
+      ? await bcrypt.compare(password, p.password)
+      : p.password === legacyHash;
+    if (matches) {
+      matchedPlayer = p;
+      break;
+    }
+  }
 
   if (!matchedPlayer) {
     return c.json({ error: "Incorrect password" }, 401);

@@ -58,18 +58,20 @@ export async function secureLoginWithEmail(email: string, password: string): Pro
   let passwordMatches = false;
 
   if (isAlreadyHashed(storedPassword)) {
-    // Password is hashed - verify against hash
-    passwordMatches = await verifyPassword(password, storedPassword);
+    // Hashed password (bcrypt or legacy SHA-256) — verify and migrate if needed
+    const { valid, legacy } = await verifyPassword(password, storedPassword);
+    passwordMatches = valid;
+    if (valid && legacy) {
+      // Upgrade legacy SHA-256 hash to bcrypt silently
+      const newHash = await hashPassword(password);
+      useTeamStore.getState().updatePlayer(playerToCheck.id, { password: newHash });
+    }
   } else {
-    // Legacy plain text password - compare directly
-    // After successful login, we should migrate to hashed password
+    // Very old plain-text password — compare directly then migrate
     passwordMatches = storedPassword === password;
-
     if (passwordMatches) {
-      // Migrate to hashed password
       const hashedPassword = await hashPassword(password);
       useTeamStore.getState().updatePlayer(playerToCheck.id, { password: hashedPassword });
-      console.log('Migrated password to hashed format for user:', email);
     }
   }
 
@@ -120,16 +122,17 @@ export async function secureLoginWithPhone(phone: string, password: string): Pro
   let passwordMatches = false;
 
   if (isAlreadyHashed(storedPassword)) {
-    passwordMatches = await verifyPassword(password, storedPassword);
+    const { valid, legacy } = await verifyPassword(password, storedPassword);
+    passwordMatches = valid;
+    if (valid && legacy) {
+      const newHash = await hashPassword(password);
+      useTeamStore.getState().updatePlayer(playerToCheck.id, { password: newHash });
+    }
   } else {
-    // Legacy plain text password
     passwordMatches = storedPassword === password;
-
     if (passwordMatches) {
-      // Migrate to hashed password
       const hashedPassword = await hashPassword(password);
       useTeamStore.getState().updatePlayer(playerToCheck.id, { password: hashedPassword });
-      console.log('Migrated password to hashed format for phone user');
     }
   }
 

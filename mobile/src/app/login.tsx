@@ -693,13 +693,18 @@ export default function LoginScreen() {
           if (phonePlayerRows && phonePlayerRows.length > 0) {
             const { team_id, id: playerId, password: storedPw } = phonePlayerRows[0];
             // Verify password against stored hash
-            const { verifyPassword, isAlreadyHashed } = await import('@/lib/crypto');
+            const { verifyPassword, isAlreadyHashed, hashPassword } = await import('@/lib/crypto');
             let passwordOk = false;
             if (storedPw) {
               if (isAlreadyHashed(storedPw)) {
-                passwordOk = await verifyPassword(password, storedPw);
+                const { valid } = await verifyPassword(password, storedPw);
+                passwordOk = valid;
               } else {
                 passwordOk = storedPw === password;
+                if (passwordOk) {
+                  const newHash = await hashPassword(password);
+                  useTeamStore.getState().updatePlayer(playerId, { password: newHash });
+                }
               }
             }
             if (!passwordOk) {
