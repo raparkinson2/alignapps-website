@@ -16,6 +16,7 @@ import type { Game, Event, Player, ChatMessage, PaymentPeriod, PlayerPayment, Pa
 import { BACKEND_URL } from './config';
 import { fetchAndSaveWeather, fetchAndSaveEventWeather } from './weather-service';
 import { getAllCachedWeather } from './weather-cache';
+import { enqueueMutation } from './mutation-queue';
 
 // Suppress realtime payment refetches for a short window after a local push
 // to prevent the "appear → disappear → reappear" flicker loop.
@@ -1028,10 +1029,12 @@ export async function pushTeamToSupabase(teamId: string, teamName: string, setti
         }
       } else {
         console.error('SYNC: pushTeamToSupabase error:', error.message);
+        enqueueMutation('team', teamId, teamId).catch(() => {});
       }
     }
   } catch (err) {
     console.error('SYNC: pushTeamToSupabase error:', err);
+    enqueueMutation('team', teamId, teamId).catch(() => {});
   }
 }
 
@@ -1068,9 +1071,13 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
       password: player.password || null,
       password_version: player.passwordVersion ?? 1,
     }, { onConflict: 'id' });
-    if (error) console.error('SYNC: pushPlayerToSupabase error:', error.message);
+    if (error) {
+      console.error('SYNC: pushPlayerToSupabase error:', error.message);
+      enqueueMutation('player', player.id, teamId).catch(() => {});
+    }
   } catch (err) {
     console.error('SYNC: pushPlayerToSupabase error:', err);
+    enqueueMutation('player', player.id, teamId).catch(() => {});
   }
 }
 
@@ -1144,9 +1151,13 @@ export async function pushGameToSupabase(game: Game, teamId: string): Promise<vo
       weather_condition: game.weatherCondition || null,
       weather_auto_fetched: game.weatherAutoFetched || false,
     }, { onConflict: 'id' });
-    if (error) console.error('SYNC: pushGameToSupabase error:', error.message);
+    if (error) {
+      console.error('SYNC: pushGameToSupabase error:', error.message);
+      enqueueMutation('game', game.id, teamId).catch(() => {});
+    }
   } catch (err) {
     console.error('SYNC: pushGameToSupabase error:', err);
+    enqueueMutation('game', game.id, teamId).catch(() => {});
   }
 }
 
@@ -1229,9 +1240,13 @@ export async function pushEventToSupabase(event: Event, teamId: string): Promise
       weather_auto_fetched: event.weatherAutoFetched || false,
       weather_is_forecast: event.weatherIsForecast || false,
     }, { onConflict: 'id' });
-    if (error) console.error('SYNC: pushEventToSupabase error:', error.message);
+    if (error) {
+      console.error('SYNC: pushEventToSupabase error:', error.message);
+      enqueueMutation('event', event.id, teamId).catch(() => {});
+    }
   } catch (err) {
     console.error('SYNC: pushEventToSupabase error:', err);
+    enqueueMutation('event', event.id, teamId).catch(() => {});
   }
 }
 
@@ -1431,6 +1446,7 @@ export async function pushPollToSupabase(poll: Poll, teamId: string): Promise<vo
     }, { onConflict: 'id' });
   } catch (err) {
     console.error('SYNC: pushPollToSupabase error:', err);
+    enqueueMutation('poll', poll.id, teamId).catch(() => {});
   }
 }
 

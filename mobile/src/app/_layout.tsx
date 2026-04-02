@@ -18,6 +18,7 @@ import { useTeamColor } from '@/lib/theme';
 import { registerForPushNotificationsAsync } from '@/lib/notifications';
 import { clearInvalidSession, getSafeSession, supabase } from '@/lib/supabase';
 import { startRealtimeSync, stopRealtimeSync, pushPlayerToSupabase, loadTeamFromSupabase, pushTeamToSupabase } from '@/lib/realtime-sync';
+import { drainMutationQueue } from '@/lib/mutation-queue';
 import { BACKEND_URL } from '@/lib/config';
 import { syncError } from '@/lib/sync-error-handler';
 import { getCustomerInfo } from '@/lib/revenuecatClient';
@@ -230,9 +231,8 @@ function AuthNavigator() {
 
       if (prevState !== 'active' && nextState === 'active') {
         console.log('APP: Returning to foreground — reconnecting realtime and refreshing data');
-        // Force restart realtime subscription to ensure WebSocket is alive after backgrounding.
-        // stopRealtimeSync first so startRealtimeSync doesn't skip due to "already subscribed" guard.
-        // startRealtimeSync will also call loadTeamFromSupabase to catch any missed changes.
+        // Drain any mutations that failed while offline, then reconnect realtime.
+        drainMutationQueue().catch(() => {});
         stopRealtimeSync();
         startRealtimeSync(activeTeamId);
       }

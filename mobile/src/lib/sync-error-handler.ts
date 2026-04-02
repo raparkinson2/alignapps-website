@@ -5,10 +5,12 @@
  * Supabase push/delete calls throughout the app.
  *
  * - Logs errors with structured context (operation name, timestamp)
- * - Easy to extend: swap the body here to send to Sentry, Datadog, etc.
+ * - Optionally enqueues a retry via the mutation queue (pass `retry` arg)
  * - Does NOT re-throw by design — these are optimistic-update mutations
  *   where local state is already updated and we want best-effort syncs.
  */
+
+import { enqueueMutation, MutationType } from './mutation-queue';
 
 type SyncOperation =
   | 'pushTeamToSupabase'
@@ -33,7 +35,15 @@ type SyncOperation =
   | 'deleteSinglePhoto'
   | 'sendPushToPlayers'
   | 'cancelNotifications'
-  | string; // allow ad-hoc strings for call sites not yet typed
+  | string;
+
+export type { MutationType };
+
+type RetryOptions = {
+  type: MutationType;
+  entityId: string;
+  teamId: string;
+};
 
 let _failureCount = 0;
 
@@ -44,11 +54,20 @@ export function getSyncFailureCount(): number {
 
 /**
  * Call this in a `.catch()` on any fire-and-forget Supabase sync.
+ * Pass `retry` to also enqueue the mutation for automatic retry on reconnect.
  *
- * @example
- *   pushPlayerToSupabase(player, teamId).catch(syncError('pushPlayerToSupabase'));
+ * @example — without retry (default):
+ *   pushChatMessageToSupabase(msg, teamId).catch(syncError('pushChatMessageToSupabase'));
+ *
+ * @example — with retry:
+ *   pushPlayerToSupabase(player, teamId).catch(
+ *     syncError('pushPlayerToSupabase', { type: 'player', entityId: player.id, teamId })
+ *   );
  */
-export function syncError(operation: SyncOperation): (err: unknown) => void {
+export function syncError(
+  operation: SyncOperation,
+  retry?: RetryOptions,
+): (err: unknown) => void {
   return (err: unknown) => {
     _failureCount++;
     const message = err instanceof Error ? err.message : String(err);
@@ -57,5 +76,8 @@ export function syncError(operation: SyncOperation): (err: unknown) => void {
       message,
       err
     );
+    if (retry) {
+      enqueueMutation(retry.type, retry.entityId, retry.teamId).catch(() => {});
+    }
   };
 }
