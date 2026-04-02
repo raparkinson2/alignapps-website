@@ -270,13 +270,28 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       else if (r.response === 'invited') { map.invited.push(r.player_id); }
       else if (r.response === 'viewed') { map.viewed.push(r.player_id); map.invited.push(r.player_id); }
     }
-    const events: Event[] = (eventsData || []).map((e: any) => {
-      const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {}, viewed: [] };
-      return { ...mapEvent(e), confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes, viewedBy: resp.viewed };
-    });
-
     // Flush priority data to store — Events tab is now fully renderable
     const currentState1 = useTeamStore.getState();
+    // Build a map of existing local weather so we don't lose it on resync
+    // (Supabase events table may not have weather columns yet)
+    const localEventWeather: Record<string, { weatherTemp?: number; weatherCondition?: string; weatherAutoFetched?: boolean; weatherIsForecast?: boolean }> = {};
+    const localEventsSource = teamId === currentState1.activeTeamId ? currentState1.events : (currentState1.teams.find(t => t.id === teamId)?.events || []);
+    for (const le of localEventsSource) {
+      if (le.weatherTemp != null || le.weatherCondition) {
+        localEventWeather[le.id] = { weatherTemp: le.weatherTemp, weatherCondition: le.weatherCondition, weatherAutoFetched: le.weatherAutoFetched, weatherIsForecast: le.weatherIsForecast };
+      }
+    }
+
+    const events: Event[] = (eventsData || []).map((e: any) => {
+      const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {}, viewed: [] };
+      const mapped = mapEvent(e);
+      // Preserve locally-fetched weather if Supabase doesn't have it
+      const localW = localEventWeather[e.id];
+      if (localW && mapped.weatherTemp == null && !mapped.weatherCondition) {
+        Object.assign(mapped, localW);
+      }
+      return { ...mapped, confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes, viewedBy: resp.viewed };
+    });
     const isActiveTeam = teamId === currentState1.activeTeamId;
     const localPlayers = isActiveTeam
       ? currentState1.players
@@ -670,6 +685,13 @@ export function startRealtimeSync(teamId: string): void {
       const store = useTeamStore.getState();
       const updated = mapEvent(payload.new);
       const existing = store.events.find((e) => e.id === updated.id);
+      // Preserve local weather if Supabase doesn't have it
+      if (existing && updated.weatherTemp == null && !updated.weatherCondition && (existing.weatherTemp != null || existing.weatherCondition)) {
+        updated.weatherTemp = existing.weatherTemp;
+        updated.weatherCondition = existing.weatherCondition;
+        updated.weatherAutoFetched = existing.weatherAutoFetched;
+        updated.weatherIsForecast = existing.weatherIsForecast;
+      }
       useTeamStore.setState({
         events: store.events.map((e) => e.id === updated.id
           ? { ...updated, confirmedPlayers: existing?.confirmedPlayers || [], declinedPlayers: existing?.declinedPlayers || [], invitedPlayers: existing?.invitedPlayers || [], declinedNotes: existing?.declinedNotes, viewedBy: existing?.viewedBy || [] }
