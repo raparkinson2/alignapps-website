@@ -19,10 +19,17 @@ type WeatherCondition = 'sunny' | 'partly_cloudy' | 'cloudy' | 'rain' | 'snow' |
  * Fetch weather for a Game via the backend proxy.
  * No-op if: weather already fetched AND has data, no address, or >16 days out.
  */
+function bestAddress(address?: string | null, location?: string | null): string | null {
+  // Prefer whichever field looks more complete (has a comma = likely has city/state)
+  if (address?.includes(',')) return address;
+  if (location?.includes(',')) return location;
+  return address || location || null;
+}
+
 export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<void> {
   if (!game.date) return;
 
-  const address = game.address || game.location;
+  const address = bestAddress(game.address, game.location);
   if (!address?.trim()) return;
 
   const dateStr = game.date.split('T')[0];
@@ -61,7 +68,7 @@ export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<v
 export async function fetchAndSaveEventWeather(event: Event, teamId: string): Promise<void> {
   if (!event.date) return;
 
-  const address = event.address || event.location;
+  const address = bestAddress(event.address, event.location);
   if (!address?.trim()) return;
 
   const dateStr = event.date.split('T')[0];
