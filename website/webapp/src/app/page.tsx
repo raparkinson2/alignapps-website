@@ -58,6 +58,8 @@ const FEATURES = [
       'Baseball/Softball: 9 & 10-player orders',
       'Soccer: 4-4-2 & diamond formations',
       'Basketball: Starting 5 + bench',
+      "Men's Lacrosse: Attack, midfield & defense lines",
+      "Women's Lacrosse: Attack, midfield & defense lines",
     ],
   },
   {
