@@ -597,6 +597,9 @@ export default function TeamRecordsScreen() {
         teamGoals: (sport === 'hockey' || sport === 'soccer' || sport === 'lacrosse') && teamGoals > 0 ? teamGoals : undefined,
       },
     });
+    if (activeTeamId) {
+      pushTeamToSupabase(activeTeamId, teamName, useTeamStore.getState().teamSettings).catch(() => {});
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowEditStatsModal(false);
   };
