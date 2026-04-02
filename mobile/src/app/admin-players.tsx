@@ -201,10 +201,8 @@ export default function AdminPlayersScreen() {
   const setTeamSettingsAndSync = (updates: Parameters<typeof setTeamSettings>[0]) => {
     setTeamSettings(updates);
     if (activeTeamId) {
-      setTimeout(() => {
-        const s = useTeamStore.getState();
-        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
-      }, 50);
+      const s = useTeamStore.getState();
+      pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
     }
   };
 
