@@ -139,7 +139,16 @@ const STEPS = [
   },
 ];
 
-type ColorKey = 'cyan' | 'purple' | 'green';
+const SCREENSHOTS = [
+  { src: '/screenshots/schedule.png',      alt: 'Team schedule and game management in ALIGN Sports',          label: 'Smart Scheduling' },
+  { src: '/screenshots/rsvps.png',         alt: 'RSVP tracking — know who\'s in, out, or ghosting',           label: 'Smarter RSVPs' },
+  { src: '/screenshots/payments.png',      alt: 'Team payment tracking with Venmo, PayPal, Zelle, Cash App',  label: 'Payment Tracking' },
+  { src: '/screenshots/lineup.png',        alt: 'Sport-specific lineup builder for hockey, baseball & more',  label: 'Lineup Builder' },
+  { src: '/screenshots/stats.png',         alt: 'Team stats and season records',                              label: 'Stats & Records' },
+  { src: '/screenshots/notifications.png', alt: 'Push notifications for games, lineups, and payments',        label: 'Push Notifications' },
+];
+
+
 
 function colorClass(color: ColorKey) {
   if (color === 'cyan')   return { bg: 'bg-[#67e8f9]/10', text: 'text-[#67e8f9]', dot: '#67e8f9', border: 'border-[#67e8f9]/20' };
@@ -193,57 +202,72 @@ export default function HomePage() {
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-16 overflow-hidden">
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-16 overflow-hidden">
         {/* Background glows */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(ellipse, rgba(103,232,249,0.07) 0%, transparent 70%)' }} />
         <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(ellipse, rgba(167,139,250,0.05) 0%, transparent 70%)' }} />
 
-        <div className="relative max-w-3xl mx-auto">
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#67e8f9]/25 mb-7"
-            style={{ background: 'rgba(103,232,249,0.07)' }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#67e8f9] animate-pulse" />
-            <span className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9]">Team management without the chaos</span>
+        <div className="relative w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+
+          {/* Left: text */}
+          <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left">
+            {/* Badge */}
+            <div
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#67e8f9]/25 mb-7"
+              style={{ background: 'rgba(103,232,249,0.07)' }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#67e8f9] animate-pulse" />
+              <span className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9]">Team management without the chaos</span>
+            </div>
+
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6">
+              Your team,{' '}
+              <span style={{ background: 'linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                finally organized.
+              </span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-slate-400 max-w-2xl lg:max-w-xl mb-10 leading-relaxed">
+              ALIGN Sports is a free team management app built for coaches, captains, and recreational sports organizers. Manage schedules, rosters, payments, and chat — all in one place. Stop chasing people down in group texts.
+            </p>
+
+            {/* Store buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 mb-10">
+              <div className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl font-semibold text-slate-300 border border-white/[0.10] hover:border-[#67e8f9]/30 hover:text-slate-100 transition-all cursor-default select-none">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                iOS — Coming Soon
+              </div>
+              <div className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl font-semibold text-slate-300 border border-white/[0.10] hover:border-[#67e8f9]/30 hover:text-slate-100 transition-all cursor-default select-none">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.28.16.6.24.93.22l13.5-7.76-2.9-2.9-11.53 10.44zM.5 1.82C.18 2.16 0 2.7 0 3.4v17.2c0 .7.18 1.24.5 1.58l.08.08 9.64-9.64v-.23L.58 1.74l-.08.08zM20.11 10.3l-2.74-1.58-3.06 3.06 3.06 3.07 2.77-1.6c.79-.45.79-1.19-.03-1.95zM4.1.22L17.6 7.98l-2.9 2.9L3.18.48C3.5.24 3.84.08 4.1.22z"/></svg>
+                Android — Coming Soon
+              </div>
+            </div>
+
+            {/* Social proof */}
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-1.5">
+                {['🏒', '⚽', '🏀', '⚾', '🥎', '🥍'].map((e, i) => (
+                  <div key={i} className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-sm" style={{ background: '#0f1a2e' }}>
+                    {e}
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-slate-400">Free for coaches and captains across <span className="text-slate-200 font-semibold">7 sports</span></p>
+            </div>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-black leading-[1.05] tracking-tight mb-6">
-            Your team,{' '}
-            <span style={{ background: 'linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              finally organized.
-            </span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            ALIGN Sports is a free team management app built for coaches, captains, and recreational sports organizers. Manage schedules, rosters, payments, and chat — all in one place. Stop chasing people down in group texts.
-          </p>
-
-          {/* Store buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14">
-            <div className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl font-semibold text-slate-300 border border-white/[0.10] hover:border-[#67e8f9]/30 hover:text-slate-100 transition-all cursor-default select-none">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-              iOS — Coming Soon
-            </div>
-            <div className="flex items-center gap-2.5 px-6 py-3.5 rounded-xl font-semibold text-slate-300 border border-white/[0.10] hover:border-[#67e8f9]/30 hover:text-slate-100 transition-all cursor-default select-none">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.28.16.6.24.93.22l13.5-7.76-2.9-2.9-11.53 10.44zM.5 1.82C.18 2.16 0 2.7 0 3.4v17.2c0 .7.18 1.24.5 1.58l.08.08 9.64-9.64v-.23L.58 1.74l-.08.08zM20.11 10.3l-2.74-1.58-3.06 3.06 3.06 3.07 2.77-1.6c.79-.45.79-1.19-.03-1.95zM4.1.22L17.6 7.98l-2.9 2.9L3.18.48C3.5.24 3.84.08 4.1.22z"/></svg>
-              Android — Coming Soon
-            </div>
+          {/* Right: hero screenshot */}
+          <div className="flex-shrink-0 w-[260px] md:w-[300px] lg:w-[320px]">
+            <img
+              src="/screenshots/hero.png"
+              alt="ALIGN Sports — Team Management Without the Chaos"
+              className="w-full rounded-3xl"
+              style={{ boxShadow: '0 0 60px rgba(103,232,249,0.15), 0 30px 60px rgba(0,0,0,0.5)' }}
+            />
           </div>
 
-          {/* Social proof */}
-          <div className="flex items-center justify-center gap-3">
-            <div className="flex -space-x-1.5">
-              {['🏒', '⚽', '🏀', '⚾', '🥎', '🥍'].map((e, i) => (
-                <div key={i} className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-sm" style={{ background: '#0f1a2e' }}>
-                  {e}
-                </div>
-              ))}
-            </div>
-            <p className="text-sm text-slate-400">Free for coaches and captains across <span className="text-slate-200 font-semibold">7 sports</span></p>
-          </div>
         </div>
       </section>
 
@@ -301,6 +325,36 @@ export default function HomePage() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* ── SCREENSHOTS ─────────────────────────────────────────────────── */}
+      <section className="py-24 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 text-center mb-12">
+          <p className="text-xs font-semibold tracking-widest uppercase text-[#a78bfa] mb-3">See it in action</p>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight">Built for the way teams actually work</h2>
+          <p className="text-slate-400 mt-4 max-w-xl mx-auto">Every screen designed to save you time and keep your team on the same page.</p>
+        </div>
+
+        <div
+          className="flex gap-5 overflow-x-auto pb-4 px-6"
+          style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+        >
+          {SCREENSHOTS.map((s) => (
+            <div
+              key={s.label}
+              className="flex-shrink-0 flex flex-col items-center"
+              style={{ scrollSnapAlign: 'start', width: '220px' }}
+            >
+              <img
+                src={s.src}
+                alt={s.alt}
+                className="w-full rounded-2xl border border-white/[0.07]"
+                style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
+              />
+              <p className="text-sm font-medium text-slate-300 mt-3">{s.label}</p>
+            </div>
+          ))}
         </div>
       </section>
 
