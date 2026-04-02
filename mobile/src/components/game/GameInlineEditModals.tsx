@@ -260,14 +260,16 @@ interface EditLocationModalProps {
   onClose: () => void;
   gameId: string;
   initialLocation: string;
-  onSave: (location: string) => void;
+  onSave: (location: string, address: string) => void;
 }
 
 export function EditLocationModal({ visible, onClose, gameId, initialLocation, onSave }: EditLocationModalProps) {
   const [editLocation, setEditLocation] = useState(initialLocation);
+  const [editAddress, setEditAddress] = useState('');
 
   const handleShow = () => {
     setEditLocation(initialLocation);
+    setEditAddress('');
   };
 
   const handleSave = () => {
@@ -275,7 +277,7 @@ export function EditLocationModal({ visible, onClose, gameId, initialLocation, o
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    onSave(editLocation.trim());
+    onSave(editLocation.trim(), editAddress.trim());
   };
 
   return (
@@ -302,6 +304,10 @@ export function EditLocationModal({ visible, onClose, gameId, initialLocation, o
             <AddressSearch
               value={editLocation}
               onChangeText={setEditLocation}
+              onSelectLocation={(name, address) => {
+                setEditLocation(name);
+                setEditAddress(address);
+              }}
               placeholder="Search for a venue or address..."
             />
           </View>
@@ -407,7 +413,7 @@ export interface GameInlineEditModalsProps {
   onSaveDate: (date: Date) => void;
   onSaveTime: (time: Date) => void;
   onSaveJersey: (color: string) => void;
-  onSaveLocation: (location: string) => void;
+  onSaveLocation: (location: string, address: string) => void;
   onSaveNotes: (notes: string) => void;
 }
 

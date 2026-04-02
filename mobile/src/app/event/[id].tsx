@@ -31,6 +31,7 @@ import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, getPlayerName, AppNotification, InviteReleaseOption } from '@/lib/store';
 import { pushEventToSupabase, pushEventResponseToSupabase, pushEventViewedToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
+import { fetchAndSaveEventWeather } from '@/lib/weather-service';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -153,6 +154,7 @@ export default function EventDetailScreen() {
   const [isEditNotesModalVisible, setIsEditNotesModalVisible] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editLocation, setEditLocation] = useState('');
+  const [editAddress, setEditAddress] = useState('');
   const [editDate, setEditDate] = useState(new Date());
   const [editTime, setEditTime] = useState(new Date());
   const [editNotes, setEditNotes] = useState('');
@@ -349,6 +351,7 @@ export default function EventDetailScreen() {
 
   const openEditLocationModal = () => {
     setEditLocation(event.location);
+    setEditAddress(event.address || '');
     setIsEditLocationModalVisible(true);
   };
 
@@ -357,7 +360,18 @@ export default function EventDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    updateEventAndSync(event.id, { location: editLocation.trim() });
+    const updates = {
+      location: editLocation.trim(),
+      address: editAddress.trim() || undefined,
+      weatherAutoFetched: false,
+      weatherTemp: undefined,
+      weatherCondition: undefined,
+      weatherIsForecast: undefined,
+    };
+    updateEventAndSync(event.id, updates);
+    if (activeTeamId) {
+      fetchAndSaveEventWeather({ ...event, ...updates } as any, activeTeamId).catch(() => {});
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setIsEditLocationModalVisible(false);
   };
@@ -974,6 +988,10 @@ export default function EventDetailScreen() {
               <AddressSearch
                 value={editLocation}
                 onChangeText={setEditLocation}
+                onSelectLocation={(name, address) => {
+                  setEditLocation(name);
+                  setEditAddress(address);
+                }}
                 placeholder="Search for a venue or address..."
               />
             </View>

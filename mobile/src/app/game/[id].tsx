@@ -1804,8 +1804,12 @@ function GameDetailScreenInner() {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setIsEditJerseyModalVisible(false);
         }}
-        onSaveLocation={(location) => {
-          updateGameAndSync(game.id, { location, address: '' });
+        onSaveLocation={(location, address) => {
+          const updates = { location, address: address || '', weatherAutoFetched: false, weatherTemp: undefined, weatherCondition: undefined, weatherIsForecast: undefined };
+          updateGameAndSync(game.id, updates);
+          if (activeTeamId) {
+            fetchAndSaveWeather({ ...game, ...updates } as any, activeTeamId).catch(() => {});
+          }
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setIsEditLocationModalVisible(false);
         }}
