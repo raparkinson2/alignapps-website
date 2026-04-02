@@ -1046,6 +1046,7 @@ export default function AdminPlayersScreen() {
                         const newValue = !selectedPlayer.isInjured;
                         updatePlayer(selectedPlayer.id, { isInjured: newValue });
                         setSelectedPlayer({ ...selectedPlayer, isInjured: newValue });
+                        syncPlayerToCloud(selectedPlayer.id);
                       }}
                       className={cn('flex-1 py-3 px-4 rounded-xl mr-2 flex-row items-center justify-center', selectedPlayer.isInjured ? 'bg-red-500' : 'bg-slate-800')}
                     >
@@ -1058,6 +1059,7 @@ export default function AdminPlayersScreen() {
                         const newValue = !selectedPlayer.isSuspended;
                         updatePlayer(selectedPlayer.id, { isSuspended: newValue });
                         setSelectedPlayer({ ...selectedPlayer, isSuspended: newValue });
+                        syncPlayerToCloud(selectedPlayer.id);
                       }}
                       className={cn('flex-1 py-3 px-4 rounded-xl flex-row items-center justify-center', selectedPlayer.isSuspended ? 'bg-red-600' : 'bg-slate-800')}
                     >
@@ -1085,6 +1087,7 @@ export default function AdminPlayersScreen() {
                               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                               updatePlayer(selectedPlayer.id, { statusEndDate: undefined });
                               setSelectedPlayer({ ...selectedPlayer, statusEndDate: undefined });
+                              syncPlayerToCloud(selectedPlayer.id);
                             }}
                             hitSlop={8}
                           >
@@ -1105,6 +1108,7 @@ export default function AdminPlayersScreen() {
                                 const dateStr = format(selectedDate, 'yyyy-MM-dd');
                                 updatePlayer(selectedPlayer.id, { statusEndDate: dateStr });
                                 setSelectedPlayer({ ...selectedPlayer, statusEndDate: dateStr });
+                                syncPlayerToCloud(selectedPlayer.id);
                               }
                             }}
                             minimumDate={new Date()}
