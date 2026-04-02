@@ -4,7 +4,7 @@ import StoreHydration from './StoreHydration';
 
 export const metadata: Metadata = {
   title: 'ALIGN Sports',
-  description: 'Team management for recreational sports',
+  description: 'Team management for recreational and youth sports — schedules, rosters, lineups, stats, payments, and chat in one app.',
   icons: {
     icon: '/favicon.png',
     apple: '/favicon.png',
