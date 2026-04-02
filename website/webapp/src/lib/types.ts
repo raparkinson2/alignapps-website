@@ -539,6 +539,7 @@ export interface TeamSettings {
   seasonHistory?: ArchivedSeason[];
   stripeAccountId?: string;
   stripeOnboardingComplete?: boolean;
+  isPremium?: boolean;
 }
 
 export interface Team {

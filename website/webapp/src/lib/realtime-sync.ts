@@ -38,6 +38,7 @@ function mapTeamSettings(t: any): TeamSettings {
     championships: t.championships || [],
     stripeAccountId: t.stripe_account_id || undefined,
     stripeOnboardingComplete: t.stripe_onboarding_complete ?? false,
+    isPremium: t.is_premium ?? false,
   };
 }
 
@@ -833,6 +834,7 @@ export async function pushTeamSettingsToSupabase(teamId: string, teamName: strin
       is_softball: settings.isSoftball ?? false, jersey_colors: settings.jerseyColors,
       payment_methods: settings.paymentMethods, current_season_name: settings.currentSeasonName || null,
       season_history: settings.seasonHistory || [], championships: settings.championships || [],
+      // Note: is_premium is intentionally NOT written here — it's managed by the RevenueCat/subscription flow only
     }, { onConflict: 'id' });
   } catch (err) { console.error('SYNC: pushTeamSettingsToSupabase error:', err); }
 }
