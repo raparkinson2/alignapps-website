@@ -569,6 +569,18 @@ export function startRealtimeSync(teamId: string): void {
       console.log('SYNC: Player UPDATE');
       const store = useTeamStore.getState();
       const updated = mapPlayer(payload.new);
+
+      // If the current phone-auth user's password changed on another device, force re-login.
+      // Email/OAuth users use Supabase Auth sessions (no password field) so this only fires for phone users.
+      if (updated.id === store.currentPlayerId && store.userPhone) {
+        const current = store.players.find((p) => p.id === updated.id);
+        if (current?.password && updated.password && current.password !== updated.password) {
+          console.log('SYNC: Password changed remotely — forcing logout for security');
+          store.logout();
+          return;
+        }
+      }
+
       useTeamStore.setState({ players: store.players.map((p) => p.id === updated.id ? { ...updated } : p) });
     })
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'players' }, (payload) => {
