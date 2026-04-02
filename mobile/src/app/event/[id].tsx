@@ -653,6 +653,37 @@ export default function EventDetailScreen() {
               </Pressable>
             </Animated.View>
 
+            {/* Weather */}
+            {(event.weatherCondition || event.weatherTemp != null) && (
+              <Animated.View entering={FadeInDown.delay(325).springify()} className="mt-3">
+                <View className="bg-slate-800/80 rounded-2xl p-4 flex-row items-center">
+                  <View className="w-10 h-10 rounded-full bg-cyan-500/20 items-center justify-center">
+                    <Text style={{ fontSize: 20 }}>
+                      {event.weatherCondition === 'sunny' ? '☀️'
+                        : event.weatherCondition === 'partly_cloudy' ? '⛅'
+                        : event.weatherCondition === 'cloudy' ? '☁️'
+                        : event.weatherCondition === 'rain' ? '🌧️'
+                        : event.weatherCondition === 'snow' ? '❄️'
+                        : event.weatherCondition === 'indoor' ? '🏟️'
+                        : '🌡️'}
+                    </Text>
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-slate-400 text-xs">Weather</Text>
+                    <View className="flex-row items-center gap-2">
+                      {event.weatherTemp != null && (
+                        <Text className="text-white font-semibold">{event.weatherTemp}°F</Text>
+                      )}
+                      <Text className="text-slate-300 text-sm capitalize">
+                        {event.weatherCondition?.replace('_', ' ')}
+                        {event.weatherIsForecast ? ' (forecast)' : ' (historical)'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </Animated.View>
+            )}
+
             {/* Notes */}
             <Animated.View entering={FadeInDown.delay(350).springify()} className="mt-3">
               <Pressable

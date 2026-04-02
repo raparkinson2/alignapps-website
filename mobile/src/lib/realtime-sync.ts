@@ -1185,6 +1185,10 @@ export async function pushEventToSupabase(event: Event, teamId: string): Promise
       invite_release_option: event.inviteReleaseOption || 'now',
       invite_release_date: event.inviteReleaseDate || null,
       invites_sent: event.invitesSent || false,
+      weather_temp: event.weatherTemp ?? null,
+      weather_condition: event.weatherCondition || null,
+      weather_auto_fetched: event.weatherAutoFetched || false,
+      weather_is_forecast: event.weatherIsForecast || false,
     }, { onConflict: 'id' });
     if (error) console.error('SYNC: pushEventToSupabase error:', error.message);
   } catch (err) {
