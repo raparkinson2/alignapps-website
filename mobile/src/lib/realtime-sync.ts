@@ -342,17 +342,21 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
 
     // Proactively fetch weather for games (past = historical, up to 16 days future = forecast).
     // Runs in the background — doesn't block UI.
-    const today = new Date().toISOString().split('T')[0];
     const maxForecastDate = new Date();
     maxForecastDate.setDate(maxForecastDate.getDate() + 16);
     const maxForecastStr = maxForecastDate.toISOString().split('T')[0];
 
-    const weatherGames = games.filter(
-      (g) => !g.weatherAutoFetched && g.date.split('T')[0] <= maxForecastStr && (g.address || g.location)
-    );
-    const weatherEvents = events.filter(
-      (e) => !e.weatherAutoFetched && e.date.split('T')[0] <= maxForecastStr && (e.address || e.location)
-    );
+    const weatherGames = games.filter((g) => {
+      if (g.date.split('T')[0] > maxForecastStr) return false;
+      if (!g.address && !g.location) return false;
+      // Fetch if: never fetched, OR fetched but got no actual data (re-try)
+      return !g.weatherAutoFetched || (g.weatherTemp == null && !g.weatherCondition);
+    });
+    const weatherEvents = events.filter((e) => {
+      if (e.date.split('T')[0] > maxForecastStr) return false;
+      if (!e.address && !e.location) return false;
+      return !e.weatherAutoFetched || (e.weatherTemp == null && !e.weatherCondition);
+    });
 
     const allWeatherItems = [
       ...weatherGames.map((g, i) => ({ fn: () => fetchAndSaveWeather(g, teamId), i })),

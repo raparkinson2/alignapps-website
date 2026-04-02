@@ -69,10 +69,11 @@ function cToF(c: number): number {
 
 /**
  * Fetch weather for a Game (past = historical, future = forecast).
- * No-op if: weather already fetched, game has no address, or >16 days out.
+ * No-op if: weather already fetched AND has data, game has no address, or >16 days out.
  */
 export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<void> {
-  if (game.weatherAutoFetched) return;
+  // Skip if already fetched AND has actual weather data
+  if (game.weatherAutoFetched && (game.weatherTemp != null || game.weatherCondition)) return;
   if (!game.date) return;
 
   const addressToGeocode = game.address || game.location;
@@ -107,10 +108,10 @@ export async function fetchAndSaveWeather(game: Game, teamId: string): Promise<v
 
 /**
  * Fetch weather for an Event (past = historical, future = forecast).
- * No-op if: weather already fetched, event has no address, or >16 days out.
+ * No-op if: weather already fetched AND has data, event has no address, or >16 days out.
  */
 export async function fetchAndSaveEventWeather(event: Event, teamId: string): Promise<void> {
-  if (event.weatherAutoFetched) return;
+  if (event.weatherAutoFetched && (event.weatherTemp != null || event.weatherCondition)) return;
   if (!event.date) return;
 
   const addressToGeocode = event.address || event.location;
@@ -160,6 +161,8 @@ async function _fetchAndSave(params: FetchParams): Promise<void> {
     const coords = await geocodeAddress(address);
     if (!coords) {
       console.log('[weather] Geocoding failed for:', address);
+      // Mark as auto-fetched in Supabase so we don't retry on every app load for bad addresses
+      supabase.from(saveToTable).update({ weather_auto_fetched: true }).eq('id', id).then(() => {});
       localUpdate(null, null, isFuture);
       return;
     }
