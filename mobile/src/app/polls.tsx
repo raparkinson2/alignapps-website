@@ -936,24 +936,16 @@ export default function PollsScreen() {
     // Toggle vote
     if (option.votes.includes(currentPlayerId)) {
       unvotePoll(pollId, optionId, currentPlayerId);
-      // Sync updated poll options to Supabase
-      setTimeout(() => {
-        const s = useTeamStore.getState();
-        const updatedPoll = s.polls.find(p => p.id === pollId);
-        if (updatedPoll && s.activeTeamId) {
-          pushPollToSupabase(updatedPoll, s.activeTeamId).catch(syncError('sync'));
-        }
-      }, 50);
+      const updatedPoll = useTeamStore.getState().polls.find(p => p.id === pollId);
+      if (updatedPoll && activeTeamId) {
+        pushPollToSupabase(updatedPoll, activeTeamId).catch(syncError('sync'));
+      }
     } else {
       votePoll(pollId, optionId, currentPlayerId);
-      // Sync updated poll options to Supabase
-      setTimeout(() => {
-        const s = useTeamStore.getState();
-        const updatedPoll = s.polls.find(p => p.id === pollId);
-        if (updatedPoll && s.activeTeamId) {
-          pushPollToSupabase(updatedPoll, s.activeTeamId).catch(syncError('sync'));
-        }
-      }, 50);
+      const updatedPoll = useTeamStore.getState().polls.find(p => p.id === pollId);
+      if (updatedPoll && activeTeamId) {
+        pushPollToSupabase(updatedPoll, activeTeamId).catch(syncError('sync'));
+      }
     }
   };
 
