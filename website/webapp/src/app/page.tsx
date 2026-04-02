@@ -205,7 +205,7 @@ export default function HomePage() {
             style={{ background: 'rgba(103,232,249,0.07)' }}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#67e8f9] animate-pulse" />
-            <span className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9]">Free Sports Team Management App</span>
+            <span className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9]">Team management without the chaos</span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black leading-[1.05] tracking-tight mb-6">
