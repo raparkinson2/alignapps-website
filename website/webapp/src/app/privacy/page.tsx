@@ -2,7 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — ALIGN Sports',
+  title: { absolute: 'Privacy Policy — ALIGN Sports Team Management App' },
+  description: 'Read the ALIGN Sports privacy policy to understand how we collect, use, and protect your team data.',
 };
 
 function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {

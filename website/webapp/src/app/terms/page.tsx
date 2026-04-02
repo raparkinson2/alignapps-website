@@ -2,7 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — ALIGN Sports',
+  title: { absolute: 'Terms of Service — ALIGN Sports Team Management App' },
+  description: 'Read the ALIGN Sports terms of service for using our team management platform.',
 };
 
 function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
