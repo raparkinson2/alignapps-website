@@ -363,16 +363,19 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     maxForecastDate.setDate(maxForecastDate.getDate() + 16);
     const maxForecastStr = maxForecastDate.toISOString().split('T')[0];
 
+    const todayStr = new Date().toISOString().split('T')[0];
     const weatherGames = games.filter((g) => {
       if (g.date.split('T')[0] > maxForecastStr) return false;
       if (!g.address && !g.location) return false;
-      // Fetch if: never fetched, OR fetched but got no actual data (re-try)
-      return !g.weatherAutoFetched || (g.weatherTemp == null && !g.weatherCondition);
+      const isFuture = g.date.split('T')[0] >= todayStr;
+      // Future: always re-fetch (forecast data changes). Past: only if never fetched.
+      return isFuture || !g.weatherAutoFetched || (g.weatherTemp == null && !g.weatherCondition);
     });
     const weatherEvents = events.filter((e) => {
       if (e.date.split('T')[0] > maxForecastStr) return false;
       if (!e.address && !e.location) return false;
-      return !e.weatherAutoFetched || (e.weatherTemp == null && !e.weatherCondition);
+      const isFuture = e.date.split('T')[0] >= todayStr;
+      return isFuture || !e.weatherAutoFetched || (e.weatherTemp == null && !e.weatherCondition);
     });
 
     const allWeatherItems = [
