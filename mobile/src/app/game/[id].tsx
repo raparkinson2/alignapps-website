@@ -840,22 +840,6 @@ function GameDetailScreenInner() {
                   <Text className="text-white font-semibold ml-2">{jerseyColorName}</Text>
                 </View>
               </Pressable>
-              {(game.weatherCondition || game.weatherTemp != null) && (
-                <View className="bg-slate-800/80 rounded-2xl p-3 ml-2 items-center justify-center" style={{ minWidth: 54 }}>
-                  <Text style={{ fontSize: 20 }}>
-                    {game.weatherCondition === 'sunny' ? '☀️'
-                      : game.weatherCondition === 'partly_cloudy' ? '⛅'
-                      : game.weatherCondition === 'cloudy' ? '☁️'
-                      : game.weatherCondition === 'rain' ? '🌧️'
-                      : game.weatherCondition === 'snow' ? '❄️'
-                      : game.weatherCondition === 'indoor' ? '🏟️'
-                      : '🌡️'}
-                  </Text>
-                  {game.weatherTemp != null && (
-                    <Text className="text-white font-semibold text-xs mt-1">{game.weatherTemp}°F</Text>
-                  )}
-                </View>
-              )}
             </View>
           </Animated.View>
 
