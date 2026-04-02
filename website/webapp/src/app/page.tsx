@@ -336,15 +336,12 @@ export default function HomePage() {
           <p className="text-slate-400 mt-4 max-w-xl mx-auto">Every screen designed to save you time and keep your team on the same page.</p>
         </div>
 
-        <div
-          className="flex gap-5 overflow-x-auto pb-4 px-6"
-          style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
-        >
+        <div className="flex flex-wrap justify-center gap-6 px-6">
           {SCREENSHOTS.map((s) => (
             <div
               key={s.label}
-              className="flex-shrink-0 flex flex-col items-center"
-              style={{ scrollSnapAlign: 'start', width: '220px' }}
+              className="flex flex-col items-center"
+              style={{ width: '280px' }}
             >
               <img
                 src={s.src}
