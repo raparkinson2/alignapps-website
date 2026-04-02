@@ -11,6 +11,7 @@ import type { Game, Event } from './store-types';
 import { supabase } from './supabase';
 import { useTeamStore } from './store';
 import { BACKEND_URL } from './config';
+import { cacheWeather } from './weather-cache';
 
 type WeatherCondition = 'sunny' | 'partly_cloudy' | 'cloudy' | 'rain' | 'snow' | 'indoor';
 
@@ -126,6 +127,14 @@ async function _fetchAndSave(params: FetchParams): Promise<void> {
     }).eq('id', id).then(({ error }) => {
       if (error) console.log('[weather] Supabase save skipped:', error.message);
     });
+
+    // Always cache locally so it survives app restarts even if Supabase columns are missing
+    cacheWeather(id, {
+      weatherTemp: data.tempF,
+      weatherCondition: data.condition,
+      weatherAutoFetched: true,
+      weatherIsForecast: data.isForecast,
+    }).catch(() => {});
 
     localUpdate(data.tempF, data.condition, data.isForecast);
   } catch (err) {

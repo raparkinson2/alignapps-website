@@ -15,6 +15,7 @@ import { useTeamStore } from './store';
 import type { Game, Event, Player, ChatMessage, PaymentPeriod, PlayerPayment, PaymentEntry, Photo, AppNotification, Poll, TeamLink, Team, TeamSettings } from './store';
 import { BACKEND_URL } from './config';
 import { fetchAndSaveWeather, fetchAndSaveEventWeather } from './weather-service';
+import { getAllCachedWeather } from './weather-cache';
 
 // Suppress realtime payment refetches for a short window after a local push
 // to prevent the "appear → disappear → reappear" flicker loop.
@@ -272,8 +273,9 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     }
     // Flush priority data to store — Events tab is now fully renderable
     const currentState1 = useTeamStore.getState();
-    // Build a map of existing local weather so we don't lose it on resync
-    // (Supabase events table may not have weather columns yet)
+    // Load persisted weather cache (survives app restarts, fallback for missing Supabase columns)
+    const weatherCache = await getAllCachedWeather();
+    // Also build a map of existing local weather so we don't lose it on resync
     const localEventWeather: Record<string, { weatherTemp?: number; weatherCondition?: string; weatherAutoFetched?: boolean; weatherIsForecast?: boolean }> = {};
     const localEventsSource = teamId === currentState1.activeTeamId ? currentState1.events : (currentState1.teams.find(t => t.id === teamId)?.events || []);
     for (const le of localEventsSource) {
@@ -285,10 +287,10 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     const events: Event[] = (eventsData || []).map((e: any) => {
       const resp = eventResponsesMap[e.id] || { confirmed: [], declined: [], invited: [], notes: {}, viewed: [] };
       const mapped = mapEvent(e);
-      // Preserve locally-fetched weather if Supabase doesn't have it
-      const localW = localEventWeather[e.id];
-      if (localW && mapped.weatherTemp == null && !mapped.weatherCondition) {
-        Object.assign(mapped, localW);
+      // Preserve weather: priority is Supabase > local store > AsyncStorage cache
+      if (mapped.weatherTemp == null && !mapped.weatherCondition) {
+        const localW = localEventWeather[e.id] ?? weatherCache[e.id];
+        if (localW) Object.assign(mapped, localW);
       }
       return { ...mapped, confirmedPlayers: resp.confirmed, declinedPlayers: resp.declined, invitedPlayers: resp.invited, declinedNotes: resp.notes, viewedBy: resp.viewed };
     });
