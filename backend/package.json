@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/bun": "latest",
     "typescript": "5.8.3"
   },
@@ -22,6 +23,7 @@
     "@vibecodeapp/backend-sdk": "^1.0.1",
     "@vibecodeapp/cloud-studio": "^0.2.4",
     "@vibecodeapp/proxy": "^2.0.3",
+    "bcryptjs": "^3.0.3",
     "hono": "4.6.0",
     "postgres": "^3.4.8",
     "stripe": "^20.4.0",
