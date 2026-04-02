@@ -380,6 +380,7 @@ export default function AdminPlayersScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updatePlayer(selectedPlayer.id, { status });
     setSelectedPlayer({ ...selectedPlayer, status });
+    syncPlayerToCloud(selectedPlayer.id);
   };
 
   const handleToggleRole = (role: PlayerRole) => {
