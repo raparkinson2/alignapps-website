@@ -7,7 +7,7 @@ import {
   Bug, FileText, ChevronRight, Check, ExternalLink, LogOut,
   UserPlus, Globe, UserCheck, Trophy, Calendar,
   CheckCircle2, Send, ShieldCheck, Eye, History, MessageSquare,
-  FolderOpen, Upload, File, Image as ImageIcon, AlertCircle,
+  FolderOpen, Upload, File, Image as ImageIcon, AlertCircle, Crown,
 } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -1623,6 +1623,9 @@ export default function MorePage() {
       <SectionCard title="Stats">
         {showStats && (
           <MenuItem icon={BarChart3} iconBg="bg-[#a78bfa]/10" iconColor="text-[#a78bfa]" label="Stats" sub="View and edit player statistics" onClick={() => router.push('/app/stats')} />
+        )}
+        {isPremium && (
+          <MenuItem icon={Crown} iconBg="bg-amber-500/10" iconColor="text-amber-400" label="Coach Insights" sub="Engagement scores, flake factor & deep dives" onClick={() => router.push('/app/coach-insights')} />
         )}
         <MenuItem icon={TrendingUp} iconBg="bg-[#a78bfa]/10" iconColor="text-[#a78bfa]" label="Analytics" sub="Attendance and team statistics" onClick={() => router.push('/app/attendance')} last={!showRecords} />
         {showRecords && (

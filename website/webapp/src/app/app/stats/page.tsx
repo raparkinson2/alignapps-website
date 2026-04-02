@@ -366,7 +366,7 @@ function EditStatsModal({ player, cols, activeTeamId, onClose, onSave }: EditSta
   );
 }
 
-// ─── Stats Table ──────────────────────────────────────────────────────────────
+// ─── Stats Cards ──────────────────────────────────────────────────────────────
 
 interface StatsTableProps {
   section: TableSection;
@@ -390,89 +390,86 @@ function StatsTable({ section, canManage, onEditPlayer }: StatsTableProps) {
   }, [section.players, section.cols, sortKey, sortAsc]);
 
   const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortKey(key);
-      setSortAsc(false);
-    }
+    if (sortKey === key) setSortAsc(!sortAsc);
+    else { setSortKey(key); setSortAsc(false); }
   };
 
   if (section.players.length === 0) return null;
 
   return (
     <div className="mb-6">
-      <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{section.title}</h2>
-      <div className="bg-[#0f1a2e] border border-white/10 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left px-4 py-3 text-slate-500 font-medium w-40">Player</th>
-                {section.cols.map((col) => (
-                  <th
-                    key={col.key}
-                    className="px-3 py-3 text-slate-500 font-medium cursor-pointer hover:text-slate-300 transition-colors select-none whitespace-nowrap"
-                    onClick={() => handleSort(col.key)}
-                  >
-                    <span className="flex items-center justify-end gap-1">
-                      {col.label}
-                      {sortKey === col.key ? (
-                        sortAsc ? <ChevronUp size={12} /> : <ChevronDown size={12} />
-                      ) : null}
-                    </span>
-                  </th>
-                ))}
-                {canManage && <th className="px-3 py-3 w-10" />}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedPlayers.map((player, idx) => (
-                <tr
-                  key={player.id}
-                  className={cn(
-                    'border-b border-white/[0.05] last:border-0',
-                    idx % 2 === 0 ? '' : 'bg-white/[0.02]'
-                  )}
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Avatar player={player} size="sm" />
-                      <div className="min-w-0">
-                        <p className="text-slate-100 font-medium text-xs truncate">{getPlayerName(player)}</p>
-                        {player.number && (
-                          <p className="text-slate-500 text-[10px]">#{player.number}</p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  {section.cols.map((col) => (
-                    <td
-                      key={col.key}
-                      className={cn(
-                        'px-3 py-3 text-right font-mono text-xs',
-                        sortKey === col.key ? 'text-slate-100' : 'text-slate-400'
-                      )}
-                    >
-                      {col.getValue(player)}
-                    </td>
-                  ))}
-                  {canManage && (
-                    <td className="px-3 py-3">
-                      <button
-                        onClick={() => onEditPlayer(player, section.cols)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-[#67e8f9] hover:bg-[#67e8f9]/10 transition-all"
-                        title="Edit stats"
-                      >
-                        <Pencil size={12} />
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Section header + sort controls */}
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{section.title}</h2>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-slate-600 mr-1">Sort:</span>
+          {section.cols.map((col) => (
+            <button
+              key={col.key}
+              onClick={() => handleSort(col.key)}
+              className={cn(
+                'px-2 py-0.5 rounded text-[11px] font-semibold transition-all flex items-center gap-0.5',
+                sortKey === col.key
+                  ? 'bg-[#67e8f9]/20 text-[#67e8f9]'
+                  : 'text-slate-500 hover:text-slate-300'
+              )}
+            >
+              {col.label}
+              {sortKey === col.key && (sortAsc ? <ChevronUp size={10} /> : <ChevronDown size={10} />)}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* Player cards */}
+      <div className="space-y-2">
+        {sortedPlayers.map((player, idx) => (
+          <div
+            key={player.id}
+            className="bg-[#0f1a2e] border border-white/10 rounded-xl px-4 py-3 flex items-center gap-3"
+          >
+            {/* Rank */}
+            <span className="text-slate-600 font-bold text-xs w-5 shrink-0 text-center">{idx + 1}</span>
+
+            <Avatar player={player} size="sm" />
+
+            {/* Name + stats */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <p className="text-slate-100 font-semibold text-sm truncate">{getPlayerName(player)}</p>
+                {player.number && <span className="text-slate-500 text-xs shrink-0">#{player.number}</span>}
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {section.cols.map((col) => (
+                  <div key={col.key} className="flex items-center gap-1">
+                    <span className={cn(
+                      'text-[10px] font-semibold uppercase tracking-wide',
+                      sortKey === col.key ? 'text-[#67e8f9]' : 'text-slate-500'
+                    )}>
+                      {col.label}
+                    </span>
+                    <span className={cn(
+                      'text-xs font-mono font-bold',
+                      sortKey === col.key ? 'text-slate-100' : 'text-slate-300'
+                    )}>
+                      {col.getValue(player)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {canManage && (
+              <button
+                onClick={() => onEditPlayer(player, section.cols)}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-[#67e8f9] hover:bg-[#67e8f9]/10 transition-all shrink-0"
+                title="Edit stats"
+              >
+                <Pencil size={13} />
+              </button>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
