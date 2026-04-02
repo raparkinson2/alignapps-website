@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Shield, Pencil, Trash2, Plus, AlertTriangle, Trophy } from 'lucide-react';
+import { Shield, Pencil, Trash2, Plus, AlertTriangle, Trophy, Crown, ChevronRight } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { pushTeamSettingsToSupabase, deletePlayerFromSupabase } from '@/lib/realtime-sync';
@@ -12,6 +12,7 @@ import Avatar from '@/components/ui/Avatar';
 import type { Player } from '@/lib/types';
 import { getPlayerName, isCoachOrParent } from '@/lib/types';
 import Modal from '@/components/ui/Modal';
+import { useRouter } from 'next/navigation';
 
 type AdminTab = 'players' | 'settings' | 'season';
 
@@ -23,6 +24,7 @@ export default function AdminPage() {
   const removePlayer = useTeamStore((s) => s.removePlayer);
   const setTeamSettings = useTeamStore((s) => s.setTeamSettings);
   const { isAdmin, currentPlayer } = usePermissions();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('players');
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -104,6 +106,33 @@ export default function AdminPage() {
         </div>
         <h1 className="text-xl font-bold text-slate-100">Admin</h1>
       </div>
+
+      {/* Premium Status Card */}
+      {teamSettings.isPremium ? (
+        <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-4 py-3.5 mb-5">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+            <Crown size={18} className="text-emerald-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-emerald-400 font-bold text-sm">Premium Active</p>
+            <p className="text-emerald-400/70 text-xs mt-0.5">All features unlocked for your team</p>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => router.push('/app/more')}
+          className="w-full flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3.5 mb-5 hover:bg-amber-500/15 transition-all text-left"
+        >
+          <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+            <Crown size={18} className="text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-amber-400 font-bold text-sm">Upgrade to Premium</p>
+            <p className="text-amber-400/70 text-xs mt-0.5">Stats, records, payments &amp; more</p>
+          </div>
+          <ChevronRight size={16} className="text-amber-400/50 shrink-0" />
+        </button>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-white/[0.03] border border-white/10 rounded-xl p-1 mb-6">

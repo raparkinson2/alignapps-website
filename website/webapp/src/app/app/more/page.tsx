@@ -1558,6 +1558,10 @@ export default function MorePage() {
   const otherTeams = useMemo(() => teams.filter(t => t.id !== activeTeamId), [teams, activeTeamId]);
   const unreadCount = notifications.filter(n => n.toPlayerId === currentPlayerId && !n.read).length;
 
+  const isPremium = teamSettings?.isPremium ?? false;
+  const showStats = isPremium || (teamSettings?.showTeamStats ?? false);
+  const showRecords = isPremium || (teamSettings?.showTeamRecords ?? false);
+
   const handleSignOut = async () => {
     await signOut();
     logout();
@@ -1599,8 +1603,8 @@ export default function MorePage() {
         </div>
       )}
 
-      {/* TEAM section */}
-      <SectionCard title="Team">
+      {/* MY TEAM section */}
+      <SectionCard title="My Team">
         <MenuItem
           icon={ArrowLeftRight}
           iconBg="bg-[#67e8f9]/10"
@@ -1610,11 +1614,20 @@ export default function MorePage() {
           onClick={() => setTab('switch-team')}
         />
         <MenuItem icon={CalendarOff} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="My Availability" sub="Set dates you're unavailable" onClick={() => setTab('availability')} />
-        <MenuItem icon={LinkIcon} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Links" sub={linksSubText} onClick={() => setTab('links')} />
         <MenuItem icon={BarChart3} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Polls" sub={pollsSubText} onClick={() => setTab('polls')} />
-        <MenuItem icon={FolderOpen} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="File Storage" sub="PDFs, images, and documents" onClick={() => setTab('files')} />
-        <MenuItem icon={TrendingUp} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Stats and Analytics" sub="Attendance and team statistics" onClick={() => setTab('stats')} />
+        <MenuItem icon={LinkIcon} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Team Links" sub={linksSubText} onClick={() => setTab('links')} />
         <MenuItem icon={UserPlus} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Create New Team" sub="Start a new team" onClick={() => setTab('create-team')} last />
+      </SectionCard>
+
+      {/* STATS section */}
+      <SectionCard title="Stats">
+        {showStats && (
+          <MenuItem icon={BarChart3} iconBg="bg-[#a78bfa]/10" iconColor="text-[#a78bfa]" label="Stats" sub="View and edit player statistics" onClick={() => router.push('/app/stats')} />
+        )}
+        <MenuItem icon={TrendingUp} iconBg="bg-[#a78bfa]/10" iconColor="text-[#a78bfa]" label="Analytics" sub="Attendance and team statistics" onClick={() => router.push('/app/attendance')} last={!showRecords} />
+        {showRecords && (
+          <MenuItem icon={Trophy} iconBg="bg-amber-400/10" iconColor="text-amber-400" label="Season Summary" sub="Record, results, and highlights" onClick={() => router.push('/app/records')} last />
+        )}
       </SectionCard>
 
       {/* COMMUNICATION & ALERTS section */}
@@ -1625,7 +1638,8 @@ export default function MorePage() {
       </SectionCard>
 
       {/* SUPPORT section */}
-      <SectionCard title="Support">
+      <SectionCard title="App">
+        <MenuItem icon={FolderOpen} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="File Storage" sub="PDFs, images, and documents" onClick={() => setTab('files')} />
         <MenuItem icon={HelpCircle} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="FAQs" sub="Frequently asked questions" onClick={() => setTab('faqs')} />
         <MenuItem icon={Lightbulb} iconBg="bg-[#67e8f9]/10" iconColor="text-[#67e8f9]" label="Feature Request" sub="Suggest a new feature" onClick={() => setTab('feature-request')} />
         <MenuItem icon={Bug} iconBg="bg-rose-500/10" iconColor="text-rose-400" label="Report Bug" sub="Let us know about issues" onClick={() => setTab('report-bug')} />
