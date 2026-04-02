@@ -79,7 +79,7 @@ const hexToColorName = (hex: string): string => {
     return 'Gray';
   }
 
-  return hex; // Return as-is if not a recognized format
+  return 'Gray'; // Default for unrecognized formats
 };
 
 // Helper to convert color names to hex (reverse of hexToColorName)
@@ -87,6 +87,7 @@ const colorNameToHex = (name: string): string => {
   const nameMap: Record<string, string> = {
     'white': '#ffffff',
     'black': '#1a1a1a',
+    'dark': '#1a1a1a',
     'red': '#dc2626',
     'green': '#16a34a',
     'blue': '#2563eb',
@@ -103,7 +104,7 @@ const colorNameToHex = (name: string): string => {
     'gold': '#ffd700',
     'maroon': '#8b0000',
   };
-  return nameMap[name.toLowerCase()] || name;
+  return nameMap[name.toLowerCase()] || '#808080';
 };
 
 export interface GameCardProps {
