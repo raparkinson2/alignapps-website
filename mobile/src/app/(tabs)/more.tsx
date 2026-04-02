@@ -49,7 +49,8 @@ import * as Clipboard from 'expo-clipboard';
 import { useState, useEffect } from 'react';
 import { useTeamStore, Player, NotificationPreferences, defaultNotificationPreferences, getPlayerName, getPlayerInitials, TeamLink } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
-import { pushPlayerToSupabase } from '@/lib/realtime-sync';
+import { pushPlayerToSupabase, pushNotificationPreferencesToSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 import { toast } from '@/lib/toast';
 import { secureResetPassword } from '@/lib/secure-auth';
 import { supabase } from '@/lib/supabase';
@@ -193,6 +194,14 @@ function MoreScreen() {
   const handleSaveNotificationPrefs = (prefs: Partial<NotificationPreferences>) => {
     if (effectivePlayerId) {
       updateNotificationPreferences(effectivePlayerId, prefs);
+      if (activeTeamId) {
+        const updatedPlayer = useTeamStore.getState().players.find(p => p.id === effectivePlayerId);
+        const fullPrefs = updatedPlayer?.notificationPreferences;
+        if (fullPrefs) {
+          pushNotificationPreferencesToSupabase(effectivePlayerId, fullPrefs, activeTeamId)
+            .catch(syncError('pushNotificationPreferencesToSupabase'));
+        }
+      }
     }
   };
 

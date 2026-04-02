@@ -1450,6 +1450,30 @@ export async function pushPollToSupabase(poll: Poll, teamId: string): Promise<vo
   }
 }
 
+/**
+ * Sync a player's notification preferences to Supabase.
+ * Uses a targeted UPDATE instead of a full player upsert to avoid touching push tokens,
+ * which are managed exclusively by the backend /api/notifications/save-token endpoint.
+ */
+export async function pushNotificationPreferencesToSupabase(
+  playerId: string,
+  prefs: import('./store-types').NotificationPreferences,
+  teamId: string,
+): Promise<void> {
+  try {
+    // Exclude pushToken — stored in separate push_tokens table, not here.
+    const { pushToken: _pt, ...prefsWithoutToken } = prefs;
+    const { error } = await supabase
+      .from('players')
+      .update({ notification_preferences: prefsWithoutToken })
+      .eq('id', playerId)
+      .eq('team_id', teamId);
+    if (error) console.error('SYNC: pushNotificationPreferencesToSupabase error:', error.message);
+  } catch (err) {
+    console.error('SYNC: pushNotificationPreferencesToSupabase error:', err);
+  }
+}
+
 export async function deletePollFromSupabase(pollId: string): Promise<void> {
   try {
     await supabase.from('polls').delete().eq('id', pollId);
