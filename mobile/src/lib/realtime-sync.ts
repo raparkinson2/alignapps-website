@@ -1169,6 +1169,14 @@ export async function deleteGameFromSupabase(gameId: string): Promise<void> {
   }
 }
 
+export async function deleteAllTeamGamesFromSupabase(teamId: string): Promise<void> {
+  try {
+    await supabase.from('games').delete().eq('team_id', teamId);
+  } catch (err) {
+    console.error('SYNC: deleteAllTeamGamesFromSupabase error:', err);
+  }
+}
+
 export async function pushGameResponseToSupabase(gameId: string, playerId: string, response: 'in' | 'out' | 'invited', note?: string): Promise<void> {
   try {
     const now = new Date().toISOString();

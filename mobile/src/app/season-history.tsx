@@ -8,6 +8,8 @@ import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { useTeamStore, ArchivedSeason, ArchivedPlayerStats, SPORT_NAMES, getSportName, Sport, getPlayerPositions } from '@/lib/store';
 import { format, parseISO } from 'date-fns';
+import { pushTeamToSupabase, pushPlayerToSupabase, deleteAllTeamGamesFromSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 // Get stat headers based on sport
 const getStatHeaders = (sport: Sport): string[] => {
@@ -126,6 +128,19 @@ export default function SeasonHistoryScreen() {
   const isAdminFn = useTeamStore((s) => s.isAdmin);
   const isAdmin = isAdminFn();
   const seasonHistory = teamSettings.seasonHistory || [];
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+
+  const syncAfterUnarchive = () => {
+    if (!activeTeamId) return;
+    const s = useTeamStore.getState();
+    pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings)
+      .catch(syncError('pushTeamToSupabase'));
+    s.players.forEach(p =>
+      pushPlayerToSupabase(p, activeTeamId).catch(syncError('pushPlayerToSupabase'))
+    );
+    deleteAllTeamGamesFromSupabase(activeTeamId)
+      .catch(syncError('deleteAllTeamGamesFromSupabase'));
+  };
 
   const [expandedSeasonId, setExpandedSeasonId] = useState<string | null>(null);
 
@@ -148,6 +163,7 @@ export default function SeasonHistoryScreen() {
             const result = unarchiveSeason(season.id);
             if (result.success) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              syncAfterUnarchive();
               Alert.alert('Season Restored', result.message);
             } else if (result.hasConflict) {
               // Show force restore option
@@ -164,6 +180,7 @@ export default function SeasonHistoryScreen() {
                       const forceResult = unarchiveSeason(season.id, true);
                       if (forceResult.success) {
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        syncAfterUnarchive();
                         Alert.alert('Season Restored', forceResult.message);
                       } else {
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

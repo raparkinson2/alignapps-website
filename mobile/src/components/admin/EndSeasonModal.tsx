@@ -3,6 +3,8 @@ import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { X, Check, Archive, AlertTriangle, RefreshCw } from 'lucide-react-native';
 import { useTeamStore } from '@/lib/store';
+import { pushTeamToSupabase, pushPlayerToSupabase, deleteAllTeamGamesFromSupabase } from '@/lib/realtime-sync';
+import { syncError } from '@/lib/sync-error-handler';
 
 interface EndSeasonModalProps {
   visible: boolean;
@@ -12,6 +14,8 @@ interface EndSeasonModalProps {
 export function EndSeasonModal({ visible, onClose }: EndSeasonModalProps) {
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const archiveAndStartNewSeason = useTeamStore((s) => s.archiveAndStartNewSeason);
+  const activeTeamId = useTeamStore((s) => s.activeTeamId);
+  const teamName = useTeamStore((s) => s.teamName);
 
   const [endSeasonName, setEndSeasonName] = useState(teamSettings.currentSeasonName || '');
   const [endSeasonStep, setEndSeasonStep] = useState<'name' | 'confirm'>('name');
@@ -150,6 +154,16 @@ export function EndSeasonModal({ visible, onClose }: EndSeasonModalProps) {
                 onPress={() => {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   const result = archiveAndStartNewSeason(endSeasonName.trim());
+                  if (activeTeamId) {
+                    const s = useTeamStore.getState();
+                    pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings)
+                      .catch(syncError('pushTeamToSupabase'));
+                    s.players.forEach(p =>
+                      pushPlayerToSupabase(p, activeTeamId).catch(syncError('pushPlayerToSupabase'))
+                    );
+                    deleteAllTeamGamesFromSupabase(activeTeamId)
+                      .catch(syncError('deleteAllTeamGamesFromSupabase'));
+                  }
                   handleClose();
 
                   // Show success message
