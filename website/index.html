@@ -139,14 +139,21 @@
 
         <div class="feature-card">
           <div class="feature-icon" style="background: rgba(251, 191, 36, 0.12); color: #fbbf24;">💬</div>
-          <h3>Team Chat</h3>
-          <p>Real-time group chat with @mentions, GIF support, and image sharing. Swipe to delete messages. Everything in one thread — no more scattered texts.</p>
+          <h3>Team Chat & DMs</h3>
+          <p>Real-time group chat with @mentions, GIF support, and image sharing. Plus one-on-one direct messages between teammates. Everything in one place — no more scattered texts.</p>
         </div>
 
-        <div class="feature-card">
+        <div class="feature-card feature-card--large">
           <div class="feature-icon" style="background: rgba(248, 113, 113, 0.12); color: #f87171;">📊</div>
-          <h3>Stats & Records</h3>
-          <p>Track individual and team stats by sport. Season history, win percentages, and career records — all automatically logged.</p>
+          <h3>Stats & Analytics</h3>
+          <p>Deep stats for your whole season — not just scores. Track individual and team performance, then explore it all with powerful built-in analytics.</p>
+          <ul class="feature-list">
+            <li>Sport-specific stats per player & game</li>
+            <li>Game Momentum — see how games unfolded</li>
+            <li>Player Impact — win rate when each player plays</li>
+            <li>Attendance Heatmap — visualize who shows up</li>
+            <li>Season Wrapped — shareable end-of-season recap</li>
+          </ul>
         </div>
 
         <div class="feature-card feature-card--large">
@@ -175,9 +182,9 @@
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon" style="background: rgba(103, 232, 249, 0.12); color: #67e8f9;">📋</div>
-          <h3>Lineup Creation</h3>
-          <p>Build and manage lineups right in the app. No more spreadsheets, group texts, or last-minute scrambles — set your lineup and notify your team instantly.</p>
+          <div class="feature-icon" style="background: rgba(103, 232, 249, 0.12); color: #67e8f9;">🎉</div>
+          <h3>Season Wrapped</h3>
+          <p>At the end of the season, every player gets a shareable recap — top stats, attendance streaks, biggest wins, and standout moments. Like Spotify Wrapped, for your team.</p>
         </div>
 
         <div class="feature-card">
@@ -186,7 +193,17 @@
           <p>Play on more than one team? No problem. Create or join multiple teams and switch between them instantly — each with its own roster, schedule, and chat.</p>
         </div>
 
-      </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background: rgba(251, 191, 36, 0.12); color: #fbbf24;">📣</div>
+          <h3>Polls & Voting</h3>
+          <p>Post polls to the whole team and collect votes instantly. Use them for scheduling decisions, jersey votes, or anything you want team input on. Results update in real time.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background: rgba(34, 197, 94, 0.12); color: #22c55e;">🌤️</div>
+          <h3>Game-Day Weather</h3>
+          <p>Every game automatically shows the forecast for your venue. No more weather app switching — players know what to expect before they lace up.</p>
+        </div>
     </div>
   </section>
 
@@ -250,11 +267,6 @@
           <span class="coming-icon">🤝</span>
           <h4>League Management</h4>
           <p>Manage multiple teams across a league from a single admin account.</p>
-        </div>
-        <div class="coming-card">
-          <span class="coming-icon">📣</span>
-          <h4>Polls & Announcements</h4>
-          <p>Post team polls and pinned announcements to keep everyone aligned.</p>
         </div>
         <div class="coming-card">
           <span class="coming-icon">🤖</span>
@@ -375,6 +387,26 @@
           </button>
           <div class="faq-answer">
             <p>ALIGN Sports is currently available on iOS via the App Store. Android support is in development — stay tuned for updates.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            Does it work for youth sports with parents?
+            <span class="faq-arrow">↓</span>
+          </button>
+          <div class="faq-answer">
+            <p>Yes. ALIGN Sports supports linked parent and player accounts for youth teams. Parents can stay in the loop on schedules, attendance, and team updates while admins manage everything through a single roster.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            What analytics does the app include?
+            <span class="faq-arrow">↓</span>
+          </button>
+          <div class="faq-answer">
+            <p>Beyond basic stats, ALIGN Sports includes Game Momentum (how scoring unfolded), Player Impact (how the team performs with each player in or out), Attendance Heatmap, Monthly Splits, Season History, and Season Wrapped — a shareable end-of-season recap for every player.</p>
           </div>
         </div>
 
