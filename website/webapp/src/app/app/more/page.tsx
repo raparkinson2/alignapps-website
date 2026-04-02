@@ -812,7 +812,7 @@ function FAQsPage({ onBack }: { onBack: () => void }) {
     { q: 'How do I create a poll?', a: 'Go to More → Team Polls and tap the "+" button. You can create single or multiple choice polls, set deadlines, and notify team members.' },
     { q: "What's the difference between roles?", a: 'Admins have full access to all features including payments and player management. Coaches can edit player profiles and stats. Captains can manage games and lineups. Parents have view-only access to schedule, roster, and payments.' },
     { q: 'How do I switch between teams?', a: "If you're on multiple teams, go to More → Switch Team. You'll see all teams you belong to and can tap to switch between them." },
-    { q: 'How do I delete my account?', a: 'Contact support at rob@alignapps.com to request account deletion. This action is permanent and cannot be undone.' },
+    { q: 'How do I delete my account?', a: 'Contact support at info@alignapps.com to request account deletion. This action is permanent and cannot be undone.' },
   ];
 
   return (
@@ -855,7 +855,7 @@ function FeatureRequestPage({ currentPlayer, onBack }: { currentPlayer: Player |
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
         body: JSON.stringify({
-          to: ['rob@alignapps.com'],
+          to: ['info@alignapps.com'],
           subject: `Feature Request: ${title.trim()}`,
           body: `Title: ${title.trim()}\n\nDescription:\n${description.trim()}\n\nReason:\n${reason.trim()}\n\nContact: ${email.trim() || 'Not provided'}`,
           teamName: 'Align Sports Web',
@@ -938,7 +938,7 @@ function ReportBugPage({ currentPlayer, onBack }: { currentPlayer: Player | null
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseAnonKey}` },
         body: JSON.stringify({
-          to: ['rob@alignapps.com'],
+          to: ['info@alignapps.com'],
           subject: `Bug Report: ${title.trim()}`,
           body: `Title: ${title.trim()}\n\nDescription:\n${description.trim()}\n\nSteps to Reproduce:\n${steps.trim() || 'Not provided'}\n\nPlatform: Web\nContact: ${email.trim() || 'Not provided'}`,
           teamName: 'Align Sports Web',
@@ -1379,7 +1379,7 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
               <p>We retain personal information as long as necessary to provide the Services, comply with legal obligations, resolve disputes, and enforce agreements. Upon account deletion, personal data is permanently removed within 30 days.</p>
 
               <p className="font-semibold text-slate-300">6. Your Rights and Choices</p>
-              <p>You may have the right to access, correct, or delete your data, object to or restrict processing, and withdraw consent. Contact us at rob@alignapps.com to exercise these rights.</p>
+              <p>You may have the right to access, correct, or delete your data, object to or restrict processing, and withdraw consent. Contact us at info@alignapps.com to exercise these rights.</p>
 
               <p className="font-semibold text-slate-300">7. Children&apos;s Privacy</p>
               <p>The Services are not directed to children under 13. We do not knowingly collect personal information from children under 13. If we become aware of such collection, we will delete it promptly.</p>
@@ -1394,7 +1394,7 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
               <p>We may update this Privacy Policy from time to time. Changes are effective when posted. Continued use of the Services constitutes acceptance of the updated policy.</p>
 
               <p className="font-semibold text-slate-300">11. Contact Us</p>
-              <p>Email: <span className="text-[#67e8f9]">rob@alignapps.com</span></p>
+              <p>Email: <span className="text-[#67e8f9]">info@alignapps.com</span></p>
             </div>
           )}
         </div>
@@ -1459,7 +1459,7 @@ function NoticesPage({ onBack }: { onBack: () => void }) {
               <p>We may update these Terms from time to time. Changes are effective when posted. Continued use constitutes acceptance of the updated Terms.</p>
 
               <p className="font-semibold text-slate-300">15. Contact Us</p>
-              <p>Email: <span className="text-emerald-400">rob@alignapps.com</span></p>
+              <p>Email: <span className="text-emerald-400">info@alignapps.com</span></p>
             </div>
           )}
         </div>

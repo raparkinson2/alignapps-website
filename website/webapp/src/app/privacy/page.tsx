@@ -226,8 +226,8 @@ export default function PrivacyPage() {
           <P>If you have questions about this Privacy Policy or our data practices, you may contact us at:</P>
           <p className="text-sm text-slate-300">
             Email:{' '}
-            <a href="mailto:rob@alignapps.com" className="text-cyan-400 hover:opacity-80 transition-opacity">
-              rob@alignapps.com
+            <a href="mailto:info@alignapps.com" className="text-cyan-400 hover:opacity-80 transition-opacity">
+              info@alignapps.com
             </a>
           </p>
         </Section>

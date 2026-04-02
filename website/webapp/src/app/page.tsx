@@ -107,7 +107,7 @@ const FAQS = [
   },
   {
     q: 'What is your cancellation policy?',
-    a: 'You can cancel anytime via the app Settings or by emailing rob@alignapps.com. Fees paid are non-refundable except in exceptional cases reviewed on a case-by-case basis.',
+    a: 'You can cancel anytime via the app Settings or by emailing info@alignapps.com. Fees paid are non-refundable except in exceptional cases reviewed on a case-by-case basis.',
   },
 ];
 
@@ -446,7 +446,7 @@ export default function HomePage() {
               <ul className="space-y-2">
                 <li><a href="/privacy" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Privacy Policy</a></li>
                 <li><a href="/terms" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Terms of Service</a></li>
-                <li><a href="mailto:rob@alignapps.com" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Contact Us</a></li>
+                <li><a href="mailto:info@alignapps.com" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Contact Us</a></li>
               </ul>
             </div>
           </div>
@@ -454,7 +454,7 @@ export default function HomePage() {
           <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             <p className="text-xs text-slate-500">© 2025 Align Sports. All rights reserved.</p>
             <p className="text-xs text-slate-600">
-              <a href="mailto:rob@alignapps.com" className="hover:text-slate-400 transition-colors">rob@alignapps.com</a>
+              <a href="mailto:info@alignapps.com" className="hover:text-slate-400 transition-colors">info@alignapps.com</a>
               {' · '}
               <a href="https://www.alignapps.com" className="hover:text-slate-400 transition-colors">www.alignapps.com</a>
             </p>

@@ -68,7 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             name: 'ALIGN Sports',
             url: 'https://alignapps.com',
             logo: 'https://alignapps.com/align-logo.png',
-            email: 'rob@alignapps.com',
+            email: 'info@alignapps.com',
             description: 'ALIGN Sports builds free team management software for recreational and youth sports coaches, captains, and organizers.',
           }) }}
         />

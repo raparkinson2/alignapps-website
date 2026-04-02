@@ -180,8 +180,8 @@ export default function TermsPage() {
         <Section number="17" title="Contact Information">
           <P>
             If you have questions about these Terms, you may contact us at:{' '}
-            <a href="mailto:rob@alignapps.com" className="text-cyan-400 hover:opacity-80 transition-opacity">
-              rob@alignapps.com
+            <a href="mailto:info@alignapps.com" className="text-cyan-400 hover:opacity-80 transition-opacity">
+              info@alignapps.com
             </a>
           </P>
         </Section>
