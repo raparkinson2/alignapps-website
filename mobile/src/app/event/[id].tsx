@@ -625,27 +625,6 @@ export default function EventDetailScreen() {
                   </View>
                   <Text className="text-white font-semibold">{event.time}</Text>
                 </Pressable>
-                {(event.weatherCondition || event.weatherTemp != null) && (
-                  <View className="bg-slate-800/80 rounded-2xl p-4 ml-2 items-center justify-center">
-                    <Text className="text-slate-400 text-xs mb-1">
-                      {event.weatherIsForecast ? 'Forecast' : 'Weather'}
-                    </Text>
-                    <View className="flex-row items-center" style={{ gap: 4 }}>
-                      <Text style={{ fontSize: 16 }}>
-                        {event.weatherCondition === 'sunny' ? '☀️'
-                          : event.weatherCondition === 'partly_cloudy' ? '⛅'
-                          : event.weatherCondition === 'cloudy' ? '☁️'
-                          : event.weatherCondition === 'rain' ? '🌧️'
-                          : event.weatherCondition === 'snow' ? '❄️'
-                          : event.weatherCondition === 'indoor' ? '🏟️'
-                          : '🌡️'}
-                      </Text>
-                      {event.weatherTemp != null && (
-                        <Text className="text-white font-semibold text-sm">{event.weatherTemp}°</Text>
-                      )}
-                    </View>
-                  </View>
-                )}
               </View>
             </Animated.View>
 

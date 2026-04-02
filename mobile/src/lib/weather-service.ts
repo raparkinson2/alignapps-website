@@ -204,16 +204,18 @@ async function _fetchAndSave(params: FetchParams): Promise<void> {
 
     console.log(`[weather] ${saveToTable} ${id}: ${condition}, ${tempF}°F (WMO ${wmoCode}) [${isFuture ? 'forecast' : 'historical'}]`);
 
-    // Save to Supabase (best-effort)
-    const { error } = await supabase.from(saveToTable).update({
+    // Save to Supabase (best-effort — omit weather_is_forecast for games since column may not exist yet)
+    const updatePayload: Record<string, unknown> = {
       weather_temp: tempF,
       weather_condition: condition,
       weather_auto_fetched: true,
-      weather_is_forecast: isFuture,
-    }).eq('id', id);
+    };
+
+    const { error } = await supabase.from(saveToTable).update(updatePayload).eq('id', id);
 
     if (error) {
-      console.log(`[weather] Supabase save skipped (migration pending):`, error.message);
+      // Columns may not exist yet for events — silently skip, local store still updated
+      console.log(`[weather] Supabase save skipped:`, error.message);
     }
 
     // Always update local store
