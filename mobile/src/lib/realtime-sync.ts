@@ -355,7 +355,6 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       const existingSettings = useTeamStore.getState().teamSettings;
       const mergedSettings = {
         ...teamSettings,
-        upcomingGamesViewMode: existingSettings.upcomingGamesViewMode ?? teamSettings.upcomingGamesViewMode,
         // Preserve isPremium from existing state if Supabase column doesn't exist yet
         isPremium: teamSettings.isPremium || existingSettings.isPremium || false,
       };
@@ -570,7 +569,6 @@ export function startRealtimeSync(teamId: string): void {
         teamName: payload.new.name,
         teamSettings: {
           ...newSettings,
-          upcomingGamesViewMode: existingSettings.upcomingGamesViewMode ?? newSettings.upcomingGamesViewMode,
           // Preserve existing isPremium if Supabase column doesn't exist yet (is_premium = undefined)
           isPremium: (payload.new as any).is_premium !== undefined
             ? ((payload.new as any).is_premium ?? false)

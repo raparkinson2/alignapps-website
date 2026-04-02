@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, Pressable, Alert, FlatList } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import { LinearGradient } from 'expo-linear-gradient';
 import { withErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -100,8 +101,24 @@ function ScheduleScreen() {
   const { columns, containerPadding } = useResponsive();
   const isTablet = Device.deviceType === Device.DeviceType.TABLET;
 
-  // Get persisted view mode from team settings, default to 'list' (tablet always uses 'calendar')
-  const persistedViewMode = teamSettings?.upcomingGamesViewMode ?? 'list';
+  const [viewMode, setViewMode] = useState<UpcomingGamesViewMode>('list');
+
+  // Load view mode from AsyncStorage on mount. Falls back to any value previously
+  // stored in teamSettings (one-time migration), then defaults to 'list'.
+  useEffect(() => {
+    AsyncStorage.getItem('@align/view_mode').then((stored) => {
+      if (stored === 'list' || stored === 'calendar') {
+        setViewMode(stored);
+      } else {
+        // One-time migration from old teamSettings location
+        const legacy = teamSettings?.upcomingGamesViewMode;
+        if (legacy === 'list' || legacy === 'calendar') {
+          setViewMode(legacy);
+          AsyncStorage.setItem('@align/view_mode', legacy).catch(() => {});
+        }
+      }
+    }).catch(() => {});
+  }, []);
 
   // Check for scheduled invites that need to be released on mount
   useEffect(() => {
@@ -127,7 +144,6 @@ function ScheduleScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isRecordModalVisible, setIsRecordModalVisible] = useState(false);
   const [lineupViewerGame, setLineupViewerGame] = useState<Game | null>(null);
-  const [viewMode, setViewMode] = useState<UpcomingGamesViewMode>(persistedViewMode);
   // Date pre-selected when tapping an empty calendar cell
   const [modalInitialDate, setModalInitialDate] = useState<Date | undefined>(undefined);
 
@@ -141,13 +157,8 @@ function ScheduleScreen() {
   }, []);
   const skeletonStyle = useAnimatedStyle(() => ({ opacity: skeletonOpacity.value }));
 
-  // On tablet, always use calendar view. On phone, sync with persisted preference.
+  // On tablet, always use calendar view. On phone, use AsyncStorage-persisted preference.
   const effectiveViewMode: UpcomingGamesViewMode = isTablet ? 'calendar' : viewMode;
-
-  // Sync local viewMode state when persisted value changes (e.g., on hydration)
-  useEffect(() => {
-    setViewMode(persistedViewMode);
-  }, [persistedViewMode]);
 
   const sport: Sport = teamSettings?.sport ?? 'hockey';
 
@@ -389,7 +400,7 @@ function ScheduleScreen() {
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setViewMode('list');
-                setTeamSettings({ upcomingGamesViewMode: 'list' });
+                AsyncStorage.setItem('@align/view_mode', 'list').catch(() => {});
               }}
               className={cn(
                 'flex-row items-center px-3 py-1.5 rounded-lg',
@@ -403,7 +414,7 @@ function ScheduleScreen() {
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setViewMode('calendar');
-                setTeamSettings({ upcomingGamesViewMode: 'calendar' });
+                AsyncStorage.setItem('@align/view_mode', 'calendar').catch(() => {});
               }}
               className={cn(
                 'flex-row items-center px-3 py-1.5 rounded-lg',
