@@ -673,10 +673,8 @@ function GameDetailScreenInner() {
 
       setTeamSettings({ record: newRecord });
       if (activeTeamId) {
-        setTimeout(() => {
-          const s = useTeamStore.getState();
-          pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
-        }, 50);
+        const s = useTeamStore.getState();
+        pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
       }
     }
 
@@ -710,10 +708,8 @@ function GameDetailScreenInner() {
 
               setTeamSettings({ record: newRecord });
               if (activeTeamId) {
-                setTimeout(() => {
-                  const s = useTeamStore.getState();
-                  pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
-                }, 50);
+                const s = useTeamStore.getState();
+                pushTeamToSupabase(activeTeamId, s.teamName, s.teamSettings).catch(syncError('sync'));
               }
             }
 
