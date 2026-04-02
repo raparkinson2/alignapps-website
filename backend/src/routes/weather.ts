@@ -41,6 +41,20 @@ function parseGameHour(timeStr: string): number {
 // Simple in-memory geocode cache to avoid hammering external services
 const geocodeCache = new Map<string, { lat: number; lon: number }>();
 
+/**
+ * Returns true if the string looks like a real geocodable address.
+ * Rejects generic venue names like "Main Practice Rink" or "Home Field".
+ * A real address must contain digits (street number / zip) OR a comma
+ * separating components (e.g. "City, State").
+ */
+function looksLikeRealAddress(address: string): boolean {
+  const trimmed = address.trim();
+  if (trimmed.length < 5) return false;
+  const hasDigits = /\d/.test(trimmed);
+  const hasComma = trimmed.includes(',');
+  return hasDigits || hasComma;
+}
+
 async function safeJsonFetch<T>(url: string, options?: RequestInit): Promise<T | null> {
   try {
     const res = await fetch(url, options);
@@ -63,6 +77,10 @@ async function safeJsonFetch<T>(url: string, options?: RequestInit): Promise<T |
 }
 
 async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
+  if (!looksLikeRealAddress(address)) {
+    console.log(`[weather] Skipping geocode — not a real address: "${address}"`);
+    return null;
+  }
   const cacheKey = address.toLowerCase().trim();
   if (geocodeCache.has(cacheKey)) {
     return geocodeCache.get(cacheKey)!;

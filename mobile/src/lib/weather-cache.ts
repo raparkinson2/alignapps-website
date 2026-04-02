@@ -4,7 +4,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CACHE_KEY = 'weather_cache_v1';
+const CACHE_KEY = 'weather_cache_v2';
 
 interface WeatherEntry {
   weatherTemp?: number;
