@@ -328,6 +328,7 @@ export interface Player {
   lastName: string;
   email?: string;
   password?: string; // For authentication
+  passwordVersion?: number; // Increments on each password change; used for offline session invalidation
   securityQuestion?: SecurityQuestion; // For password recovery
   securityAnswer?: string; // Answer to security question (stored lowercase for comparison)
   phone?: string;

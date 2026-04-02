@@ -219,7 +219,9 @@ export async function secureRegisterInvitedPlayerByPhone(phone: string, password
  */
 export async function secureResetPassword(playerId: string, newPassword: string): Promise<void> {
   const hashedPassword = await hashPassword(newPassword);
-  useTeamStore.getState().updatePlayer(playerId, { password: hashedPassword });
+  const currentPlayer = useTeamStore.getState().players.find(p => p.id === playerId);
+  const nextVersion = (currentPlayer?.passwordVersion ?? 1) + 1;
+  useTeamStore.getState().updatePlayer(playerId, { password: hashedPassword, passwordVersion: nextVersion });
 }
 
 /**

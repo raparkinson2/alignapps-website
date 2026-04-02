@@ -93,6 +93,7 @@ function mapPlayer(p: any): Player {
     gameLogs: p.game_logs || [],
     // Include hashed password for phone-based auth (phone users have no Supabase Auth account)
     password: p.password || undefined,
+    passwordVersion: p.password_version ?? 1,
     associatedPlayerId: p.stats?._associatedPlayerId || undefined,
   };
 }
@@ -233,6 +234,27 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     const playerMap = new Map<string, Player>();
     for (const p of rawPlayers) playerMap.set(p.id, p);
     const players = Array.from(playerMap.values());
+
+    // Offline session invalidation: if the current player's password_version
+    // increased in Supabase, their password was changed on another device while
+    // this device was offline. Force logout before applying any new data.
+    const storeBeforeLoad = useTeamStore.getState();
+    if (storeBeforeLoad.currentPlayerId) {
+      const remotePlayer = players.find(p => p.id === storeBeforeLoad.currentPlayerId);
+      const localPlayers = teamId === storeBeforeLoad.activeTeamId
+        ? storeBeforeLoad.players
+        : (storeBeforeLoad.teams.find(t => t.id === teamId)?.players || []);
+      const localPlayer = localPlayers.find(p => p.id === storeBeforeLoad.currentPlayerId);
+      if (
+        remotePlayer?.passwordVersion != null &&
+        localPlayer?.passwordVersion != null &&
+        remotePlayer.passwordVersion > localPlayer.passwordVersion
+      ) {
+        console.log('SYNC: Password changed on another device — forcing logout');
+        storeBeforeLoad.logout();
+        return false;
+      }
+    }
 
     // Fetch game + event responses in parallel
     const gameIds = (gamesData || []).map((g: any) => g.id);
@@ -1044,6 +1066,7 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
       // Store hashed password for phone-only users (no Supabase Auth account)
       // This is a hashed value, never plain-text
       password: player.password || null,
+      password_version: player.passwordVersion ?? 1,
     }, { onConflict: 'id' });
     if (error) console.error('SYNC: pushPlayerToSupabase error:', error.message);
   } catch (err) {
