@@ -157,7 +157,7 @@ export default function HomePage() {
         style={{ background: 'rgba(8,12,20,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
       >
         <div className="flex items-center gap-2.5">
-          <span className="text-2xl">🏆</span>
+          <img src="/align-logo.png" alt="ALIGN Sports" width={32} height={32} className="rounded-lg" />
           <span
             className="font-black text-xl tracking-tight"
             style={{ background: 'linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
@@ -419,7 +419,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl">🏆</span>
+                <img src="/align-logo.png" alt="ALIGN Sports" width={28} height={28} className="rounded-md" />
                 <span className="font-bold text-lg">ALIGN Sports</span>
               </div>
               <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
