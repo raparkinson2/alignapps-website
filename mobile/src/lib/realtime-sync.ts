@@ -1410,6 +1410,14 @@ export async function pushPollToSupabase(poll: Poll, teamId: string): Promise<vo
   }
 }
 
+export async function deletePollFromSupabase(pollId: string): Promise<void> {
+  try {
+    await supabase.from('polls').delete().eq('id', pollId);
+  } catch (err) {
+    console.error('SYNC: deletePollFromSupabase error:', err);
+  }
+}
+
 export async function pushTeamLinkToSupabase(link: TeamLink, teamId: string): Promise<void> {
   try {
     await supabase.from('team_links').upsert({

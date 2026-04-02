@@ -34,7 +34,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { useTeamStore, Poll, getPlayerName, Player, AppNotification } from '@/lib/store';
-import { pushPollToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
+import { pushPollToSupabase, pushNotificationToSupabase, deletePollFromSupabase } from '@/lib/realtime-sync';
 import { sendPushToPlayers } from '@/lib/notifications';
 import { syncError } from '@/lib/sync-error-handler';
 
@@ -959,7 +959,10 @@ export default function PollsScreen() {
 
   const handleDeletePollGroup = (pollIds: string[]) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    pollIds.forEach((id) => removePoll(id));
+    pollIds.forEach((id) => {
+      removePoll(id);
+      deletePollFromSupabase(id).catch(syncError('sync'));
+    });
   };
 
   // Group polls by groupId or fallback to timestamp-based grouping
