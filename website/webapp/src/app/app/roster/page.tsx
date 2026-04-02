@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import type { Player, Sport } from '@/lib/types';
 import { isCoachOrParent } from '@/lib/types';
 import AddEditPlayerModal from '@/components/admin/AddEditPlayerModal';
+import { useRouter } from 'next/navigation';
 
 // Position groupings by sport
 type PositionGroup = { label: string; positions: string[] };
@@ -59,6 +60,7 @@ export default function RosterPage() {
   const players = useTeamStore((s) => s.players);
   const teamSettings = useTeamStore((s) => s.teamSettings);
   const { isAdmin } = usePermissions();
+  const router = useRouter();
 
   const [showReserve, setShowReserve] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -87,6 +89,10 @@ export default function RosterPage() {
   const handleEdit = (player: Player) => {
     setEditingPlayer(player);
     setShowAddPlayer(true);
+  };
+
+  const handleCardClick = (player: Player) => {
+    router.push(`/app/player-profile/${player.id}`);
   };
 
   return (
@@ -121,7 +127,7 @@ export default function RosterPage() {
                   player={player}
                   isAdmin={isAdmin}
                   onEdit={handleEdit}
-                  onClick={handleEdit}
+                  onClick={handleCardClick}
                 />
               ))}
             </div>
@@ -141,7 +147,7 @@ export default function RosterPage() {
                   player={player}
                   isAdmin={isAdmin}
                   onEdit={handleEdit}
-                  onClick={handleEdit}
+                  onClick={handleCardClick}
                 />
               ))}
             </div>
@@ -172,7 +178,7 @@ export default function RosterPage() {
                     player={player}
                     isAdmin={isAdmin}
                     onEdit={handleEdit}
-                    onClick={handleEdit}
+                    onClick={handleCardClick}
                   />
                 ))}
               </div>
@@ -193,7 +199,7 @@ export default function RosterPage() {
                   player={player}
                   isAdmin={isAdmin}
                   onEdit={handleEdit}
-                  onClick={handleEdit}
+                  onClick={handleCardClick}
                 />
               ))}
             </div>

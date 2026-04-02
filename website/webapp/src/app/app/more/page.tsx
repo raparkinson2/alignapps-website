@@ -8,6 +8,7 @@ import {
   UserPlus, Globe, UserCheck, Trophy, Calendar,
   CheckCircle2, Send, ShieldCheck, Eye, History, MessageSquare,
   FolderOpen, Upload, File, Image as ImageIcon, AlertCircle, Crown,
+  Pencil, Star,
 } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -19,6 +20,7 @@ import {
 import { generateId, cn } from '@/lib/utils';
 import Avatar from '@/components/ui/Avatar';
 import Modal from '@/components/ui/Modal';
+import AddEditPlayerModal from '@/components/admin/AddEditPlayerModal';
 import type { Poll, PollOption, TeamLink, Player } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { signOut } from '@/lib/supabase-auth';
@@ -1554,6 +1556,8 @@ export default function MorePage() {
   const currentPlayer = players.find(p => p.id === currentPlayerId) ?? null;
   const [tab, setTab] = useState<Tab>('home');
   const [showEmailTeam, _setShowEmailTeam] = useState(false); // kept for future use
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
 
   const otherTeams = useMemo(() => teams.filter(t => t.id !== activeTeamId), [teams, activeTeamId]);
   const unreadCount = notifications.filter(n => n.toPlayerId === currentPlayerId && !n.read).length;
@@ -1593,13 +1597,28 @@ export default function MorePage() {
 
       {/* Player profile card */}
       {currentPlayer && (
-        <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl p-4 mb-5 flex items-center gap-4">
-          <Avatar player={currentPlayer} size="lg" />
-          <div className="min-w-0">
-            <p className="font-bold text-slate-100 text-base truncate">{currentPlayer.firstName} {currentPlayer.lastName}</p>
-            <p className="text-sm text-slate-400 truncate">{teamName}</p>
-            {currentPlayer.number && <p className="text-xs text-slate-500 mt-0.5">#{currentPlayer.number}</p>}
+        <div className="bg-[#0f1a2e] border border-white/[0.07] rounded-2xl p-4 mb-5">
+          <div className="flex items-center gap-4">
+            <Avatar player={currentPlayer} size="lg" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-slate-100 text-base truncate">{currentPlayer.firstName} {currentPlayer.lastName}</p>
+              <p className="text-sm text-[#67e8f9] truncate">{currentPlayer.position}{currentPlayer.position ? ' · ' : ''}{teamName}</p>
+              {currentPlayer.number && <p className="text-xs text-slate-500 mt-0.5">#{currentPlayer.number}</p>}
+            </div>
+            <button
+              onClick={() => { setEditingPlayer(currentPlayer); setShowAddPlayer(true); }}
+              className="p-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:bg-white/[0.1] transition-all shrink-0"
+            >
+              <Pencil size={14} />
+            </button>
           </div>
+          <button
+            onClick={() => router.push(`/app/player-profile/${currentPlayer.id}`)}
+            className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#67e8f9]/20 bg-[#67e8f9]/[0.06] text-[#67e8f9] text-sm font-semibold hover:bg-[#67e8f9]/10 transition-all"
+          >
+            <Star size={13} />
+            View My Player Card
+          </button>
         </div>
       )}
 
@@ -1660,6 +1679,13 @@ export default function MorePage() {
       </div>
 
       <p className="text-center text-xs text-slate-700 pb-6">AlignApps © {new Date().getFullYear()}</p>
+
+      {/* Edit profile modal */}
+      <AddEditPlayerModal
+        isOpen={showAddPlayer}
+        onClose={() => { setShowAddPlayer(false); setEditingPlayer(null); }}
+        player={editingPlayer}
+      />
     </div>
   );
 }
