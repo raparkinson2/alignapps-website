@@ -205,7 +205,7 @@ export default function HomePage() {
             style={{ background: 'rgba(103,232,249,0.07)' }}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#67e8f9] animate-pulse" />
-            <span className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9]">Team management without the chaos</span>
+            <span className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9]">Free Sports Team Management App</span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black leading-[1.05] tracking-tight mb-6">
@@ -216,7 +216,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            ALIGN Sports is a simple, powerful team management app built for coaches, captains, and organizers who are tired of chasing people down. If your team lives in group texts and "who's coming tonight?" messages — this fixes that.
+            ALIGN Sports is a free team management app built for coaches, captains, and recreational sports organizers. Manage schedules, rosters, payments, and chat — all in one place. Stop chasing people down in group texts.
           </p>
 
           {/* Store buttons */}
@@ -240,14 +240,14 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-            <p className="text-sm text-slate-400">Used by teams across <span className="text-slate-200 font-semibold">7 sports</span></p>
+            <p className="text-sm text-slate-400">Free for coaches and captains across <span className="text-slate-200 font-semibold">7 sports</span></p>
           </div>
         </div>
       </section>
 
       {/* ── SPORTS STRIP ────────────────────────────────────────────────── */}
       <section id="sports" className="py-10 border-y" style={{ background: '#0d1526', borderColor: 'rgba(255,255,255,0.06)' }}>
-        <p className="text-center text-xs font-semibold tracking-widest uppercase text-slate-500 mb-6">Built for every sport</p>
+        <p className="text-center text-xs font-semibold tracking-widest uppercase text-slate-500 mb-6">Sports team management for every league</p>
         <div className="flex flex-wrap items-center justify-center gap-3 px-6">
           {SPORTS.map((s) => (
             <div
@@ -266,9 +266,9 @@ export default function HomePage() {
       <section id="features" className="py-24 px-6 max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <p className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9] mb-3">Everything your team needs</p>
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight">All in one app.</h2>
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight">All-in-one team management.</h2>
           <p className="text-slate-400 mt-4 max-w-xl mx-auto">
-            No more juggling group texts, spreadsheets, and Venmo requests. ALIGN brings it all together.
+            No more juggling group texts, spreadsheets, and Venmo requests. ALIGN brings schedule management, roster tracking, payments, chat, and stats together in one free app.
           </p>
         </div>
 
@@ -349,7 +349,7 @@ export default function HomePage() {
         <div className="max-w-2xl mx-auto px-6">
           <div className="text-center mb-12">
             <p className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9] mb-3">FAQ</p>
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight">Common questions</h2>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight">Frequently Asked Questions</h2>
           </div>
 
           <div className="space-y-2">
@@ -461,6 +461,20 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* ── JSON-LD: FAQ ─────────────────────────────────────────────────── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: FAQS.map((faq) => ({
+            '@type': 'Question',
+            name: faq.q,
+            acceptedAnswer: { '@type': 'Answer', text: faq.a },
+          })),
+        }) }}
+      />
 
     </div>
   );
