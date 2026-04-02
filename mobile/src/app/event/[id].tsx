@@ -30,7 +30,7 @@ import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTeamStore, Player, getPlayerName, AppNotification, InviteReleaseOption } from '@/lib/store';
-import { pushEventToSupabase, pushEventResponseToSupabase, pushEventViewedToSupabase, pushNotificationToSupabase } from '@/lib/realtime-sync';
+import { pushEventToSupabase, pushEventResponseToSupabase, pushEventViewedToSupabase, pushNotificationToSupabase, deleteEventFromSupabase } from '@/lib/realtime-sync';
 import { fetchAndSaveEventWeather } from '@/lib/weather-service';
 import { cn } from '@/lib/cn';
 import { AddressSearch } from '@/components/AddressSearch';
@@ -430,6 +430,7 @@ export default function EventDetailScreen() {
           style: 'destructive',
           onPress: () => {
             removeEvent(event.id);
+            deleteEventFromSupabase(event.id).catch(() => {});
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.back();
           },

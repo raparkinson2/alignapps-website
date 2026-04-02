@@ -21,7 +21,7 @@ import { useTeamStore, Game, TeamRecord, Sport, UpcomingGamesViewMode, Poll } fr
 import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/lib/cn';
 import { useResponsive } from '@/lib/useResponsive';
-import { deleteGameFromSupabase } from '@/lib/realtime-sync';
+import { deleteGameFromSupabase, deleteEventFromSupabase } from '@/lib/realtime-sync';
 import { sendPushToPlayers } from '@/lib/notifications';
 
 import { GameCard } from '@/components/home/GameCard';
@@ -321,6 +321,7 @@ function ScheduleScreen() {
                   style: 'destructive',
                   onPress: () => {
                     removeEvent(event.id);
+                    deleteEventFromSupabase(event.id).catch(() => {});
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   },
                 },
