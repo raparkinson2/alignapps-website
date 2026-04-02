@@ -6,8 +6,22 @@ import {
   LayoutList, MessageSquare, Image, CreditCard,
   BarChart2, Trophy, Coffee, Beer, TrendingUp,
   User, UserMinus, UserCog, Users,
-  CheckCircle2, AlertCircle, ExternalLink, X, Zap,
+  CheckCircle2, AlertCircle, ExternalLink, X, Zap, Crown, Lock,
 } from 'lucide-react';
+
+// ─── Jersey color presets (matching mobile) ────────────────────────────────────
+
+const FREE_PRESETS = ['#FFFFFF', '#1A1A1A', '#1E40AF', '#DC2626', '#16A34A', '#7C3AED', '#EA580C', '#0891B2'];
+
+const PREMIUM_PACKS: { label: string; colors: string[] }[] = [
+  { label: 'Deep Blues',       colors: ['#0F172A','#003087','#1E3A5F','#0047AB','#1E40AF','#1B4FBE','#1D4ED8','#2563EB'] },
+  { label: 'Deep Reds',        colors: ['#5C0B0B','#8B0000','#7F1D1D','#991B1B','#B91C1C','#C41E3A','#DC2626','#EF4444'] },
+  { label: 'Forest Greens',    colors: ['#004D25','#1B4332','#006400','#14532D','#166534','#15803D','#16A34A','#22C55E'] },
+  { label: 'Golds & Bronzes',  colors: ['#A16207','#B8860B','#D97706','#CD7F32','#DAA520','#F59E0B','#FFC200','#FFD700'] },
+  { label: 'Purples & Maroons',colors: ['#3B0764','#4A044E','#4B0082','#581C87','#6B21A8','#7E22CE','#7C3AED','#A855F7'] },
+  { label: 'Steels & Silvers', colors: ['#1F2937','#2D2D2D','#374151','#4B5563','#6B7280','#9CA3AF','#D1D5DB','#E5E7EB'] },
+  { label: 'Neon & Bright',    colors: ['#FF073A','#FF6B00','#FFFF00','#39FF14','#00FF41','#00BFFF','#00FFFF','#FF00FF'] },
+];
 import { cn } from '@/lib/utils';
 import { pushTeamSettingsToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
@@ -330,6 +344,8 @@ export default function TeamSettingsForm() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripeError, setStripeError] = useState<string | null>(null);
 
+  const isPremium = teamSettings.isPremium ?? false;
+
   const updateLocal = (updates: Partial<TeamSettings>) =>
     setLocalSettings((prev) => ({ ...prev, ...updates }));
 
@@ -429,7 +445,16 @@ export default function TeamSettingsForm() {
 
         {/* ── Jersey Colors ─────────────────────────────────────────────────── */}
         <div className="mb-5">
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Jersey Colors</label>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="text-xs font-medium text-slate-400">Jersey Colors</label>
+            {!isPremium && (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded px-1.5 py-0.5">
+                <Crown size={9} /> MORE WITH PREMIUM
+              </span>
+            )}
+          </div>
+
+          {/* Current colors */}
           <div className="space-y-2 mb-3">
             {(localSettings.jerseyColors ?? []).map((jc) => (
               <div key={jc.name} className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2">
@@ -441,13 +466,79 @@ export default function TeamSettingsForm() {
               </div>
             ))}
           </div>
-          <div className="flex gap-2">
-            <input type="color" value={newColorHex} onChange={(e) => setNewColorHex(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer" />
-            <input type="text" value={newColorName} onChange={(e) => setNewColorName(e.target.value)} placeholder="Color name" className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm" />
-            <button onClick={handleAddJerseyColor} className="px-3 py-2 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] hover:bg-[#67e8f9]/20 transition-all">
-              <Plus size={16} />
-            </button>
+
+          {/* Standard presets */}
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Standard Colors</p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {FREE_PRESETS.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                onClick={() => setNewColorHex(hex)}
+                className={cn(
+                  'w-8 h-8 rounded-full border-2 transition-all',
+                  newColorHex.toUpperCase() === hex.toUpperCase()
+                    ? 'border-[#67e8f9] scale-110'
+                    : 'border-white/20 hover:border-white/40'
+                )}
+                style={{ backgroundColor: hex }}
+              />
+            ))}
           </div>
+
+          {/* Premium packs */}
+          {isPremium ? (
+            <>
+              <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2">Premium Packs</p>
+              {PREMIUM_PACKS.map((pack) => (
+                <div key={pack.label} className="mb-2">
+                  <p className="text-[10px] text-slate-500 mb-1.5">{pack.label}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {pack.colors.map((hex) => (
+                      <button
+                        key={hex}
+                        type="button"
+                        onClick={() => setNewColorHex(hex)}
+                        className={cn(
+                          'w-8 h-8 rounded-full border-2 transition-all',
+                          newColorHex.toUpperCase() === hex.toUpperCase()
+                            ? 'border-amber-400 scale-110'
+                            : 'border-white/20 hover:border-white/40'
+                        )}
+                        style={{ backgroundColor: hex }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <div className="flex items-center gap-2 bg-amber-500/5 border border-amber-500/15 rounded-xl px-3 py-2.5 mb-3">
+              <Lock size={13} className="text-amber-400/60 shrink-0" />
+              <p className="text-xs text-amber-400/70">Premium color packs unlock with a subscription</p>
+            </div>
+          )}
+
+          {/* Custom color picker — premium only */}
+          {isPremium ? (
+            <div className="flex gap-2 mt-3">
+              <input type="color" value={newColorHex} onChange={(e) => setNewColorHex(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer" />
+              <input type="text" value={newColorName} onChange={(e) => setNewColorName(e.target.value)} placeholder="Color name (e.g. Home)" className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm" />
+              <button onClick={handleAddJerseyColor} className="px-3 py-2 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] hover:bg-[#67e8f9]/20 transition-all">
+                <Plus size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2 mt-1">
+              <div className="w-10 h-10 rounded-xl border border-white/10 shrink-0 flex items-center justify-center" style={{ backgroundColor: newColorHex }}>
+                <span className="text-[8px] text-white/50 font-bold">HEX</span>
+              </div>
+              <input type="text" value={newColorName} onChange={(e) => setNewColorName(e.target.value)} placeholder="Color name (e.g. Home)" className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#67e8f9]/40 text-sm" />
+              <button onClick={handleAddJerseyColor} className="px-3 py-2 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] hover:bg-[#67e8f9]/20 transition-all">
+                <Plus size={16} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── Organization ──────────────────────────────────────────────────── */}
