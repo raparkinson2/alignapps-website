@@ -65,17 +65,17 @@ export function EventCard({ event, index, onPress, skipAnimation = false, hideDa
           </View>
 
           {/* Info Grid */}
-          <View className="flex-row mb-2">
-            <View className="flex-1 flex-row items-center">
+          <View className="flex-row items-center mb-2">
+            <View className="flex-row items-center">
               <Clock size={14} color={iconColor} strokeWidth={2} />
               <Text className="text-slate-300 text-sm ml-1.5">{event.time}</Text>
             </View>
-            <View className="flex-1 flex-row items-center">
+            <View className="flex-row items-center ml-4">
               <Calendar size={14} color={iconColor} strokeWidth={2} />
               <Text className="text-slate-300 text-sm ml-1.5">{isPractice ? 'Practice' : 'Event'}</Text>
             </View>
             {(event.weatherCondition || event.weatherTemp != null) && (
-              <View className="flex-row items-center ml-2" style={{ gap: 3 }}>
+              <View className="flex-row items-center ml-4" style={{ gap: 3 }}>
                 <Text style={{ fontSize: 14 }}>
                   {event.weatherCondition === 'sunny' ? '☀️'
                     : event.weatherCondition === 'partly_cloudy' ? '⛅'
