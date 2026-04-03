@@ -297,9 +297,9 @@ export default function HomePage() {
       <section id="features" className="py-24 px-6 max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <p className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9] mb-3">Everything your team needs</p>
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight">All-in-one team management.</h2>
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight">All-in-one team management</h2>
           <p className="text-slate-400 mt-4 max-w-xl mx-auto">
-            No more juggling group texts, spreadsheets, and Venmo requests. ALIGN brings schedule management, roster tracking, payments, chat, and stats together in one free app.
+            No more juggling group texts, spreadsheets, trackers, and payment requests. ALIGN Sports brings roster management, schedules, RSVPs, lineups, payment tracking, chat, photos, stats and more together in one app.
           </p>
         </div>
 
