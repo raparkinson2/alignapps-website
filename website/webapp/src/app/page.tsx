@@ -182,6 +182,7 @@ export default function HomePage() {
           {[
             { label: 'Features',     href: '#features' },
             { label: 'Sports',       href: '#sports' },
+            { label: 'Plans',        href: '#plans' },
             { label: 'How It Works', href: '#how-it-works' },
             { label: 'FAQ',          href: '#faq' },
             { label: 'About',        href: '/about' },
@@ -351,6 +352,111 @@ export default function HomePage() {
               <p className="text-sm font-medium text-slate-300 mt-3">{s.label}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── PLANS ───────────────────────────────────────────────────────── */}
+      <section id="plans" className="py-24 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9] mb-3">Plans</p>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight">
+              Free to start.{' '}
+              <span style={{ background: 'linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Premium to dominate.
+              </span>
+            </h2>
+            <p className="text-slate-400 mt-4 max-w-xl mx-auto">Get your team organized right away — upgrade when you're ready to unlock the full experience.</p>
+          </div>
+
+          {/* Table */}
+          <div className="rounded-2xl border border-white/[0.07] overflow-hidden" style={{ background: '#0f1a2e' }}>
+
+            {/* Header */}
+            <div className="flex border-b border-white/[0.07]" style={{ background: '#0d1526' }}>
+              <div className="flex-1 p-6" />
+              <div className="w-36 flex flex-col items-center justify-center p-5 border-l border-white/[0.07]">
+                <span className="text-base font-bold text-slate-100">Free</span>
+                <span className="text-xs text-slate-500 mt-0.5">Get started</span>
+              </div>
+              <div className="w-36 flex flex-col items-center justify-center p-5 border-l" style={{ borderColor: 'rgba(103,232,249,0.2)', background: 'rgba(103,232,249,0.04)' }}>
+                <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full mb-1.5" style={{ background: '#67e8f9', color: '#080c14' }}>Most Popular</span>
+                <span className="text-base font-bold text-slate-100">Premium</span>
+                <span className="text-xs text-slate-500 mt-0.5">Full access</span>
+              </div>
+            </div>
+
+            {/* Free rows */}
+            {[
+              { icon: '📅', name: 'Schedule & Events',             desc: 'Games, practices, and events with instant notifications' },
+              { icon: '👥', name: 'Roster Management',             desc: 'Player profiles, positions, and jersey numbers' },
+              { icon: '✅', name: 'Player RSVP & Check-In',        desc: "Track who's in, out, or ghosting for every event" },
+              { icon: '💬', name: 'Team Chat & DMs',               desc: 'Group chat, @mentions, GIFs, and direct messages' },
+              { icon: '🔔', name: 'Push Notifications',            desc: 'Game reminders, lineup alerts, and team updates' },
+              { icon: '🌤️', name: 'Game-Day Weather',              desc: 'Automatic forecast for every game venue' },
+              { icon: '📣', name: 'Polls & Voting',                desc: 'Team votes with real-time results' },
+              { icon: '📸', name: 'Team Photos',                   desc: 'Shared gallery synced for every teammate' },
+              { icon: '🏆', name: 'Sport-Specific Lineups',        desc: 'Lines, batting orders, formations, and starting 5' },
+              { icon: '💸', name: 'Peer-to-Peer Payment Linking',  desc: 'Link Venmo, PayPal, Zelle & Cash App in the app' },
+              { icon: '💳', name: 'Stripe Integration',            desc: 'Collect dues directly through the app via Stripe' },
+              { icon: '🔐', name: 'Configurable Roles',            desc: 'Admins, coaches, players — control who can do what' },
+              { icon: '🥤', name: 'Refreshment Assignments',       desc: "Assign and track who's bringing snacks or drinks" },
+            ].map((f, i, arr) => (
+              <div key={f.name} className={`flex items-center ${i < arr.length - 1 ? 'border-b border-white/[0.05]' : ''} hover:bg-white/[0.015] transition-colors`}>
+                <div className="flex-1 flex items-center gap-3.5 px-6 py-4">
+                  <span className="text-lg w-9 h-9 flex items-center justify-center rounded-xl border border-white/[0.07] flex-shrink-0" style={{ background: '#080c14' }}>{f.icon}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-100">{f.name}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{f.desc}</p>
+                  </div>
+                </div>
+                <div className="w-36 flex items-center justify-center border-l border-white/[0.07] self-stretch">
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'rgba(103,232,249,0.1)', color: '#67e8f9' }}>✓</span>
+                </div>
+                <div className="w-36 flex items-center justify-center border-l self-stretch" style={{ borderColor: 'rgba(103,232,249,0.15)', background: 'rgba(103,232,249,0.03)' }}>
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'rgba(103,232,249,0.1)', color: '#67e8f9' }}>✓</span>
+                </div>
+              </div>
+            ))}
+
+            {/* Divider */}
+            <div className="flex border-y" style={{ borderColor: 'rgba(103,232,249,0.2)', background: 'rgba(103,232,249,0.04)' }}>
+              <div className="flex-1 px-6 py-2.5">
+                <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: '#67e8f9' }}>Premium Only</span>
+              </div>
+              <div className="w-36 border-l border-white/[0.07]" />
+              <div className="w-36 border-l" style={{ borderColor: 'rgba(103,232,249,0.15)' }} />
+            </div>
+
+            {/* Premium-only rows */}
+            {[
+              { icon: '💰', name: 'Payment Tracking',               desc: 'Assign dues, log payments, and see who owes what' },
+              { icon: '📊', name: 'Advanced Stats & Analytics',      desc: 'Per-player stats, leaderboards, and season totals' },
+              { icon: '🗓️', name: 'Attendance Heatmap',             desc: 'Visualize who shows up across the whole season' },
+              { icon: '📜', name: 'All-Time Records & Season History', desc: 'Championships, records, and archived seasons' },
+              { icon: '🎉', name: 'Season Wrapped',                  desc: 'Shareable end-of-season recap for every player' },
+              { icon: '🔄', name: 'Multiple Teams',                  desc: 'Create or join more than one team, switch instantly' },
+              { icon: '📤', name: 'Stats Exports',                   desc: 'Export season and player stats for reporting' },
+              { icon: '📁', name: 'Document Storage',                desc: 'Store waivers, rosters, and team files in one place' },
+            ].map((f, i, arr) => (
+              <div key={f.name} className={`flex items-center ${i < arr.length - 1 ? 'border-b border-white/[0.05]' : ''} hover:bg-white/[0.015] transition-colors`}>
+                <div className="flex-1 flex items-center gap-3.5 px-6 py-4">
+                  <span className="text-lg w-9 h-9 flex items-center justify-center rounded-xl border border-white/[0.07] flex-shrink-0" style={{ background: '#080c14' }}>{f.icon}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-100">{f.name}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{f.desc}</p>
+                  </div>
+                </div>
+                <div className="w-36 flex items-center justify-center border-l border-white/[0.07] self-stretch">
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold text-slate-600" style={{ background: 'rgba(255,255,255,0.04)' }}>—</span>
+                </div>
+                <div className="w-36 flex items-center justify-center border-l self-stretch" style={{ borderColor: 'rgba(103,232,249,0.15)', background: 'rgba(103,232,249,0.03)' }}>
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'rgba(103,232,249,0.1)', color: '#67e8f9' }}>✓</span>
+                </div>
+              </div>
+            ))}
+
+          </div>
         </div>
       </section>
 
