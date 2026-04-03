@@ -380,7 +380,7 @@ export default function HomePage() {
                 <span className="text-xs text-slate-500 mt-0.5">Get started</span>
               </div>
               <div className="w-36 flex flex-col items-center justify-center p-5 border-l" style={{ borderColor: 'rgba(103,232,249,0.2)', background: 'rgba(103,232,249,0.04)' }}>
-                <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full mb-1.5" style={{ background: '#67e8f9', color: '#080c14' }}>Most Popular</span>
+                <span className="text-[10px] font-bold tracking-wide uppercase px-2.5 py-0.5 rounded-full mb-1.5 whitespace-nowrap" style={{ background: '#67e8f9', color: '#080c14' }}>Most Popular</span>
                 <span className="text-base font-bold text-slate-100">Premium</span>
                 <span className="text-xs text-slate-500 mt-0.5">Full access</span>
               </div>
