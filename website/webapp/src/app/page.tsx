@@ -1,8 +1,7 @@
-'use client';
-
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import FaqAccordion from './FaqAccordion';
 import { getSoccerName } from '@/lib/types';
 
 const SPORTS = [
@@ -161,8 +160,6 @@ function colorClass(color: ColorKey) {
 }
 
 export default function HomePage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-100" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
 
@@ -519,33 +516,7 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-black tracking-tight">Frequently Asked Questions</h2>
           </div>
 
-          <div className="space-y-2">
-            {FAQS.map((faq, i) => (
-              <div
-                key={i}
-                className="rounded-xl border border-white/[0.07] overflow-hidden"
-                style={{ background: '#0f1a2e' }}
-              >
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between p-5 text-left hover:bg-white/[0.02] transition-colors"
-                >
-                  <span className="font-medium text-slate-100 text-sm pr-4">{faq.q}</span>
-                  <span
-                    className="text-slate-500 flex-shrink-0 transition-transform duration-200"
-                    style={{ transform: openFaq === i ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block' }}
-                  >
-                    ▾
-                  </span>
-                </button>
-                {openFaq === i && (
-                  <div className="px-5 pb-5 text-sm text-slate-400 leading-relaxed border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          <FaqAccordion faqs={FAQS} />
         </div>
       </section>
 

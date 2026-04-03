@@ -12,6 +12,7 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', 'date-fns'],
   },
   images: {
+    minimumCacheTTL: 31536000,
     remotePatterns: [
       {
         protocol: 'https',
