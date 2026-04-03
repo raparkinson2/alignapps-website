@@ -16,7 +16,6 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PLATFORM_FEE_PERCENT: z.string().optional().default("0.5"),
-  STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
 });
 
 /**
