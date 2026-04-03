@@ -50,7 +50,7 @@ const FEATURES = [
   {
     icon: '🏆',
     title: 'Sport-Specific Lineups',
-    desc: 'Build lineups made for your sport — hockey lines, baseball batting orders, soccer formations, and more.',
+    desc: 'Build lineups made for your sport — hockey lines, baseball lineup cards, soccer formations, basketball starting 5 and more. No extra spreadsheets. Right in the app.',
     large: true,
     color: 'green',
     bullets: [
