@@ -337,8 +337,8 @@ export default function HomePage() {
       <section className="py-24 overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 text-center mb-12">
           <p className="text-xs font-semibold tracking-widest uppercase text-[#a78bfa] mb-3">See it in action</p>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight">Built for the way teams actually work</h2>
-          <p className="text-slate-400 mt-4 max-w-xl mx-auto">Every screen designed to save you time and keep your team on the same page.</p>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight">Built by players who know how teams actually work</h2>
+          <p className="text-slate-400 mt-4 max-w-xl mx-auto">Every screen is designed to save you time and keep your team on the same page.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-6 max-w-5xl mx-auto">
