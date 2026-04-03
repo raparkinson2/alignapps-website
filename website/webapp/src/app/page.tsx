@@ -32,7 +32,7 @@ const FEATURES = [
   {
     icon: '💳',
     title: 'Payment Tracking',
-    desc: 'Assign and track payments directly in the app. Log Venmo, PayPal, Zelle, and Cash App — no spreadsheet required.',
+    desc: 'Assign and track payments directly in the app. Log peer-to-peer payments like Venmo, PayPal, Apple Pay, Zelle, Google Pay and Cash App — no spreadsheet required.',
     color: 'green',
   },
   {
