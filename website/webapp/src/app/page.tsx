@@ -44,7 +44,7 @@ const FEATURES = [
   {
     icon: '📊',
     title: 'Stats & Records',
-    desc: 'Track individual and team stats by sport. Season history, win percentages, and career records — always up to date.',
+    desc: 'Track individual and team stats with different categories by sport. Save season by season history, win percentages, career records and way more — always up to date.',
     color: 'purple',
   },
   {
