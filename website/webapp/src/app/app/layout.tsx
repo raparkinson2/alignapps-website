@@ -14,6 +14,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useTeamData();
 
   useEffect(() => {
+    useTeamStore.persist.rehydrate();
+  }, []);
+
+  useEffect(() => {
     if (!loading && !isLoggedIn && pendingTeamOptions.length === 0) {
       router.push('/login');
     }

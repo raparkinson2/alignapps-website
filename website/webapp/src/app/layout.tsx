@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import StoreHydration from './StoreHydration';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://alignapps.com'),
@@ -88,7 +87,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-bg-base text-slate-100 min-h-screen antialiased" suppressHydrationWarning>
-        <StoreHydration />
         {children}
       </body>
     </html>

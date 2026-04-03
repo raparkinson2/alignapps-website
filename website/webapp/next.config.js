@@ -1,10 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true,
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  experimental: {
+    // Tree-shake large libraries so only the icons/functions actually used are bundled
+    optimizePackageImports: ['lucide-react', 'date-fns'],
   },
   images: {
     remotePatterns: [
