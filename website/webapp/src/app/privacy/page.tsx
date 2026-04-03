@@ -54,7 +54,7 @@ export default function PrivacyPage() {
         <p className="text-slate-400 text-sm mb-8">Last Updated: March 2026</p>
 
         <P>
-          ALIGN Sports (&quot;ALIGN Sports,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) respects your privacy and is committed to protecting your personal information. This Privacy Policy describes how we collect, use, disclose, and safeguard information when you use the ALIGN Sports mobile application, related services, and website located at www.alignapps.com (collectively, the &quot;Services&quot;).
+          ALIGN Apps, LLC, operating as ALIGN Sports (&quot;ALIGN Sports,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;), respects your privacy and is committed to protecting your personal information. This Privacy Policy describes how we collect, use, disclose, and safeguard information when you use the ALIGN Sports mobile application, related services, and website located at www.alignapps.com (collectively, the &quot;Services&quot;).
         </P>
         <P>By accessing or using the Services, you agree to the collection and use of information in accordance with this Privacy Policy.</P>
 
@@ -225,6 +225,9 @@ export default function PrivacyPage() {
         <Section number="12" title="Contact Us">
           <P>If you have questions about this Privacy Policy or our data practices, you may contact us at:</P>
           <p className="text-sm text-slate-300">
+            ALIGN Apps, LLC (operating as ALIGN Sports)
+          </p>
+          <p className="text-sm text-slate-300 mt-1">
             Email:{' '}
             <a href="mailto:info@alignapps.com" className="text-cyan-400 hover:opacity-80 transition-opacity">
               info@alignapps.com

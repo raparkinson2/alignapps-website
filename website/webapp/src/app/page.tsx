@@ -336,12 +336,11 @@ export default function HomePage() {
           <p className="text-slate-400 mt-4 max-w-xl mx-auto">Every screen designed to save you time and keep your team on the same page.</p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-6 px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-6 max-w-5xl mx-auto">
           {SCREENSHOTS.map((s) => (
             <div
               key={s.label}
               className="flex flex-col items-center"
-              style={{ width: '280px' }}
             >
               <img
                 src={s.src}

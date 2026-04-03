@@ -45,14 +45,14 @@ export default function TermsPage() {
         <p className="text-slate-400 text-sm mb-8">Last Updated: March 2026</p>
 
         <P>
-          These Terms of Service (&quot;Terms&quot;) govern your access to and use of the ALIGN Sports mobile application, website located at www.alignapps.com, and related services (collectively, the &quot;Services&quot;).
+          These Terms of Service (&quot;Terms&quot;) govern your access to and use of the ALIGN Sports mobile application, website located at www.alignapps.com, and related services (collectively, the &quot;Services&quot;) provided by ALIGN Apps, LLC.
         </P>
         <P>By creating an account or using the Services, you agree to be bound by these Terms. If you do not agree, you may not use the Services.</P>
 
         <Divider />
 
         <Section number="1" title="Company Information">
-          <P>ALIGN Sports (&quot;ALIGN Sports,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) provides a platform for managing sports teams, including scheduling, communication, and payment tracking tools.</P>
+          <P>ALIGN Apps, LLC (&quot;ALIGN Apps,&quot; operating as &quot;ALIGN Sports&quot;) is a limited liability company that provides a platform for managing sports teams, including scheduling, communication, and payment tracking tools. References to &quot;ALIGN Sports,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot; in these Terms refer to ALIGN Apps, LLC.</P>
         </Section>
 
         <Divider />
@@ -179,11 +179,15 @@ export default function TermsPage() {
 
         <Section number="17" title="Contact Information">
           <P>
-            If you have questions about these Terms, you may contact us at:{' '}
+            If you have questions about these Terms, you may contact us at:
+          </P>
+          <p className="text-sm text-slate-300">ALIGN Apps, LLC (operating as ALIGN Sports)</p>
+          <p className="text-sm text-slate-300 mt-1">
+            Email:{' '}
             <a href="mailto:info@alignapps.com" className="text-cyan-400 hover:opacity-80 transition-opacity">
               info@alignapps.com
             </a>
-          </P>
+          </p>
         </Section>
       </div>
     </div>
