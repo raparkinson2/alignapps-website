@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getSoccerName } from '@/lib/types';
 
 const SPORTS = [
@@ -168,7 +169,7 @@ export default function HomePage() {
         style={{ background: 'rgba(8,12,20,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
       >
         <div className="flex items-center gap-2.5">
-          <img src="/align-logo.png" alt="ALIGN Sports" width={32} height={32} className="rounded-lg" />
+          <Image src="/align-logo.png" alt="ALIGN Sports" width={32} height={32} className="rounded-lg" />
           <span
             className="font-black text-xl tracking-tight"
             style={{ background: 'linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
@@ -261,11 +262,14 @@ export default function HomePage() {
 
           {/* Right: hero screenshot */}
           <div className="flex-shrink-0 w-[260px] md:w-[300px] lg:w-[320px]">
-            <img
+            <Image
               src="/screenshots/hero.png"
               alt="ALIGN Sports — Team Management Without the Chaos"
-              className="w-full rounded-3xl"
+              width={390}
+              height={844}
+              className="w-full h-auto rounded-3xl"
               style={{ boxShadow: '0 0 60px rgba(103,232,249,0.15), 0 30px 60px rgba(0,0,0,0.5)' }}
+              priority
             />
           </div>
 
@@ -343,10 +347,12 @@ export default function HomePage() {
               key={s.label}
               className="flex flex-col items-center"
             >
-              <img
+              <Image
                 src={s.src}
                 alt={s.alt}
-                className="w-full rounded-2xl border border-white/[0.07]"
+                width={390}
+                height={844}
+                className="w-full h-auto rounded-2xl border border-white/[0.07]"
                 style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
               />
               <p className="text-sm font-medium text-slate-300 mt-3">{s.label}</p>
@@ -577,7 +583,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-3">
-                <img src="/align-logo.png" alt="ALIGN Sports" width={28} height={28} className="rounded-md" />
+                <Image src="/align-logo.png" alt="ALIGN Sports" width={28} height={28} className="rounded-md" />
                 <span className="font-bold text-lg">ALIGN Sports</span>
               </div>
               <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
