@@ -225,14 +225,14 @@ export default function HomePage() {
             </div>
 
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6">
-              Your team,{' '}
+              Your team.{' '}
               <span style={{ background: 'linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                finally organized.
+                Finally organized.
               </span>
             </h1>
 
             <p className="text-lg md:text-xl text-slate-400 max-w-2xl lg:max-w-xl mb-10 leading-relaxed">
-              ALIGN Sports is a free team management app built for coaches, captains, and recreational sports organizers. Manage schedules, rosters, payments, and chat — all in one place. Stop chasing people down in group texts.
+              ALIGN Sports is a free team management app built for coaches, captains, and anyone managing recreational sports. Manage rosters, schedules, track payments, chat, send messages and more — all in one place. Stop chasing people down.
             </p>
 
             {/* Store buttons */}
