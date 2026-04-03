@@ -1244,10 +1244,19 @@ body {
 
   .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
 
-  .pricing-col-feature { min-width: 0; }
+  .pricing-col-feature { min-width: 0; flex: 1; }
   .pf-desc { display: none; }
-  .pricing-col { min-width: 60px; }
+  .pricing-col { width: 80px; min-width: 0; flex-shrink: 0; padding: 16px 8px; }
   .pricing-plan-sub { display: none; }
+  .pricing-plan-label { font-size: 14px; }
+  .pricing-plan-badge { font-size: 9px; padding: 2px 6px; }
+  .pricing-row .pricing-col-feature { padding: 14px 12px; gap: 10px; }
+  .pricing-col-feature { padding: 16px 12px; }
+  .pf-icon { width: 30px; height: 30px; font-size: 16px; border-radius: 8px; flex-shrink: 0; }
+  .pf-name { font-size: 12px; }
+  .check { width: 24px; height: 24px; font-size: 14px; }
+  .pricing-divider-row .pricing-col-feature { padding: 8px 12px; }
+  .pricing-table { margin-top: 32px; }
 }
 
 /* ===========================
