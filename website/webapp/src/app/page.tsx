@@ -147,6 +147,9 @@ const SCREENSHOTS = [
   { src: '/screenshots/lineup.png',        alt: 'Sport-specific lineup builder for hockey, baseball & more',  label: 'Lineup Builder' },
   { src: '/screenshots/stats.png',         alt: 'Team stats and season records',                              label: 'Stats & Records' },
   { src: '/screenshots/notifications.png', alt: 'Push notifications for games, lineups, and payments',        label: 'Push Notifications' },
+  { src: '/screenshots/roster.png',        alt: 'Instant team invite — add players fast, no spreadsheets',   label: 'Easy Roster Setup' },
+  { src: '/screenshots/customize.png',     alt: 'Customize your team features — turn modules on or off',     label: 'Customizable Tools' },
+  { src: '/screenshots/sports.png',        alt: 'Built for any sport — hockey, basketball, soccer & more',   label: 'Any Sport' },
 ];
 
 
