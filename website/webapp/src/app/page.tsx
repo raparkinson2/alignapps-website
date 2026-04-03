@@ -202,7 +202,7 @@ export default function HomePage() {
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-16 overflow-hidden">
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-16 pb-16 overflow-hidden">
         {/* Background glows */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(ellipse, rgba(103,232,249,0.07) 0%, transparent 70%)' }} />
