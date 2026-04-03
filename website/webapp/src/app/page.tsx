@@ -508,6 +508,17 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── ORIGIN STORY ────────────────────────────────────────────────── */}
+      <section className="py-20 border-y" style={{ background: '#0d1526', borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="max-w-2xl mx-auto px-6 text-center">
+          <p className="text-xs font-semibold tracking-widest uppercase text-[#67e8f9] mb-3">Our story</p>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6">Built by athletes. For athletes.</h2>
+          <p className="text-slate-400 leading-relaxed">
+            ALIGN Sports started with a frustrated beer league hockey captain that was tired of trying different apps every season with nothing fully meeting the needs of the team. Tired of living in spreadsheets and payment apps and the feeling of herding cats — there had to be a better way. Running a recreational sports team should not require a spreadsheet, three group chats, an app and a prayer that everyone shows up.
+          </p>
+        </div>
+      </section>
+
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
       <section id="faq" className="py-20 border-t" style={{ background: '#0d1526', borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="max-w-2xl mx-auto px-6">
