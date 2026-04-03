@@ -71,7 +71,7 @@ const FEATURES = [
   {
     icon: '🔔',
     title: 'Push Notifications',
-    desc: 'Game reminders, new lineups, chat messages, and payment updates — delivered the moment they happen.',
+    desc: 'Send game notifications, reminders, gameday lineups, chat messages, and payment updates — delivered the moment they happen.',
     color: 'purple',
   },
   {
