@@ -18,10 +18,10 @@ const FEATURES = [
   {
     icon: '📅',
     title: 'Smart Scheduling',
-    desc: 'Create games, practices, and events in seconds. Track RSVPs, set jersey colors, and send instant notifications — all from one place.',
+    desc: 'Create games, practices, and events in seconds. Track RSVPs, set jersey colors, set lineups, and send instant push notifications — all from one place.',
     large: true,
     color: 'cyan',
-    bullets: ['List & calendar views', 'Game check-in / check-out', 'Final scores & stats', 'Schedule invite links'],
+    bullets: ['List & calendar views', 'Simple game check-in', 'Final scores & stats', 'Set lineups in the app'],
   },
   {
     icon: '👥',
@@ -470,8 +470,8 @@ export default function HomePage() {
       <section className="py-20 border-y" style={{ background: '#0d1526', borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="max-w-4xl mx-auto px-6 text-center">
           <p className="text-xs font-semibold tracking-widest uppercase text-[#a78bfa] mb-3">Who it's for</p>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Built for the people running the team</h2>
-          <p className="text-slate-400 mb-12">Anyone who's tired of chasing people down — this is your app.</p>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Built for anyone who's tired of chasing people down.</h2>
+          <p className="text-slate-400 mb-12">This is your app.</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {WHO.map((w) => (
               <div
