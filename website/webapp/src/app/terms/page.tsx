@@ -15,8 +15,16 @@ function Section({ number, title, children }: { number: string; title: string; c
   );
 }
 
+function SubHeading({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm font-semibold text-slate-200 mb-2 mt-3">{children}</p>;
+}
+
 function P({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-slate-300 leading-relaxed mb-2">{children}</p>;
+}
+
+function Callout({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm italic text-slate-300 leading-relaxed mb-3">{children}</p>;
 }
 
 function Ul({ items }: { items: React.ReactNode[] }) {
@@ -42,7 +50,7 @@ export default function TermsPage() {
         </Link>
 
         <h1 className="text-4xl font-black tracking-tight mb-1">Terms of Service</h1>
-        <p className="text-slate-400 text-sm mb-8">Last Updated: March 2026</p>
+        <p className="text-slate-400 text-sm mb-8">Last Updated: April 2026</p>
 
         <P>
           These Terms of Service (&quot;Terms&quot;) govern your access to and use of the ALIGN Sports mobile application, website located at www.alignapps.com, and related services (collectively, the &quot;Services&quot;) provided by ALIGN Apps, LLC.
@@ -58,8 +66,7 @@ export default function TermsPage() {
         <Divider />
 
         <Section number="2" title="Eligibility">
-          <P>You must be at least 13 years old to use the Services.</P>
-          <P>If you are under the age of majority in your jurisdiction, you may use the Services only with the involvement of a parent or legal guardian.</P>
+          <P>You must be at least 13 years old (or the minimum legal age in your country to use our Services) to use the Services. If you are under the age of majority in your jurisdiction, you may use the Services only with the involvement and consent of a parent or legal guardian who agrees to be bound by these Terms.</P>
         </Section>
 
         <Divider />
@@ -76,7 +83,7 @@ export default function TermsPage() {
 
         <Divider />
 
-        <Section number="4" title="User Content">
+        <Section number="4" title="User Content and Copyright (DMCA Policy)">
           <P>You may create, upload, or share content including team rosters, player information, messages, and photos. You retain ownership of your content.</P>
           <P>By using the Services, you grant ALIGN Sports a limited, non-exclusive, worldwide, royalty-free license to host, store, reproduce, and display your content solely for the purpose of operating and improving the Services.</P>
           <P>You agree that your content will not:</P>
@@ -85,21 +92,32 @@ export default function TermsPage() {
             'Infringe intellectual property or privacy rights',
             'Be harmful, abusive, or inappropriate',
           ]} />
-          <P>We reserve the right to remove or restrict content that violates these Terms.</P>
+          <SubHeading>Copyright Infringement (DMCA)</SubHeading>
+          <P>We respect intellectual property rights. If you believe that your copyright has been infringed by any content on our Services, please submit a notice to our registered copyright agent at the contact information provided below. Your notice must comply with the requirements of the Digital Millennium Copyright Act (17 U.S.C. §512). We reserve the right to remove or restrict content that violates these Terms or infringes on copyrights, and to terminate repeat infringers.</P>
         </Section>
 
         <Divider />
 
         <Section number="5" title="Team Administration and User Interactions">
-          <P>Team administrators may control membership and access, roles and permissions, and team settings and visibility.</P>
+          <P>Team administrators may control:</P>
+          <Ul items={[
+            'Membership and access',
+            'Roles and permissions',
+            'Team settings and visibility',
+          ]} />
           <P>ALIGN Sports is not responsible for decisions made by team administrators or interactions and disputes between users.</P>
         </Section>
 
         <Divider />
 
-        <Section number="6" title="Payments and Financial Features">
-          <P>ALIGN Sports provides tools to track and organize payments but does not process payments directly. Payments may be facilitated through third-party providers such as Stripe.</P>
-          <P>You acknowledge that ALIGN Sports is not a party to any financial transactions between users, does not control or store payment credentials, and is not responsible for payment disputes, chargebacks, or refunds.</P>
+        <Section number="6" title="Payments, Subscriptions, and Financial Features">
+          <P>ALIGN Sports provides tools to track and organize payments and may offer premium subscription plans.</P>
+          <Ul items={[
+            <><strong className="text-slate-100">Payment Processing:</strong> We do not process payments directly. Payments are facilitated through third-party providers such as Stripe. You acknowledge that we do not store payment credentials and are not a party to financial transactions between users.</>,
+            <><strong className="text-slate-100">Subscriptions &amp; Auto-Renewal:</strong> If you purchase a premium subscription, it will automatically renew at the end of the subscription period unless canceled prior to the renewal date. You may cancel your subscription via the platform or app store where it was purchased.</>,
+            <><strong className="text-slate-100">Refunds:</strong> All fees and charges are non-refundable, and there are no refunds or credits for partially used periods, except as required by applicable law (such as the EU consumer right of withdrawal, where applicable, which you expressly waive upon immediate use of digital content).</>,
+            <><strong className="text-slate-100">Disputes:</strong> We are not responsible for payment disputes, chargebacks, or refunds between users or between you and the payment processor.</>,
+          ]} />
         </Section>
 
         <Divider />
@@ -126,7 +144,12 @@ export default function TermsPage() {
 
         <Section number="9" title="Intellectual Property">
           <P>All rights, title, and interest in and to the Services (excluding user content) are owned by ALIGN Sports.</P>
-          <P>You may not copy, modify, or distribute the Services; reverse engineer or attempt to extract source code; or use ALIGN Sports branding without permission.</P>
+          <P>You may not:</P>
+          <Ul items={[
+            'Copy, modify, or distribute the Services',
+            'Reverse engineer or attempt to extract source code',
+            'Use ALIGN Sports branding without permission',
+          ]} />
         </Section>
 
         <Divider />
@@ -158,29 +181,46 @@ export default function TermsPage() {
 
         <Divider />
 
-        <Section number="14" title="App Store Terms">
-          <P><strong className="text-slate-100">Apple App Store:</strong> Apple Inc. is not responsible for the Services, has no obligation to provide maintenance or support, and any claims related to the app must be directed to ALIGN Sports.</P>
-          <P><strong className="text-slate-100">Google Play:</strong> Google is not responsible for the Services and has no obligation to provide maintenance or support.</P>
+        <Section number="14" title="Dispute Resolution and Arbitration">
+          <Callout>Please read this section carefully. It affects your legal rights, including your right to file a lawsuit in court.</Callout>
+          <Ul items={[
+            <><strong className="text-slate-100">Arbitration Agreement:</strong> Any dispute, claim, or controversy arising out of or relating to these Terms or the breach, termination, enforcement, interpretation, or validity thereof, shall be determined by binding arbitration rather than in court, except that you may assert claims in small claims court if your claims qualify.</>,
+            <><strong className="text-slate-100">Class Action Waiver:</strong> You and ALIGN Sports agree that each may bring claims against the other only in your or its individual capacity, and not as a plaintiff or class member in any purported class or representative proceeding.</>,
+          ]} />
+          <P><em>(Note: If you reside in the European Union or other jurisdictions where this arbitration provision is prohibited by law, this arbitration agreement may not apply to you, and you may bring a claim in the courts of your country of residence.)</em></P>
         </Section>
 
         <Divider />
 
-        <Section number="15" title="Changes to These Terms">
+        <Section number="15" title="Notice to California Residents">
+          <P>Under California Civil Code Section 1789.3, California users of an electronic commercial service are entitled to the following specific consumer rights notice: The Complaint Assistance Unit of the Division of Consumer Services of the California Department of Consumer Affairs may be contacted in writing at 1625 N. Market Blvd., Suite S-202, Sacramento, California 95834, or by telephone at (800) 952-5210.</P>
+        </Section>
+
+        <Divider />
+
+        <Section number="16" title="App Store Terms">
+          <Ul items={[
+            <><strong className="text-slate-100">Apple App Store:</strong> Apple Inc. is not responsible for the Services, has no obligation to provide maintenance or support, and any claims related to the app must be directed to ALIGN Sports. You agree to comply with applicable third-party terms of agreement when using the App.</>,
+            <><strong className="text-slate-100">Google Play:</strong> Google is not responsible for the Services and has no obligation to provide maintenance or support.</>,
+          ]} />
+        </Section>
+
+        <Divider />
+
+        <Section number="17" title="Changes to These Terms">
           <P>We may update these Terms from time to time. Changes will be effective when posted. Continued use of the Services constitutes acceptance of the updated Terms.</P>
         </Section>
 
         <Divider />
 
-        <Section number="16" title="Governing Law">
+        <Section number="18" title="Governing Law">
           <P>These Terms shall be governed by and construed in accordance with the laws of the State of Ohio, without regard to conflict of law principles.</P>
         </Section>
 
         <Divider />
 
-        <Section number="17" title="Contact Information">
-          <P>
-            If you have questions about these Terms, you may contact us at:
-          </P>
+        <Section number="19" title="Contact Information">
+          <P>If you have questions about these Terms, you may contact us at:</P>
           <p className="text-sm text-slate-300">ALIGN Apps, LLC (operating as ALIGN Sports)</p>
           <p className="text-sm text-slate-300 mt-1">
             Email:{' '}
