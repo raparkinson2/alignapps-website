@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Send, ImageIcon, Smile, X, Search, AtSign } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
-import { pushChatMessageToSupabase, deleteChatMessageFromSupabase, uploadAndSavePhoto } from '@/lib/realtime-sync';
+import { pushChatMessageToSupabase, deleteChatMessageFromSupabase, uploadAndSavePhoto, toggleChatReaction } from '@/lib/realtime-sync';
 import { generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import MessageBubble from '@/components/chat/MessageBubble';
@@ -121,6 +121,7 @@ export default function ChatPage() {
   const activeTeamId = useTeamStore((s) => s.activeTeamId);
   const addChatMessage = useTeamStore((s) => s.addChatMessage);
   const deleteChatMessage = useTeamStore((s) => s.deleteChatMessage);
+  const updateChatMessage = useTeamStore((s) => s.updateChatMessage);
   const markChatAsRead = useTeamStore((s) => s.markChatAsRead);
 
   const [text, setText] = useState('');
@@ -130,6 +131,7 @@ export default function ChatPage() {
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionStartIndex, setMentionStartIndex] = useState<number | null>(null);
   const [showMentionPicker, setShowMentionPicker] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string; text: string; sender: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -245,10 +247,14 @@ export default function ChatPage() {
       createdAt: new Date().toISOString(),
       mentionedPlayerIds: mentionedIds,
       mentionType,
+      replyToId: replyTo?.id,
+      replyToText: replyTo?.text,
+      replyToSender: replyTo?.sender,
     };
 
     addChatMessage(msg);
     setText('');
+    setReplyTo(null);
     await pushChatMessageToSupabase(msg, activeTeamId);
     setSending(false);
   }, [text, currentPlayerId, activeTeamId, currentPlayer, addChatMessage, players]);
@@ -272,6 +278,31 @@ export default function ChatPage() {
     deleteChatMessage(id);
     await deleteChatMessageFromSupabase(id);
   };
+
+  const handleReaction = useCallback(async (messageId: string, emoji: string) => {
+    if (!currentPlayerId) return;
+    const msg = chatMessages.find((m) => m.id === messageId);
+    if (!msg) return;
+    // Optimistic update
+    const reactions = { ...(msg.reactions || {}) };
+    const existing = reactions[emoji] || [];
+    if (existing.includes(currentPlayerId)) {
+      reactions[emoji] = existing.filter((id) => id !== currentPlayerId);
+      if (reactions[emoji]!.length === 0) delete reactions[emoji];
+    } else {
+      reactions[emoji] = [...existing, currentPlayerId];
+    }
+    updateChatMessage(messageId, { reactions });
+    await toggleChatReaction(messageId, emoji, currentPlayerId, msg.reactions);
+  }, [currentPlayerId, chatMessages, updateChatMessage]);
+
+  const handleReply = useCallback((message: ChatMessage) => {
+    const sender = players.find((p) => p.id === message.senderId);
+    const senderName = sender ? `${sender.firstName} ${sender.lastName}` : (message.senderName || 'Unknown');
+    const previewText = message.message || (message.imageUrl ? 'Photo' : message.gifUrl ? 'GIF' : '');
+    setReplyTo({ id: message.id, text: previewText, sender: senderName });
+    textareaRef.current?.focus();
+  }, [players]);
 
   const handleImageAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -313,7 +344,10 @@ export default function ChatPage() {
                 isOwn={isOwn}
                 sender={sender}
                 players={players}
+                currentPlayerId={currentPlayerId}
                 onDelete={isOwn ? handleDelete : undefined}
+                onReply={handleReply}
+                onReaction={handleReaction}
               />
             </div>
           );
@@ -323,6 +357,22 @@ export default function ChatPage() {
 
       {/* Input bar */}
       <div className="shrink-0 bg-[#0d1526] border-t border-white/[0.07] px-4 py-3 lg:px-6">
+        {/* Reply preview */}
+        {replyTo && (
+          <div className="flex items-center gap-2 mb-2 bg-white/[0.03] border-l-2 border-[#67e8f9] rounded-lg px-3 py-2">
+            <div className="flex-1 min-w-0">
+              <span className="text-xs text-[#67e8f9] font-medium">Replying to {replyTo.sender}</span>
+              <p className="text-xs text-slate-400 truncate">{replyTo.text}</p>
+            </div>
+            <button
+              onClick={() => setReplyTo(null)}
+              className="text-slate-500 hover:text-slate-300 transition-colors shrink-0"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {/* Mention picker */}
         {showMentionPicker && mentionSuggestions.length > 0 && (
           <div className="mb-2 bg-[#0d1526] border border-white/10 rounded-xl overflow-hidden shadow-xl">

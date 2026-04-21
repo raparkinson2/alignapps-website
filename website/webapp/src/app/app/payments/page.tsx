@@ -405,7 +405,7 @@ export default function PaymentsPage() {
               A processing fee (2.9% + $0.30) is added to your total so your team receives the full amount owed.
             </p>
             <p className="text-slate-300 text-sm leading-6 mb-3">
-              Align Sports does not collect, store, or have access to your card number, CVV, or any other payment credentials. All sensitive financial data is handled exclusively by Stripe.
+              ALIGN Sports does not collect, store, or have access to your card number, CVV, or any other payment credentials. All sensitive financial data is handled exclusively by Stripe.
             </p>
             <p className="text-slate-400 text-xs leading-5">
               By completing a payment, you agree to Stripe&apos;s{' '}

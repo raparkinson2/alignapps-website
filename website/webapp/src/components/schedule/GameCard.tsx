@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import {
   MapPin, Pencil, CheckCircle2, XCircle, ChevronDown, ChevronUp,
-  Users, UserPlus, Send, X, Circle, Eye,
+  Users, UserPlus, Send, X, Circle, Eye, CalendarPlus,
 } from 'lucide-react';
 import { cn, getDateLabel, formatTime } from '@/lib/utils';
 import { getPlayerName, isCoachOrParent } from '@/lib/types';
@@ -238,6 +238,36 @@ export default function GameCard({
     });
     setReminderSent(true);
     setTimeout(() => setReminderSent(false), 2000);
+  };
+
+  const handleAddToCalendar = () => {
+    const dateDigits = game.date.replace(/-/g, '').slice(0, 8);
+    const timeDigits = game.time ? game.time.replace(/:/g, '').padEnd(6, '0') : '';
+    const dtstart = timeDigits ? `${dateDigits}T${timeDigits}` : dateDigits;
+    const locationParts: string[] = [];
+    if (game.location) locationParts.push(game.location);
+    if (game.address) locationParts.push(game.address);
+    const icsLines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//ALIGN Sports//Game//EN',
+      'BEGIN:VEVENT',
+      `UID:game-${game.id}@alignsports`,
+      timeDigits ? `DTSTART:${dtstart}` : `DTSTART;VALUE=DATE:${dtstart}`,
+      `SUMMARY:vs ${game.opponent}`,
+      ...(locationParts.length > 0 ? [`LOCATION:${locationParts.join(', ')}`] : []),
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ];
+    const blob = new Blob([icsLines.join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `game-vs-${game.opponent.replace(/\s+/g, '-')}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -479,6 +509,15 @@ export default function GameCard({
             {hasLineup ? `View ${lineupLabel}` : `Set ${lineupLabel}`}
           </button>
         )}
+
+        {/* Add to Calendar */}
+        <button
+          onClick={handleAddToCalendar}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium transition-all border border-white/10 text-slate-500 hover:text-slate-300 hover:bg-white/10 mt-2"
+        >
+          <CalendarPlus size={13} />
+          Add to Calendar
+        </button>
       </div>
 
       {/* ── Invite More Modal ── */}

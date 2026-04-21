@@ -94,6 +94,7 @@ interface TeamStore {
   // Chat mutations
   addChatMessage: (message: ChatMessage) => void;
   deleteChatMessage: (id: string) => void;
+  updateChatMessage: (id: string, updates: Partial<ChatMessage>) => void;
   markChatAsRead: (playerId: string) => void;
   getUnreadChatCount: (playerId: string) => number;
 
@@ -265,6 +266,9 @@ export const useTeamStore = create<TeamStore>()(
         return { chatMessages: [...s.chatMessages, message] };
       }),
       deleteChatMessage: (id) => set((s) => ({ chatMessages: s.chatMessages.filter((m) => m.id !== id) })),
+      updateChatMessage: (id, updates) => set((s) => ({
+        chatMessages: s.chatMessages.map((m) => m.id === id ? { ...m, ...updates } : m),
+      })),
       markChatAsRead: (playerId) => set((s) => ({
         chatLastReadAt: { ...s.chatLastReadAt, [playerId]: new Date().toISOString() },
       })),

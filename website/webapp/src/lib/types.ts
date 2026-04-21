@@ -66,6 +66,8 @@ export interface StatusDuration {
   unit: DurationUnit;
 }
 
+export type NotificationChannel = 'push' | 'email' | 'both' | 'none';
+
 export interface NotificationPreferences {
   gameInvites: boolean;
   gameReminderDayBefore: boolean;
@@ -73,6 +75,7 @@ export interface NotificationPreferences {
   chatMessages: boolean;
   chatMentions: boolean;
   paymentReminders: boolean;
+  notificationChannel?: NotificationChannel;
   pushToken?: string;
 }
 
@@ -326,6 +329,8 @@ export interface Game {
   finalScoreThem?: number;
   gameResult?: 'win' | 'loss' | 'tie' | 'otLoss';
   resultRecorded?: boolean;
+  liveScoreUs?: number;
+  liveScoreThem?: number;
 }
 
 // ─── Event ────────────────────────────────────────────────────────────────────
@@ -372,6 +377,10 @@ export interface ChatMessage {
   gifHeight?: number;
   mentionedPlayerIds?: string[];
   mentionType?: 'all' | 'specific';
+  reactions?: Record<string, string[]>;
+  replyToId?: string;
+  replyToText?: string;
+  replyToSender?: string;
   createdAt: string;
 }
 
@@ -540,6 +549,7 @@ export interface TeamSettings {
   stripeAccountId?: string;
   stripeOnboardingComplete?: boolean;
   isPremium?: boolean;
+  autoRemindersEnabled?: boolean;
 }
 
 export interface Team {

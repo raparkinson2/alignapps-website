@@ -519,12 +519,27 @@ function NotificationsPage({ player, activeTeamId, onBack }: { player: Player; a
     chatMessages: true, chatMentions: true, paymentReminders: true,
   };
 
+  const currentChannel = (prefs as any).notificationChannel || 'push';
+
+  const setChannel = async (channel: string) => {
+    const updated = { ...prefs, notificationChannel: channel };
+    updatePlayer(player.id, { notificationPreferences: updated });
+    if (activeTeamId) await pushPlayerToSupabase({ ...player, notificationPreferences: updated }, activeTeamId);
+  };
+
   const toggle = async (key: keyof typeof prefs) => {
     if (typeof prefs[key] !== 'boolean') return;
     const updated = { ...prefs, [key]: !prefs[key] };
     updatePlayer(player.id, { notificationPreferences: updated });
     if (activeTeamId) await pushPlayerToSupabase({ ...player, notificationPreferences: updated }, activeTeamId);
   };
+
+  const channelOptions = [
+    { value: 'push', label: 'Push', desc: 'App notifications' },
+    { value: 'email', label: 'Email', desc: 'Email only' },
+    { value: 'both', label: 'Both', desc: 'Push + email' },
+    { value: 'none', label: 'None', desc: 'No notifications' },
+  ];
 
   const sections = [
     {
@@ -559,6 +574,33 @@ function NotificationsPage({ player, activeTeamId, onBack }: { player: Player; a
         <h1 className="text-xl font-bold text-slate-100">Notification Settings</h1>
       </div>
       <div className="space-y-4">
+        {/* Notification Channel Picker */}
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1 mb-2">How do you want to be notified?</p>
+          <div className="grid grid-cols-4 gap-2">
+            {channelOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setChannel(opt.value)}
+                className={cn(
+                  'rounded-xl p-3 text-center border transition-all',
+                  currentChannel === opt.value
+                    ? 'bg-[#67e8f9]/10 border-[#67e8f9]/30 text-[#67e8f9]'
+                    : 'bg-[#0f1a2e] border-white/[0.07] text-slate-400 hover:bg-white/[0.04]'
+                )}
+              >
+                <p className="text-sm font-semibold">{opt.label}</p>
+                <p className="text-[10px] mt-0.5 opacity-70">{opt.desc}</p>
+              </button>
+            ))}
+          </div>
+          {(currentChannel === 'email' || currentChannel === 'both') && (
+            <div className="mt-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
+              <p className="text-xs text-amber-400">Make sure your email address is set in your profile for email notifications to work.</p>
+            </div>
+          )}
+        </div>
+
         {sections.map(section => (
           <div key={section.title}>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1 mb-2">{section.title}</p>
@@ -789,7 +831,7 @@ function CreateTeamPage({ onBack }: { onBack: () => void }) {
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#67e8f9] text-[#080c14] font-bold text-sm hover:bg-[#67e8f9]/90 transition-all"
         >
           <ExternalLink size={15} />
-          Create Team on AlignApps.com
+          Create Team on ALIGN Apps
         </a>
       </div>
 
@@ -858,7 +900,7 @@ function FeatureRequestPage({ currentPlayer, onBack }: { currentPlayer: Player |
           to: ['info@alignapps.com'],
           subject: `Feature Request: ${title.trim()}`,
           body: `Title: ${title.trim()}\n\nDescription:\n${description.trim()}\n\nReason:\n${reason.trim()}\n\nContact: ${email.trim() || 'Not provided'}`,
-          teamName: 'Align Sports Web',
+          teamName: 'ALIGN Sports Web',
         }),
       });
       setSubmitted(true);
@@ -941,7 +983,7 @@ function ReportBugPage({ currentPlayer, onBack }: { currentPlayer: Player | null
           to: ['info@alignapps.com'],
           subject: `Bug Report: ${title.trim()}`,
           body: `Title: ${title.trim()}\n\nDescription:\n${description.trim()}\n\nSteps to Reproduce:\n${steps.trim() || 'Not provided'}\n\nPlatform: Web\nContact: ${email.trim() || 'Not provided'}`,
-          teamName: 'Align Sports Web',
+          teamName: 'ALIGN Sports Web',
         }),
       });
       setSubmitted(true);
@@ -1644,7 +1686,7 @@ export default function MorePage() {
           <MenuItem icon={BarChart3} iconBg="bg-[#a78bfa]/10" iconColor="text-[#a78bfa]" label="Stats" sub="View and edit player statistics" onClick={() => router.push('/app/stats')} />
         )}
         {isPremium && (
-          <MenuItem icon={Crown} iconBg="bg-amber-500/10" iconColor="text-amber-400" label="Coach Insights" sub="Engagement scores, flake factor & deep dives" onClick={() => router.push('/app/coach-insights')} />
+          <MenuItem icon={Crown} iconBg="bg-amber-500/10" iconColor="text-amber-400" label="Coach Insights" sub="Reliability factor & deep dives" onClick={() => router.push('/app/coach-insights')} />
         )}
         <MenuItem icon={TrendingUp} iconBg="bg-[#a78bfa]/10" iconColor="text-[#a78bfa]" label="Analytics" sub="Attendance and team statistics" onClick={() => router.push('/app/attendance')} last={!showRecords} />
         {showRecords && (
@@ -1678,7 +1720,7 @@ export default function MorePage() {
         </button>
       </div>
 
-      <p className="text-center text-xs text-slate-700 pb-6">AlignApps © {new Date().getFullYear()}</p>
+      <p className="text-center text-xs text-slate-700 pb-6">ALIGN Apps © {new Date().getFullYear()}</p>
 
       {/* Edit profile modal */}
       <AddEditPlayerModal

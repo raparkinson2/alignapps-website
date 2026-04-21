@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Plus, ChevronDown, CalendarDays, List, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronDown, CalendarDays, List, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { useTeamStore } from '@/lib/store';
 import { usePermissions } from '@/hooks/usePermissions';
 import { pushGameResponseToSupabase, pushEventResponseToSupabase } from '@/lib/realtime-sync';
@@ -11,6 +11,7 @@ import AddGameModal from '@/components/schedule/AddGameModal';
 import AddEventModal from '@/components/schedule/AddEventModal';
 import AddPracticeModal from '@/components/schedule/AddPracticeModal';
 import LineupModal from '@/components/schedule/LineupModal';
+import ImportScheduleModal from '@/components/admin/ImportScheduleModal';
 import { cn } from '@/lib/utils';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import type { Game, Event, TeamSettings, Player } from '@/lib/types';
@@ -285,6 +286,7 @@ export default function SchedulePage() {
   const [editingPractice, setEditingPractice] = useState<Event | null>(null);
   const [lineupGame, setLineupGame] = useState<Game | null>(null);
   const [showPast, setShowPast] = useState(false);
+  const [showScheduleImport, setShowScheduleImport] = useState(false);
 
   const today = todayStr();
 
@@ -365,6 +367,13 @@ export default function SchedulePage() {
           {/* Add buttons (admin only) */}
           {isAdmin && (
             <>
+              <button
+                onClick={() => setShowScheduleImport(true)}
+                className="p-2 rounded-xl bg-white/[0.05] border border-white/10 text-orange-400 hover:bg-orange-500/10 transition-all"
+                title="Import Schedule from CSV"
+              >
+                <Upload size={15} />
+              </button>
               <button
                 onClick={() => { setEditingGame(null); setShowAddGame(true); }}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#67e8f9]/10 border border-[#67e8f9]/20 text-[#67e8f9] text-sm font-medium hover:bg-[#67e8f9]/20 transition-all"
@@ -522,6 +531,8 @@ export default function SchedulePage() {
           isAdmin={isAdmin}
         />
       )}
+
+      <ImportScheduleModal isOpen={showScheduleImport} onClose={() => setShowScheduleImport(false)} />
     </div>
   );
 }

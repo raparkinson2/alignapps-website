@@ -601,7 +601,7 @@ export default function HomePage() {
           </div>
 
           <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-            <p className="text-xs text-slate-500">© 2025 Align Sports. All rights reserved.</p>
+            <p className="text-xs text-slate-500">© 2025 ALIGN Sports. All rights reserved.</p>
             <p className="text-xs text-slate-600">
               <a href="mailto:info@alignapps.com" className="hover:text-slate-400 transition-colors">info@alignapps.com</a>
               {' · '}

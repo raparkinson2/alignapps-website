@@ -39,6 +39,7 @@ function mapTeamSettings(t: any): TeamSettings {
     stripeAccountId: t.stripe_account_id || undefined,
     stripeOnboardingComplete: t.stripe_onboarding_complete ?? false,
     isPremium: t.is_premium ?? false,
+    autoRemindersEnabled: t.auto_reminders_enabled ?? true,
   };
 }
 
@@ -62,7 +63,7 @@ function mapPlayer(p: any): Player {
     stats: p.stats || {},
     goalieStats: p.goalie_stats || {},
     pitcherStats: p.pitcher_stats || {},
-    gameLogs: p.game_logs || [],
+    gameLogs: [], // Populated separately from game_logs table
     password: p.password || undefined,
     associatedPlayerId: p.associated_player_id || undefined,
   };
@@ -94,6 +95,8 @@ function mapGame(g: any): Game {
     finalScoreThem: g.final_score_them ?? undefined,
     gameResult: g.game_result || undefined,
     resultRecorded: g.result_recorded || false,
+    liveScoreUs: g.live_score_us ?? undefined,
+    liveScoreThem: g.live_score_them ?? undefined,
     checkedInPlayers: [],
     checkedOutPlayers: [],
     invitedPlayers: [],
@@ -159,17 +162,37 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
     for (const p of rawPlayers) playerMap.set(p.id, p);
     const players = Array.from(playerMap.values());
 
-    // Fetch game + event responses in parallel now that we have the IDs
+    // Fetch game + event responses + game logs in parallel now that we have the IDs
+    const playerIds = players.map(p => p.id);
     const gameIds = (gamesData || []).map((g: any) => g.id);
     const eventIds = (eventsData || []).map((e: any) => e.id);
-    const [{ data: grData }, { data: erData }] = await Promise.all([
+    const [{ data: grData }, { data: erData }, { data: gameLogsData }] = await Promise.all([
       gameIds.length > 0
         ? supabase.from('game_responses').select('*').in('game_id', gameIds)
         : Promise.resolve({ data: [] }),
       eventIds.length > 0
         ? supabase.from('event_responses').select('*').in('event_id', eventIds)
         : Promise.resolve({ data: [] }),
+      playerIds.length > 0
+        ? supabase.from('game_logs').select('*').in('player_id', playerIds)
+        : Promise.resolve({ data: [] }),
     ]);
+
+    // Attach game logs to players
+    const gameLogsByPlayer: Record<string, any[]> = {};
+    for (const gl of gameLogsData || []) {
+      if (!gameLogsByPlayer[gl.player_id]) gameLogsByPlayer[gl.player_id] = [];
+      gameLogsByPlayer[gl.player_id].push({
+        id: gl.id,
+        gameId: gl.game_id || undefined,
+        date: gl.date,
+        stats: gl.stats || {},
+        statType: gl.stat_type,
+      });
+    }
+    for (const p of players) {
+      (p as any).gameLogs = gameLogsByPlayer[p.id] || [];
+    }
 
     const gameResponsesMap: Record<string, { in: string[]; out: string[]; invited: string[]; notes: Record<string, string>; viewed: string[] }> = {};
     for (const r of grData || []) {
@@ -204,6 +227,8 @@ export async function loadTeamFromSupabase(teamId: string): Promise<boolean> {
       message: m.message || '', imageUrl: m.image_url || undefined, gifUrl: m.gif_url || undefined,
       gifWidth: m.gif_width || undefined, gifHeight: m.gif_height || undefined,
       mentionedPlayerIds: m.mentioned_player_ids || [], mentionType: m.mention_type || undefined,
+      reactions: m.reactions || undefined,
+      replyToId: m.reply_to_id || undefined, replyToText: m.reply_to_text || undefined, replyToSender: m.reply_to_sender || undefined,
       createdAt: m.created_at,
     }));
 
@@ -474,9 +499,25 @@ export function startRealtimeSync(teamId: string): void {
         message: m.message || '', imageUrl: m.image_url || undefined, gifUrl: m.gif_url || undefined,
         gifWidth: m.gif_width || undefined, gifHeight: m.gif_height || undefined,
         mentionedPlayerIds: m.mentioned_player_ids || [], mentionType: m.mention_type || undefined,
+        reactions: m.reactions || undefined,
+        replyToId: m.reply_to_id || undefined, replyToText: m.reply_to_text || undefined, replyToSender: m.reply_to_sender || undefined,
         createdAt: m.created_at,
       };
       useTeamStore.setState({ chatMessages: [...store.chatMessages, msg] });
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_messages', filter: `team_id=eq.${teamId}` }, (payload) => {
+      const store = useTeamStore.getState();
+      const m = payload.new as any;
+      const updated: ChatMessage = {
+        id: m.id, senderId: m.sender_id, senderName: m.sender_name || undefined,
+        message: m.message || '', imageUrl: m.image_url || undefined, gifUrl: m.gif_url || undefined,
+        gifWidth: m.gif_width || undefined, gifHeight: m.gif_height || undefined,
+        mentionedPlayerIds: m.mentioned_player_ids || [], mentionType: m.mention_type || undefined,
+        reactions: m.reactions || undefined,
+        replyToId: m.reply_to_id || undefined, replyToText: m.reply_to_text || undefined, replyToSender: m.reply_to_sender || undefined,
+        createdAt: m.created_at,
+      };
+      useTeamStore.setState({ chatMessages: store.chatMessages.map((msg) => msg.id === updated.id ? updated : msg) });
     })
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (payload) => {
       const store = useTeamStore.getState();
@@ -559,6 +600,40 @@ export function startRealtimeSync(teamId: string): void {
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'direct_messages' }, (payload) => {
       const store = useTeamStore.getState();
       useTeamStore.setState({ directMessages: store.directMessages.filter((dm) => dm.id !== payload.old.id) });
+    })
+
+    // ── GAME LOGS ─────────────────────────────────────────────────────────────
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'game_logs', filter: `team_id=eq.${teamId}` }, (payload) => {
+      const store = useTeamStore.getState();
+      const gl = payload.new as any;
+      const entry = { id: gl.id, gameId: gl.game_id || undefined, date: gl.date, stats: gl.stats || {}, statType: gl.stat_type };
+      const players = store.players.map(p => {
+        if (p.id !== gl.player_id) return p;
+        if ((p.gameLogs || []).some((g: any) => g.id === gl.id)) return p;
+        return { ...p, gameLogs: [...(p.gameLogs || []), entry] };
+      });
+      useTeamStore.setState({ players });
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'game_logs', filter: `team_id=eq.${teamId}` }, (payload) => {
+      const store = useTeamStore.getState();
+      const gl = payload.new as any;
+      const entry = { id: gl.id, gameId: gl.game_id || undefined, date: gl.date, stats: gl.stats || {}, statType: gl.stat_type };
+      const players = store.players.map(p => {
+        if (p.id !== gl.player_id) return p;
+        return { ...p, gameLogs: (p.gameLogs || []).map((g: any) => g.id === gl.id ? entry : g) };
+      });
+      useTeamStore.setState({ players });
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'game_logs' }, (payload) => {
+      const store = useTeamStore.getState();
+      const oldId = payload.old?.id;
+      if (!oldId) return;
+      const players = store.players.map(p => {
+        const filtered = (p.gameLogs || []).filter((g: any) => g.id !== oldId);
+        if (filtered.length === (p.gameLogs || []).length) return p;
+        return { ...p, gameLogs: filtered };
+      });
+      useTeamStore.setState({ players });
     });
 
   channel.subscribe((status) => {
@@ -634,6 +709,7 @@ export async function pushGameToSupabase(game: Game, teamId: string): Promise<vo
       invite_release_date: game.inviteReleaseDate || null, invites_sent: game.invitesSent || false,
       final_score_us: game.finalScoreUs ?? null, final_score_them: game.finalScoreThem ?? null,
       game_result: game.gameResult || null, result_recorded: game.resultRecorded || false,
+      live_score_us: game.liveScoreUs ?? null, live_score_them: game.liveScoreThem ?? null,
     }, { onConflict: 'id' });
     if (error) console.error('SYNC: pushGameToSupabase error:', error.message);
   } catch (err) { console.error('SYNC: pushGameToSupabase error:', err); }
@@ -743,6 +819,7 @@ export async function pushChatMessageToSupabase(message: ChatMessage, teamId: st
       image_url: message.imageUrl || null, gif_url: message.gifUrl || null,
       gif_width: message.gifWidth || null, gif_height: message.gifHeight || null,
       mentioned_player_ids: message.mentionedPlayerIds || [], mention_type: message.mentionType || null,
+      reply_to_id: message.replyToId || null, reply_to_text: message.replyToText || null, reply_to_sender: message.replyToSender || null,
       created_at: message.createdAt,
     });
     if (error) console.error('SYNC: pushChatMessageToSupabase error:', error.message);
@@ -753,6 +830,26 @@ export async function deleteChatMessageFromSupabase(messageId: string): Promise<
   try {
     await getSupabaseClient().from('chat_messages').delete().eq('id', messageId);
   } catch (err) { console.error('SYNC: deleteChatMessageFromSupabase error:', err); }
+}
+
+export async function toggleChatReaction(
+  messageId: string,
+  emoji: string,
+  playerId: string,
+  currentReactions: Record<string, string[]> | undefined
+): Promise<void> {
+  try {
+    const reactions = { ...(currentReactions || {}) };
+    const existing = reactions[emoji] || [];
+    if (existing.includes(playerId)) {
+      reactions[emoji] = existing.filter((id) => id !== playerId);
+      if (reactions[emoji]!.length === 0) delete reactions[emoji];
+    } else {
+      reactions[emoji] = [...existing, playerId];
+    }
+    const { error } = await getSupabaseClient().from('chat_messages').update({ reactions }).eq('id', messageId);
+    if (error) console.error('SYNC: toggleChatReaction error:', error.message);
+  } catch (err) { console.error('SYNC: toggleChatReaction error:', err); }
 }
 
 export async function pushPlayerToSupabase(player: Player, teamId: string): Promise<{ success: boolean; error?: string }> {
@@ -766,7 +863,6 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
       is_injured: player.isInjured || false, is_suspended: player.isSuspended || false,
       status_end_date: player.statusEndDate || null, unavailable_dates: player.unavailableDates || [],
       stats: player.stats || {}, goalie_stats: player.goalieStats || {}, pitcher_stats: player.pitcherStats || {},
-      game_logs: player.gameLogs || [],
     }, { onConflict: 'id' });
     if (error) {
       console.error('SYNC: pushPlayerToSupabase error:', error.message);
@@ -777,6 +873,52 @@ export async function pushPlayerToSupabase(player: Player, teamId: string): Prom
     const msg = err instanceof Error ? err.message : 'Unknown error';
     console.error('SYNC: pushPlayerToSupabase error:', msg);
     return { success: false, error: msg };
+  }
+}
+
+// ─── Game Log CRUD (dedicated game_logs table) ─────────────────────────────
+
+export async function pushGameLogToSupabase(
+  gameLog: { id: string; gameId?: string; date: string; stats: any; statType: string },
+  playerId: string,
+  teamId: string
+): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('game_logs').upsert({
+      id: gameLog.id,
+      player_id: playerId,
+      team_id: teamId,
+      game_id: gameLog.gameId || null,
+      date: gameLog.date,
+      stats: gameLog.stats || {},
+      stat_type: gameLog.statType,
+    }, { onConflict: 'id' });
+    if (error) console.error('SYNC: pushGameLogToSupabase error:', error.message);
+  } catch (err) {
+    console.error('SYNC: pushGameLogToSupabase error:', err);
+  }
+}
+
+export async function updateGameLogInSupabase(
+  gameLogId: string,
+  updates: { stats?: any; date?: string; game_id?: string }
+): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from('game_logs').update(updates).eq('id', gameLogId);
+    if (error) console.error('SYNC: updateGameLogInSupabase error:', error.message);
+  } catch (err) {
+    console.error('SYNC: updateGameLogInSupabase error:', err);
+  }
+}
+
+export async function deleteGameLogFromSupabase(gameLogId: string): Promise<void> {
+  try {
+    const { error } = await getSupabaseClient().from('game_logs').delete().eq('id', gameLogId);
+    if (error) console.error('SYNC: deleteGameLogFromSupabase error:', error.message);
+  } catch (err) {
+    console.error('SYNC: deleteGameLogFromSupabase error:', err);
   }
 }
 
@@ -834,6 +976,7 @@ export async function pushTeamSettingsToSupabase(teamId: string, teamName: strin
       is_softball: settings.isSoftball ?? false, jersey_colors: settings.jerseyColors,
       payment_methods: settings.paymentMethods, current_season_name: settings.currentSeasonName || null,
       season_history: settings.seasonHistory || [], championships: settings.championships || [],
+      auto_reminders_enabled: settings.autoRemindersEnabled ?? true,
       // Note: is_premium is intentionally NOT written here — it's managed by the RevenueCat/subscription flow only
     }, { onConflict: 'id' });
   } catch (err) { console.error('SYNC: pushTeamSettingsToSupabase error:', err); }

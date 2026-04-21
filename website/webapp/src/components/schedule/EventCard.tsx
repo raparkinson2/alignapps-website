@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MapPin, Pencil, CheckCircle2, XCircle, Circle, UserPlus, Send, X, ChevronDown, ChevronUp, Eye } from 'lucide-react';
+import { MapPin, Pencil, CheckCircle2, XCircle, Circle, UserPlus, Send, X, ChevronDown, ChevronUp, Eye, CalendarPlus } from 'lucide-react';
 import { cn, getDateLabel, formatTime, EVENT_TYPE_COLORS, EVENT_TYPE_LABELS } from '@/lib/utils';
 import { pushEventToSupabase, pushEventResponseToSupabase } from '@/lib/realtime-sync';
 import { useTeamStore } from '@/lib/store';
@@ -187,6 +187,36 @@ export default function EventCard({
     if ((event.declinedPlayers ?? []).includes(playerId))
       return <XCircle size={16} className="text-rose-400 shrink-0" />;
     return <Circle size={16} className="text-slate-500 shrink-0" />;
+  };
+
+  const handleAddToCalendar = () => {
+    const dateDigits = event.date.replace(/-/g, '').slice(0, 8);
+    const timeDigits = event.time ? event.time.replace(/:/g, '').padEnd(6, '0') : '';
+    const dtstart = timeDigits ? `${dateDigits}T${timeDigits}` : dateDigits;
+    const locationParts: string[] = [];
+    if (event.location) locationParts.push(event.location);
+    if (event.address) locationParts.push(event.address);
+    const icsLines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//ALIGN Sports//Event//EN',
+      'BEGIN:VEVENT',
+      `UID:event-${event.id}@alignsports`,
+      timeDigits ? `DTSTART:${dtstart}` : `DTSTART;VALUE=DATE:${dtstart}`,
+      `SUMMARY:${event.title} (${event.type})`,
+      ...(locationParts.length > 0 ? [`LOCATION:${locationParts.join(', ')}`] : []),
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ];
+    const blob = new Blob([icsLines.join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${event.title.replace(/\s+/g, '-')}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -396,6 +426,15 @@ export default function EventCard({
             </button>
           </div>
         )}
+
+        {/* Add to Calendar */}
+        <button
+          onClick={handleAddToCalendar}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium transition-all border border-white/10 text-slate-500 hover:text-slate-300 hover:bg-white/10 mt-2"
+        >
+          <CalendarPlus size={13} />
+          Add to Calendar
+        </button>
       </div>
 
       {/* Invite More modal */}
