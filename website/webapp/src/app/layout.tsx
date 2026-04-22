@@ -35,12 +35,24 @@ export const metadata: Metadata = {
     icon: '/favicon.png',
     apple: '/favicon.png',
   },
+  alternates: {
+    canonical: 'https://alignapps.com',
+  },
   openGraph: {
     type: 'website',
     siteName: 'ALIGN Sports',
     title: 'ALIGN Sports — Team Management App for Coaches & Captains',
     description: 'The free all-in-one team management app for recreational and youth sports. Schedules, rosters, lineups, payments, chat, and stats — in one place.',
     url: 'https://alignapps.com',
+    locale: 'en_US',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'ALIGN Sports — Team management for recreational and youth sports',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
@@ -48,10 +60,18 @@ export const metadata: Metadata = {
     creator: '@ALIGNSportsApp',
     title: 'ALIGN Sports — Team Management App for Coaches & Captains',
     description: 'The free all-in-one team management app for recreational and youth sports. Schedules, rosters, lineups, payments, chat, and stats — in one place.',
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
   },
 };
 

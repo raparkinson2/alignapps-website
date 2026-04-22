@@ -4,6 +4,22 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: { absolute: 'Terms of Service — ALIGN Sports Team Management App' },
   description: 'Read the ALIGN Sports terms of service for using our team management platform.',
+  alternates: {
+    canonical: 'https://alignapps.com/terms',
+  },
+  openGraph: {
+    title: 'Terms of Service — ALIGN Sports',
+    description: 'Terms of service for using the ALIGN Sports team management platform.',
+    url: 'https://alignapps.com/terms',
+    type: 'website',
+    siteName: 'ALIGN Sports',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@ALIGNSportsApp',
+    title: 'Terms of Service — ALIGN Sports',
+    description: 'Terms of service for using the ALIGN Sports team management platform.',
+  },
 };
 
 function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
@@ -44,6 +60,17 @@ function Divider() {
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-bg-base text-slate-100">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://alignapps.com' },
+            { '@type': 'ListItem', position: 2, name: 'Terms of Service', item: 'https://alignapps.com/terms' },
+          ],
+        }) }}
+      />
       <div className="max-w-2xl mx-auto px-6 py-20">
         <Link href="/" className="inline-flex items-center gap-2 text-cyan-400 text-sm font-medium mb-10 hover:opacity-80 transition-opacity">
           ← Back to home

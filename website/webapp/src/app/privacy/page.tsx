@@ -4,6 +4,22 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: { absolute: 'Privacy Policy — ALIGN Sports Team Management App' },
   description: 'Read the ALIGN Sports privacy policy to understand how we collect, use, and protect your team data.',
+  alternates: {
+    canonical: 'https://alignapps.com/privacy',
+  },
+  openGraph: {
+    title: 'Privacy Policy — ALIGN Sports',
+    description: 'How ALIGN Sports collects, uses, and protects your team data.',
+    url: 'https://alignapps.com/privacy',
+    type: 'website',
+    siteName: 'ALIGN Sports',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@ALIGNSportsApp',
+    title: 'Privacy Policy — ALIGN Sports',
+    description: 'How ALIGN Sports collects, uses, and protects your team data.',
+  },
 };
 
 function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
@@ -49,6 +65,17 @@ function Divider() {
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-bg-base text-slate-100">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://alignapps.com' },
+            { '@type': 'ListItem', position: 2, name: 'Privacy Policy', item: 'https://alignapps.com/privacy' },
+          ],
+        }) }}
+      />
       <div className="max-w-2xl mx-auto px-6 py-20">
         <Link href="/" className="inline-flex items-center gap-2 text-cyan-400 text-sm font-medium mb-10 hover:opacity-80 transition-opacity">
           ← Back to home
