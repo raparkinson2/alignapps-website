@@ -92,7 +92,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             email: 'info@alignapps.com',
             description: 'ALIGN Sports builds free team management software for recreational and youth sports coaches, captains, and organizers.',
             sameAs: [
-              'https://apps.apple.com/us/app/align-sports/id6743450598',
               'https://www.instagram.com/alignsports.app/',
               'https://x.com/ALIGNSportsApp',
             ],
@@ -108,7 +107,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             applicationCategory: 'SportsApplication',
             description: 'Free team management app for recreational and youth sports. Manage schedules, rosters, lineups, stats, payments, and team chat in one place.',
             url: 'https://alignapps.com',
-            downloadUrl: 'https://apps.apple.com/us/app/align-sports/id6743450598',
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
             featureList: 'Schedule management, RSVP tracking, Roster management, Team chat with GIF support, Stats tracking, Payment tracking, Sport-specific lineups, Team photo gallery, Push notifications, Multiple team support',
           }) }}
