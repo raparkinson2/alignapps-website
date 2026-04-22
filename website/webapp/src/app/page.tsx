@@ -602,12 +602,34 @@ export default function HomePage() {
 
           <div className="mb-10">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Follow</p>
-            <ul className="flex items-center gap-4">
+            <ul className="flex items-center gap-3">
               <li>
-                <a href="https://www.instagram.com/alignsports.app/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Instagram</a>
+                <a
+                  href="https://www.instagram.com/alignsports.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow ALIGN Sports on Instagram"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] text-slate-400 hover:text-slate-100 hover:border-[#67e8f9]/30 transition-colors"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2.2c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.73 3.73 0 0 1-1.38-.9 3.73 3.73 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.21 15.58 2.2 15.2 2.2 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.21 8.8 2.2 12 2.2Zm0 1.98c-3.14 0-3.51.01-4.75.07-.94.04-1.45.2-1.79.33-.45.17-.77.38-1.11.72-.34.34-.55.66-.72 1.11-.13.34-.29.85-.33 1.79-.06 1.24-.07 1.61-.07 4.75s.01 3.51.07 4.75c.04.94.2 1.45.33 1.79.17.45.38.77.72 1.11.34.34.66.55 1.11.72.34.13.85.29 1.79.33 1.24.06 1.61.07 4.75.07s3.51-.01 4.75-.07c.94-.04 1.45-.2 1.79-.33.45-.17.77-.38 1.11-.72.34-.34.55-.66.72-1.11.13-.34.29-.85.33-1.79.06-1.24.07-1.61.07-4.75s-.01-3.51-.07-4.75c-.04-.94-.2-1.45-.33-1.79a2.99 2.99 0 0 0-.72-1.11 2.99 2.99 0 0 0-1.11-.72c-.34-.13-.85-.29-1.79-.33-1.24-.06-1.61-.07-4.75-.07Zm0 3.37a4.45 4.45 0 1 1 0 8.9 4.45 4.45 0 0 1 0-8.9Zm0 1.98a2.47 2.47 0 1 0 0 4.94 2.47 2.47 0 0 0 0-4.94Zm4.67-2.09a1.04 1.04 0 1 1 0 2.08 1.04 1.04 0 0 1 0-2.08Z" />
+                  </svg>
+                  <span className="text-sm">Instagram</span>
+                </a>
               </li>
               <li>
-                <a href="https://x.com/ALIGNSportsApp" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">X (Twitter)</a>
+                <a
+                  href="https://x.com/ALIGNSportsApp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow ALIGN Sports on X (formerly Twitter)"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] text-slate-400 hover:text-slate-100 hover:border-[#67e8f9]/30 transition-colors"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  <span className="text-sm">X</span>
+                </a>
               </li>
             </ul>
           </div>
