@@ -600,6 +600,18 @@ export default function HomePage() {
             </div>
           </div>
 
+          <div className="mb-10">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Follow</p>
+            <ul className="flex items-center gap-4">
+              <li>
+                <a href="https://www.instagram.com/alignsports.app/" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Instagram</a>
+              </li>
+              <li>
+                <a href="https://x.com/ALIGNSportsApp" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">X (Twitter)</a>
+              </li>
+            </ul>
+          </div>
+
           <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             <p className="text-xs text-slate-500">© 2025 ALIGN Sports. All rights reserved.</p>
             <p className="text-xs text-slate-600">
