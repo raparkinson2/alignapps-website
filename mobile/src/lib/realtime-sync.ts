@@ -17,6 +17,7 @@ import { BACKEND_URL } from './config';
 import { fetchAndSaveWeather, fetchAndSaveEventWeather } from './weather-service';
 import { getAllCachedWeather } from './weather-cache';
 import { enqueueMutation } from './mutation-queue';
+import { adaptLegacySoccerLineup } from './soccer-lineup-adapter';
 
 // Suppress realtime payment refetches for a short window after a local push
 // to prevent the "appear → disappear → reappear" flicker loop.
@@ -115,7 +116,7 @@ function mapGame(g: any): Game {
     basketballLineup: g.basketball_lineup || undefined,
     baseballLineup: g.baseball_lineup || undefined,
     battingOrderLineup: g.batting_order_lineup || undefined,
-    soccerLineup: g.soccer_lineup || undefined,
+    soccerLineup: adaptLegacySoccerLineup(g.soccer_lineup),
     soccerDiamondLineup: g.soccer_diamond_lineup || undefined,
     lacrosseLineup: g.lacrosse_lineup || undefined,
     inviteReleaseOption: g.invite_release_option || 'now',

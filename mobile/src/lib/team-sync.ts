@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { Team, Player, Game, Event, Photo, TeamSettings } from './store';
 import { uploadPhotoToStorage, uploadPhotoToStorageBase64 } from './photo-storage';
+import { adaptLegacySoccerLineup } from './soccer-lineup-adapter';
 
 /**
  * Team Sync Service
@@ -385,7 +386,7 @@ export async function downloadTeamFromSupabase(teamId: string): Promise<{
         lineup: g.hockey_lineup,
         basketballLineup: g.basketball_lineup,
         baseballLineup: g.baseball_lineup,
-        soccerLineup: g.soccer_lineup,
+        soccerLineup: adaptLegacySoccerLineup(g.soccer_lineup),
         soccerDiamondLineup: g.soccer_diamond_lineup,
         inviteReleaseOption: g.invite_release_option || 'now',
         inviteReleaseDate: g.invite_release_date,

@@ -45,9 +45,9 @@ export function SoccerFormationModal({ visible, onClose, gameId, onSelectFormati
                   : 'bg-slate-800/60 border-slate-700/50'
               )}
             >
-              <Text className="text-white text-lg font-semibold mb-2">4-4-2</Text>
+              <Text className="text-white text-lg font-semibold mb-2">Custom Formation</Text>
               <Text className="text-slate-400 text-sm mb-4">
-                Classic formation with 4 defenders, 4 midfielders, and 2 strikers
+                Build your own — set defenders, midfielders, and forwards
               </Text>
               {/* Visual representation */}
               <View className="bg-slate-700/30 rounded-xl p-4">

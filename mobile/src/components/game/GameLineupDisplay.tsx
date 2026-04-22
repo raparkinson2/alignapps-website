@@ -448,106 +448,70 @@ export function GameLineupDisplay({
                 onPress={canManageTeam() ? onOpenSoccerLineupModal : undefined}
                 className="px-4 pb-4 active:bg-emerald-500/30"
               >
-                {/* Forwards Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Forwards</Text>
-                <View className="flex-row justify-center gap-6 mb-3">
-                  {['st1', 'st2'].map((pos) => {
-                    const playerId = game.soccerLineup![pos as keyof SoccerLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={pos} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">ST</Text>
+                {(() => {
+                  const sl = game.soccerLineup!;
+                  const renderRow = (ids: (string | undefined)[], count: number, prefix: string) => (
+                    <View className="flex-row flex-wrap justify-around mb-3">
+                      {ids.slice(0, count).map((pid, i) => {
+                        const player = pid ? players.find((p) => p.id === pid) : null;
+                        return (
+                          <View key={`${prefix}-${i}`} className="items-center">
+                            {player ? (
+                              <>
+                                <PlayerAvatar player={player} size={32} />
+                                <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
+                              </>
+                            ) : (
+                              <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                                <Text className="text-slate-500 text-[10px]">{prefix}{i + 1}</Text>
+                              </View>
+                            )}
                           </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
+                        );
+                      })}
+                    </View>
+                  );
+                  const gkPlayer = sl.gk ? players.find((p) => p.id === sl.gk) : null;
+                  return (
+                    <>
+                      <Text className="text-slate-400 text-xs mb-2">Forwards</Text>
+                      {renderRow(sl.forwards, sl.numForwards, 'F')}
 
-                {/* Midfield Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Midfield</Text>
-                <View className="flex-row justify-around mb-3">
-                  {[
-                    { key: 'lm', label: 'LM' },
-                    { key: 'cm1', label: 'CM' },
-                    { key: 'cm2', label: 'CM' },
-                    { key: 'rm', label: 'RM' },
-                  ].map(({ key, label }) => {
-                    const playerId = game.soccerLineup![key as keyof SoccerLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={key} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">{label}</Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
+                      {sl.numAttMidfielders > 0 && (
+                        <>
+                          <Text className="text-slate-400 text-xs mb-2">Att. Midfielders</Text>
+                          {renderRow(sl.attMidfielders, sl.numAttMidfielders, 'AM')}
+                        </>
+                      )}
 
-                {/* Defense Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Defense</Text>
-                <View className="flex-row justify-around mb-3">
-                  {[
-                    { key: 'lb', label: 'LB' },
-                    { key: 'cb1', label: 'CB' },
-                    { key: 'cb2', label: 'CB' },
-                    { key: 'rb', label: 'RB' },
-                  ].map(({ key, label }) => {
-                    const playerId = game.soccerLineup![key as keyof SoccerLineup];
-                    const player = playerId ? players.find((p) => p.id === playerId) : null;
-                    return (
-                      <View key={key} className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">{label}</Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
+                      {sl.numDefMidfielders > 0 && (
+                        <>
+                          <Text className="text-slate-400 text-xs mb-2">Def. Midfielders</Text>
+                          {renderRow(sl.defMidfielders, sl.numDefMidfielders, 'DM')}
+                        </>
+                      )}
 
-                {/* Goalkeeper Preview */}
-                <Text className="text-slate-400 text-xs mb-2">Goalkeeper</Text>
-                <View className="flex-row justify-center">
-                  {(() => {
-                    const player = game.soccerLineup!.gk ? players.find((p) => p.id === game.soccerLineup!.gk) : null;
-                    return (
-                      <View className="items-center">
-                        {player ? (
-                          <>
-                            <PlayerAvatar player={player} size={32} />
-                            <Text className="text-white text-xs mt-0.5">#{player.number}</Text>
-                          </>
-                        ) : (
-                          <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
-                            <Text className="text-slate-500 text-[10px]">GK</Text>
-                          </View>
-                        )}
+                      <Text className="text-slate-400 text-xs mb-2">Defenders</Text>
+                      {renderRow(sl.defenders, sl.numDefenders, 'D')}
+
+                      <Text className="text-slate-400 text-xs mb-2">Goalkeeper</Text>
+                      <View className="flex-row justify-center">
+                        <View className="items-center">
+                          {gkPlayer ? (
+                            <>
+                              <PlayerAvatar player={gkPlayer} size={32} />
+                              <Text className="text-white text-xs mt-0.5">#{gkPlayer.number}</Text>
+                            </>
+                          ) : (
+                            <View className="w-8 h-8 rounded-full bg-slate-700/50 items-center justify-center">
+                              <Text className="text-slate-500 text-[10px]">GK</Text>
+                            </View>
+                          )}
+                        </View>
                       </View>
-                    );
-                  })()}
-                </View>
+                    </>
+                  );
+                })()}
               </Pressable>
             )}
           </View>

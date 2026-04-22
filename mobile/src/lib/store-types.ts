@@ -473,19 +473,36 @@ export interface BattingOrderLineup {
   numHitters: number; // 9 for baseball, 10+ for softball (with extra hitter option)
 }
 
-// Soccer Lineup Types (11 starters)
+// Legacy flat 4-4-2 shape — kept so the adapter can parse old persisted/synced data.
+export interface LegacySoccerLineup {
+  gk?: string;
+  lb?: string;
+  cb1?: string;
+  cb2?: string;
+  rb?: string;
+  lm?: string;
+  cm1?: string;
+  cm2?: string;
+  rm?: string;
+  st1?: string;
+  st2?: string;
+}
+
+// Soccer Custom Formation (basketball-style configurable rows).
+// GK is always 1 (mandatory). Outfield rows: Defenders, Def Midfielders, Att Midfielders, Forwards.
+// Constraint: defenders + defMids + attMids + forwards = 10 (10 outfield + 1 GK = 11 starters).
 export interface SoccerLineup {
-  gk?: string;  // Goalkeeper
-  lb?: string;  // Left Back
-  cb1?: string; // Center Back 1
-  cb2?: string; // Center Back 2
-  rb?: string;  // Right Back
-  lm?: string;  // Left Midfield
-  cm1?: string; // Center Midfield 1
-  cm2?: string; // Center Midfield 2
-  rm?: string;  // Right Midfield
-  st1?: string; // Striker 1
-  st2?: string; // Striker 2
+  gk?: string;
+  defenders: (string | undefined)[];
+  defMidfielders: (string | undefined)[];
+  attMidfielders: (string | undefined)[];
+  forwards: (string | undefined)[];
+  bench: (string | undefined)[];
+  numDefenders: number;
+  numDefMidfielders: number;
+  numAttMidfielders: number;
+  numForwards: number;
+  numBenchSpots: number;
 }
 
 // Soccer Diamond Midfield Lineup Types (4-1-2-1-2)

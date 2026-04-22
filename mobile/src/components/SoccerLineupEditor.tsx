@@ -1,12 +1,16 @@
+import { View, Text, Pressable, ScrollView, Modal, Platform } from 'react-native';
 import { useState, useMemo } from 'react';
-import { View, Text, Modal, Pressable, ScrollView , Platform } from 'react-native';
+import { X, Plus, Minus, User, Trash2 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Trash2 } from 'lucide-react-native';
-import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { SoccerLineup, Player, getPlayerName, getPlayerInitials } from '@/lib/store';
 import { cn } from '@/lib/cn';
+import { Player, SoccerLineup, getPlayerName } from '@/lib/store';
+import {
+  createEmptySoccerLineup,
+  formatSoccerFormation,
+  hasAssignedSoccerPlayers as hasAssigned,
+} from '@/lib/soccer-lineup-adapter';
 import { PlayerAvatar } from './PlayerAvatar';
 
 interface SoccerLineupEditorProps {
@@ -17,67 +21,45 @@ interface SoccerLineupEditorProps {
   players: Player[];
 }
 
-type PositionKey = 'gk' | 'lb' | 'cb1' | 'cb2' | 'rb' | 'lm' | 'cm1' | 'cm2' | 'rm' | 'st1' | 'st2';
+type PositionType = 'gk' | 'd' | 'dm' | 'am' | 'f' | 'bench';
+type SlotType = 'gk' | 'defender' | 'defMid' | 'attMid' | 'forward' | 'bench';
 
-const POSITION_LABELS: Record<PositionKey, string> = {
-  gk: 'GK',
-  lb: 'LB',
-  cb1: 'CB',
-  cb2: 'CB',
-  rb: 'RB',
-  lm: 'LM',
-  cm1: 'CM',
-  cm2: 'CM',
-  rm: 'RM',
-  st1: 'ST',
-  st2: 'ST',
-};
+interface PositionSlotProps {
+  playerId?: string;
+  players: Player[];
+  onSelect: () => void;
+  label: string;
+}
 
-const POSITION_NAMES: Record<PositionKey, string> = {
-  gk: 'Goalkeeper',
-  lb: 'Left Back',
-  cb1: 'Center Back',
-  cb2: 'Center Back',
-  rb: 'Right Back',
-  lm: 'Left Midfield',
-  cm1: 'Center Midfield',
-  cm2: 'Center Midfield',
-  rm: 'Right Midfield',
-  st1: 'Striker',
-  st2: 'Striker',
-};
+function PositionSlot({ playerId, players, onSelect, label }: PositionSlotProps) {
+  const player = playerId ? players.find((p) => p.id === playerId) : undefined;
 
-const createEmptyLineup = (): SoccerLineup => ({
-  gk: undefined,
-  lb: undefined,
-  cb1: undefined,
-  cb2: undefined,
-  rb: undefined,
-  lm: undefined,
-  cm1: undefined,
-  cm2: undefined,
-  rm: undefined,
-  st1: undefined,
-  st2: undefined,
-});
-
-// Helper function to check if a lineup has any assigned players
-export function hasAssignedSoccerPlayers(lineup: SoccerLineup | undefined): boolean {
-  if (!lineup) return false;
-  return !!(
-    lineup.gk ||
-    lineup.lb ||
-    lineup.cb1 ||
-    lineup.cb2 ||
-    lineup.rb ||
-    lineup.lm ||
-    lineup.cm1 ||
-    lineup.cm2 ||
-    lineup.rm ||
-    lineup.st1 ||
-    lineup.st2
+  return (
+    <Pressable onPress={onSelect} className="items-center">
+      <View
+        className={cn(
+          'w-16 h-16 rounded-full border-2 items-center justify-center overflow-hidden',
+          player ? 'border-emerald-500 bg-slate-700' : 'border-slate-600 border-dashed bg-slate-800/50'
+        )}
+      >
+        {player ? (
+          <PlayerAvatar player={player} size={60} />
+        ) : (
+          <User size={24} color="#64748b" />
+        )}
+      </View>
+      <Text className="text-slate-400 text-xs mt-1 font-medium">{label}</Text>
+      {player && (
+        <Text className="text-white text-xs font-semibold" numberOfLines={1}>
+          #{player.number}
+        </Text>
+      )}
+    </Pressable>
   );
 }
+
+// Re-export for call sites (GameCard, LineupViewerModals, etc.)
+export { hasAssigned as hasAssignedSoccerPlayers };
 
 export function SoccerLineupEditor({
   visible,
@@ -86,49 +68,161 @@ export function SoccerLineupEditor({
   initialLineup,
   players,
 }: SoccerLineupEditorProps) {
-  const [lineup, setLineup] = useState<SoccerLineup>(initialLineup || createEmptyLineup());
-  const [selectedPosition, setSelectedPosition] = useState<PositionKey | null>(null);
+  const [lineup, setLineup] = useState<SoccerLineup>(initialLineup ?? createEmptySoccerLineup());
+  const [playerSelectModal, setPlayerSelectModal] = useState<{
+    visible: boolean;
+    slotType: SlotType;
+    slotIndex: number;
+  } | null>(null);
 
-  // Get all assigned player IDs
+  // Outfield total (defenders + defMids + attMids + forwards). Must not exceed 10.
+  const outfieldCount = useMemo(
+    () =>
+      lineup.numDefenders +
+      lineup.numDefMidfielders +
+      lineup.numAttMidfielders +
+      lineup.numForwards,
+    [lineup.numDefenders, lineup.numDefMidfielders, lineup.numAttMidfielders, lineup.numForwards]
+  );
+
+  const remainingOutfield = 10 - outfieldCount;
+
   const assignedPlayerIds = useMemo(() => {
     const ids = new Set<string>();
-    Object.values(lineup).forEach((playerId) => {
-      if (playerId) ids.add(playerId);
-    });
+    if (lineup.gk) ids.add(lineup.gk);
+    lineup.defenders.forEach((id) => { if (id) ids.add(id); });
+    lineup.defMidfielders.forEach((id) => { if (id) ids.add(id); });
+    lineup.attMidfielders.forEach((id) => { if (id) ids.add(id); });
+    lineup.forwards.forEach((id) => { if (id) ids.add(id); });
+    lineup.bench.forEach((id) => { if (id) ids.add(id); });
     return ids;
   }, [lineup]);
 
-  // Available players (not assigned to any position)
-  const availablePlayers = useMemo(() => {
-    return players.filter((p) => p.status === 'active' && !assignedPlayerIds.has(p.id));
-  }, [players, assignedPlayerIds]);
+  const getPlayersForPosition = (position: PositionType) => {
+    const positionMap: Record<PositionType, string[]> = {
+      gk: ['GK', 'G'],
+      d: ['D', 'CB', 'LB', 'RB', 'DEF'],
+      dm: ['M', 'CM', 'CDM', 'LM', 'RM', 'MID'],
+      am: ['M', 'CAM', 'AM', 'LM', 'RM', 'MID'],
+      f: ['F', 'ST', 'CF', 'LW', 'RW', 'FWD'],
+      bench: [],
+    };
+    const preferred = positionMap[position];
 
-  const handlePositionSelect = (position: PositionKey) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedPosition(position);
+    return [...players].filter((p) => p.status === 'active').sort((a, b) => {
+      const aPref = position === 'bench' || preferred.includes(a.position);
+      const bPref = position === 'bench' || preferred.includes(b.position);
+      const aAssigned = assignedPlayerIds.has(a.id);
+      const bAssigned = assignedPlayerIds.has(b.id);
+
+      if (!aAssigned && !bAssigned) {
+        if (aPref && !bPref) return -1;
+        if (!aPref && bPref) return 1;
+      }
+      if (!aAssigned && bAssigned) return -1;
+      if (aAssigned && !bAssigned) return 1;
+      return 0;
+    });
   };
 
-  const handlePlayerSelect = (playerId: string) => {
-    if (!selectedPosition) return;
+  const resizeArr = (arr: (string | undefined)[], newLen: number): (string | undefined)[] => {
+    if (newLen <= arr.length) return arr.slice(0, newLen);
+    const next = [...arr];
+    while (next.length < newLen) next.push(undefined);
+    return next;
+  };
+
+  const handleConfigChange = (
+    type: 'defenders' | 'defMids' | 'attMids' | 'forwards' | 'bench',
+    delta: number
+  ) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLineup((prev) => {
+      const next: SoccerLineup = { ...prev };
+
+      if (type === 'defenders') {
+        const proposed = Math.max(3, Math.min(5, prev.numDefenders + delta));
+        if (delta > 0 && outfieldCount >= 10) return prev;
+        next.numDefenders = proposed;
+        next.defenders = resizeArr(prev.defenders, proposed);
+      } else if (type === 'defMids') {
+        const proposed = Math.max(0, Math.min(5, prev.numDefMidfielders + delta));
+        if (delta > 0 && outfieldCount >= 10) return prev;
+        next.numDefMidfielders = proposed;
+        next.defMidfielders = resizeArr(prev.defMidfielders, proposed);
+      } else if (type === 'attMids') {
+        const proposed = Math.max(0, Math.min(5, prev.numAttMidfielders + delta));
+        if (delta > 0 && outfieldCount >= 10) return prev;
+        next.numAttMidfielders = proposed;
+        next.attMidfielders = resizeArr(prev.attMidfielders, proposed);
+      } else if (type === 'forwards') {
+        const proposed = Math.max(1, Math.min(3, prev.numForwards + delta));
+        if (delta > 0 && outfieldCount >= 10) return prev;
+        next.numForwards = proposed;
+        next.forwards = resizeArr(prev.forwards, proposed);
+      } else if (type === 'bench') {
+        const proposed = Math.max(0, Math.min(15, prev.numBenchSpots + delta));
+        next.numBenchSpots = proposed;
+        next.bench = resizeArr(prev.bench, proposed);
+      }
+
+      return next;
+    });
+  };
+
+  const handleSelectPosition = (slotType: SlotType, slotIndex: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPlayerSelectModal({ visible: true, slotType, slotIndex });
+  };
+
+  const handlePlayerSelect = (playerId: string | undefined) => {
+    if (!playerSelectModal) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setLineup((prev) => ({
-      ...prev,
-      [selectedPosition]: playerId,
-    }));
-    setSelectedPosition(null);
+
+    setLineup((prev) => {
+      const next: SoccerLineup = { ...prev };
+      const { slotType, slotIndex } = playerSelectModal;
+
+      if (slotType === 'gk') {
+        next.gk = playerId;
+      } else if (slotType === 'defender') {
+        const arr = [...prev.defenders];
+        arr[slotIndex] = playerId;
+        next.defenders = arr;
+      } else if (slotType === 'defMid') {
+        const arr = [...prev.defMidfielders];
+        arr[slotIndex] = playerId;
+        next.defMidfielders = arr;
+      } else if (slotType === 'attMid') {
+        const arr = [...prev.attMidfielders];
+        arr[slotIndex] = playerId;
+        next.attMidfielders = arr;
+      } else if (slotType === 'forward') {
+        const arr = [...prev.forwards];
+        arr[slotIndex] = playerId;
+        next.forwards = arr;
+      } else if (slotType === 'bench') {
+        const arr = [...prev.bench];
+        arr[slotIndex] = playerId;
+        next.bench = arr;
+      }
+      return next;
+    });
+
+    setPlayerSelectModal(null);
   };
 
-  const handleRemovePlayer = (position: PositionKey) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setLineup((prev) => ({
-      ...prev,
-      [position]: undefined,
-    }));
-  };
-
-  const handleClearAllPositions = () => {
+  const handleClearAllLineup = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setLineup(createEmptyLineup());
+    setLineup((prev) => ({
+      ...prev,
+      gk: undefined,
+      defenders: prev.defenders.map(() => undefined),
+      defMidfielders: prev.defMidfielders.map(() => undefined),
+      attMidfielders: prev.attMidfielders.map(() => undefined),
+      forwards: prev.forwards.map(() => undefined),
+      bench: prev.bench.map(() => undefined),
+    }));
   };
 
   const handleSave = () => {
@@ -137,64 +231,37 @@ export function SoccerLineupEditor({
   };
 
   const handleClose = () => {
-    setLineup(initialLineup || createEmptyLineup());
+    setLineup(initialLineup ?? createEmptySoccerLineup());
     onClose();
   };
 
-  const getPlayer = (playerId: string | undefined) => {
-    return playerId ? players.find((p) => p.id === playerId) : null;
+  const getPositionType = (slotType: SlotType): PositionType => {
+    if (slotType === 'gk') return 'gk';
+    if (slotType === 'defender') return 'd';
+    if (slotType === 'defMid') return 'dm';
+    if (slotType === 'attMid') return 'am';
+    if (slotType === 'forward') return 'f';
+    return 'bench';
   };
 
-  // Check if any players are assigned
-  const hasAnyAssigned = assignedPlayerIds.size > 0;
-
-  const renderPositionSlot = (position: PositionKey, size: 'large' | 'medium' = 'medium') => {
-    const player = getPlayer(lineup[position]);
-    const isSelected = selectedPosition === position;
-    const slotSize = size === 'large' ? 64 : 48;
-
-    return (
-      <Pressable
-        onPress={() => handlePositionSelect(position)}
-        onLongPress={() => player && handleRemovePlayer(position)}
-        className={`items-center ${isSelected ? 'opacity-50' : ''}`}
-      >
-        {player ? (
-          <>
-            <View
-              className="border-2 border-emerald-500 rounded-full"
-              style={{ width: slotSize + 4, height: slotSize + 4 }}
-            >
-              <PlayerAvatar player={player} size={slotSize} />
-            </View>
-            <Text className="text-white text-xs font-semibold mt-1">#{player.number}</Text>
-          </>
-        ) : (
-          <>
-            <View
-              className={`rounded-full bg-slate-700/50 items-center justify-center border-2 ${
-                isSelected ? 'border-emerald-500' : 'border-slate-600'
-              }`}
-              style={{ width: slotSize + 4, height: slotSize + 4 }}
-            >
-              <Text className="text-slate-500 text-lg">+</Text>
-            </View>
-            <Text className="text-slate-500 text-[10px] mt-1">Tap to add</Text>
-          </>
-        )}
-        <Text className="text-emerald-400 text-[10px] font-medium mt-0.5">
-          {POSITION_LABELS[position]}
-        </Text>
-      </Pressable>
-    );
+  const slotTitle: Record<SlotType, string> = {
+    gk: 'Goalkeeper',
+    defender: 'Defender',
+    defMid: 'Defensive Midfielder',
+    attMid: 'Attacking Midfielder',
+    forward: 'Forward',
+    bench: 'Bench Player',
   };
+
+  const formation = formatSoccerFormation(lineup);
+  const filledBenchCount = lineup.bench.slice(0, lineup.numBenchSpots).filter(Boolean).length;
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View className="flex-1 bg-slate-900">
         <SafeAreaView className="flex-1" edges={Platform.OS === 'android' ? ['top', 'bottom'] : ['bottom']}>
@@ -206,109 +273,348 @@ export function SoccerLineupEditor({
             <Text className="text-white text-lg font-semibold">Set Lineup</Text>
             <View className="flex-row items-center gap-2">
               <Pressable
-                onPress={handleClearAllPositions}
+                onPress={handleClearAllLineup}
                 className="bg-slate-800 px-3 py-2 rounded-lg flex-row items-center"
-                disabled={!hasAnyAssigned}
+                disabled={assignedPlayerIds.size === 0}
               >
-                <Trash2 size={16} color={!hasAnyAssigned ? '#475569' : '#f87171'} />
+                <Trash2 size={16} color={assignedPlayerIds.size === 0 ? '#475569' : '#f87171'} />
                 <Text className={cn(
                   'ml-1.5 font-medium text-sm',
-                  !hasAnyAssigned ? 'text-slate-600' : 'text-red-400'
+                  assignedPlayerIds.size === 0 ? 'text-slate-600' : 'text-red-400'
                 )}>Clear</Text>
               </Pressable>
               <Pressable
                 onPress={handleSave}
                 className="bg-emerald-500 px-4 py-2 rounded-lg"
               >
-                <Text className="text-slate-900 font-semibold">Save</Text>
+                <Text className="text-white font-semibold">Save</Text>
               </Pressable>
             </View>
           </View>
 
           <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
-            {/* Formation Layout (4-4-2) */}
-            <Animated.View entering={FadeIn.delay(100)} className="px-5 pt-6">
-              <Text className="text-white text-lg font-semibold mb-4 text-center">
-                Starting XI (4-4-2)
-              </Text>
+            {/* Formation banner */}
+            <Animated.View entering={FadeIn.delay(50)} className="px-5 pt-4">
+              <View className="bg-emerald-500/20 rounded-xl p-3 mb-4 border border-emerald-500/30">
+                <Text className="text-emerald-400 text-sm font-medium text-center">
+                  Starting XI ({formation}): {outfieldCount + 1}/11 positions
+                  {remainingOutfield > 0 && ` (${remainingOutfield} outfield remaining)`}
+                </Text>
+              </View>
+            </Animated.View>
 
-              <View className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700/50">
-                {/* Strikers Row */}
-                <View className="flex-row justify-center gap-12 mb-5">
-                  {renderPositionSlot('st1')}
-                  {renderPositionSlot('st2')}
+            {/* Goalkeeper */}
+            <Animated.View entering={FadeIn.delay(100)} className="px-5 pt-2">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-white text-lg font-semibold">Goalkeeper</Text>
+                <View className="px-4 py-2 rounded-lg bg-emerald-500/30">
+                  <Text className="text-emerald-400 font-medium">Required</Text>
                 </View>
-
-                {/* Midfield Row */}
-                <View className="flex-row justify-around mb-5">
-                  {renderPositionSlot('lm')}
-                  {renderPositionSlot('cm1')}
-                  {renderPositionSlot('cm2')}
-                  {renderPositionSlot('rm')}
-                </View>
-
-                {/* Defense Row */}
-                <View className="flex-row justify-around mb-5">
-                  {renderPositionSlot('lb')}
-                  {renderPositionSlot('cb1')}
-                  {renderPositionSlot('cb2')}
-                  {renderPositionSlot('rb')}
-                </View>
-
-                {/* Goalkeeper */}
+              </View>
+              <View className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50">
                 <View className="items-center">
-                  {renderPositionSlot('gk', 'large')}
+                  <PositionSlot
+                    playerId={lineup.gk}
+                    players={players}
+                    onSelect={() => handleSelectPosition('gk', 0)}
+                    label="GK"
+                  />
                 </View>
               </View>
             </Animated.View>
 
-            {/* Player Selection */}
-            {selectedPosition && (
-              <Animated.View entering={FadeInDown.delay(50)} className="px-5 pt-6">
-                <Text className="text-white text-lg font-semibold mb-3">
-                  Select {POSITION_NAMES[selectedPosition]}
-                </Text>
-
-                <View className="bg-slate-800/60 rounded-2xl border border-slate-700/50 overflow-hidden">
-                  {availablePlayers.length === 0 ? (
-                    <View className="p-4">
-                      <Text className="text-slate-400 text-center">
-                        All players are assigned to positions
-                      </Text>
+            {/* Defenders */}
+            <Animated.View entering={FadeIn.delay(150)} className="px-5 pt-4">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-white text-lg font-semibold">Defenders (D)</Text>
+                <View className="flex-row items-center bg-slate-800 rounded-lg">
+                  <Pressable
+                    onPress={() => handleConfigChange('defenders', -1)}
+                    className="p-2"
+                    disabled={lineup.numDefenders <= 3}
+                  >
+                    <Minus size={20} color={lineup.numDefenders <= 3 ? '#475569' : '#10b981'} />
+                  </Pressable>
+                  <Text className="text-white font-bold px-3">{lineup.numDefenders}</Text>
+                  <Pressable
+                    onPress={() => handleConfigChange('defenders', 1)}
+                    className="p-2"
+                    disabled={lineup.numDefenders >= 5 || outfieldCount >= 10}
+                  >
+                    <Plus size={20} color={lineup.numDefenders >= 5 || outfieldCount >= 10 ? '#475569' : '#10b981'} />
+                  </Pressable>
+                </View>
+              </View>
+              <Animated.View
+                entering={FadeInDown.delay(50)}
+                className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50"
+              >
+                <View className="flex-row flex-wrap justify-around">
+                  {lineup.defenders.slice(0, lineup.numDefenders).map((pid, index) => (
+                    <View key={`d-${index}`} className="mb-2">
+                      <PositionSlot
+                        playerId={pid}
+                        players={players}
+                        onSelect={() => handleSelectPosition('defender', index)}
+                        label={`D${index + 1}`}
+                      />
                     </View>
-                  ) : (
-                    availablePlayers.map((player, index) => (
-                      <Pressable
-                        key={player.id}
-                        onPress={() => handlePlayerSelect(player.id)}
-                        className={`flex-row items-center p-3 ${
-                          index < availablePlayers.length - 1 ? 'border-b border-slate-700/50' : ''
-                        }`}
-                      >
-                        <PlayerAvatar player={player} size={40} />
-                        <View className="ml-3 flex-1">
-                          <Text className="text-white font-medium">{getPlayerName(player)}</Text>
-                          <Text className="text-slate-400 text-xs">#{player.number}</Text>
-                        </View>
-                        <Text className="text-slate-500 text-xs">{player.position}</Text>
-                      </Pressable>
-                    ))
-                  )}
+                  ))}
                 </View>
               </Animated.View>
-            )}
+            </Animated.View>
 
-            {/* Instructions */}
-            <Animated.View entering={FadeIn.delay(200)} className="px-5 pt-6">
-              <View className="bg-slate-800/40 rounded-xl p-4">
-                <Text className="text-slate-400 text-sm text-center">
-                  Tap a position to assign a player. Long press to remove.
-                </Text>
+            {/* Defensive Midfielders */}
+            <Animated.View entering={FadeIn.delay(200)} className="px-5 pt-4">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-white text-lg font-semibold">Def. Midfielders (DM)</Text>
+                <View className="flex-row items-center bg-slate-800 rounded-lg">
+                  <Pressable
+                    onPress={() => handleConfigChange('defMids', -1)}
+                    className="p-2"
+                    disabled={lineup.numDefMidfielders <= 0}
+                  >
+                    <Minus size={20} color={lineup.numDefMidfielders <= 0 ? '#475569' : '#10b981'} />
+                  </Pressable>
+                  <Text className="text-white font-bold px-3">{lineup.numDefMidfielders}</Text>
+                  <Pressable
+                    onPress={() => handleConfigChange('defMids', 1)}
+                    className="p-2"
+                    disabled={lineup.numDefMidfielders >= 5 || outfieldCount >= 10}
+                  >
+                    <Plus size={20} color={lineup.numDefMidfielders >= 5 || outfieldCount >= 10 ? '#475569' : '#10b981'} />
+                  </Pressable>
+                </View>
               </View>
+              {lineup.numDefMidfielders > 0 && (
+                <Animated.View
+                  entering={FadeInDown.delay(50)}
+                  className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50"
+                >
+                  <View className="flex-row flex-wrap justify-around">
+                    {lineup.defMidfielders.slice(0, lineup.numDefMidfielders).map((pid, index) => (
+                      <View key={`dm-${index}`} className="mb-2">
+                        <PositionSlot
+                          playerId={pid}
+                          players={players}
+                          onSelect={() => handleSelectPosition('defMid', index)}
+                          label={`DM${index + 1}`}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                </Animated.View>
+              )}
+            </Animated.View>
+
+            {/* Attacking Midfielders */}
+            <Animated.View entering={FadeIn.delay(250)} className="px-5 pt-4">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-white text-lg font-semibold">Att. Midfielders (AM)</Text>
+                <View className="flex-row items-center bg-slate-800 rounded-lg">
+                  <Pressable
+                    onPress={() => handleConfigChange('attMids', -1)}
+                    className="p-2"
+                    disabled={lineup.numAttMidfielders <= 0}
+                  >
+                    <Minus size={20} color={lineup.numAttMidfielders <= 0 ? '#475569' : '#10b981'} />
+                  </Pressable>
+                  <Text className="text-white font-bold px-3">{lineup.numAttMidfielders}</Text>
+                  <Pressable
+                    onPress={() => handleConfigChange('attMids', 1)}
+                    className="p-2"
+                    disabled={lineup.numAttMidfielders >= 5 || outfieldCount >= 10}
+                  >
+                    <Plus size={20} color={lineup.numAttMidfielders >= 5 || outfieldCount >= 10 ? '#475569' : '#10b981'} />
+                  </Pressable>
+                </View>
+              </View>
+              {lineup.numAttMidfielders > 0 && (
+                <Animated.View
+                  entering={FadeInDown.delay(50)}
+                  className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50"
+                >
+                  <View className="flex-row flex-wrap justify-around">
+                    {lineup.attMidfielders.slice(0, lineup.numAttMidfielders).map((pid, index) => (
+                      <View key={`am-${index}`} className="mb-2">
+                        <PositionSlot
+                          playerId={pid}
+                          players={players}
+                          onSelect={() => handleSelectPosition('attMid', index)}
+                          label={`AM${index + 1}`}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                </Animated.View>
+              )}
+            </Animated.View>
+
+            {/* Forwards */}
+            <Animated.View entering={FadeIn.delay(300)} className="px-5 pt-4">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-white text-lg font-semibold">Forwards (F)</Text>
+                <View className="flex-row items-center bg-slate-800 rounded-lg">
+                  <Pressable
+                    onPress={() => handleConfigChange('forwards', -1)}
+                    className="p-2"
+                    disabled={lineup.numForwards <= 1}
+                  >
+                    <Minus size={20} color={lineup.numForwards <= 1 ? '#475569' : '#10b981'} />
+                  </Pressable>
+                  <Text className="text-white font-bold px-3">{lineup.numForwards}</Text>
+                  <Pressable
+                    onPress={() => handleConfigChange('forwards', 1)}
+                    className="p-2"
+                    disabled={lineup.numForwards >= 3 || outfieldCount >= 10}
+                  >
+                    <Plus size={20} color={lineup.numForwards >= 3 || outfieldCount >= 10 ? '#475569' : '#10b981'} />
+                  </Pressable>
+                </View>
+              </View>
+              <Animated.View
+                entering={FadeInDown.delay(50)}
+                className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50"
+              >
+                <View className="flex-row flex-wrap justify-around">
+                  {lineup.forwards.slice(0, lineup.numForwards).map((pid, index) => (
+                    <View key={`f-${index}`} className="mb-2">
+                      <PositionSlot
+                        playerId={pid}
+                        players={players}
+                        onSelect={() => handleSelectPosition('forward', index)}
+                        label={`F${index + 1}`}
+                      />
+                    </View>
+                  ))}
+                </View>
+              </Animated.View>
+            </Animated.View>
+
+            {/* Bench */}
+            <Animated.View entering={FadeIn.delay(350)} className="px-5 pt-4">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-white text-lg font-semibold">Bench</Text>
+                <View className="flex-row items-center">
+                  <Text className="text-slate-400 text-sm mr-3">{filledBenchCount}/{lineup.numBenchSpots}</Text>
+                  <View className="flex-row items-center bg-slate-800 rounded-lg">
+                    <Pressable
+                      onPress={() => handleConfigChange('bench', -1)}
+                      className="p-2"
+                      disabled={lineup.numBenchSpots <= 0}
+                    >
+                      <Minus size={20} color={lineup.numBenchSpots <= 0 ? '#475569' : '#10b981'} />
+                    </Pressable>
+                    <Text className="text-white font-bold px-3">{lineup.numBenchSpots}</Text>
+                    <Pressable
+                      onPress={() => handleConfigChange('bench', 1)}
+                      className="p-2"
+                      disabled={lineup.numBenchSpots >= 15}
+                    >
+                      <Plus size={20} color={lineup.numBenchSpots >= 15 ? '#475569' : '#10b981'} />
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+              {lineup.numBenchSpots > 0 && (
+                <Animated.View
+                  entering={FadeInDown.delay(50)}
+                  className="bg-slate-800/60 rounded-2xl p-4 mb-3 border border-slate-700/50"
+                >
+                  <View className="flex-row flex-wrap justify-start">
+                    {lineup.bench.slice(0, lineup.numBenchSpots).map((pid, index) => (
+                      <View key={`bench-${index}`} className="w-1/5 items-center mb-4">
+                        <PositionSlot
+                          playerId={pid}
+                          players={players}
+                          onSelect={() => handleSelectPosition('bench', index)}
+                          label={`#${index + 1}`}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                </Animated.View>
+              )}
             </Animated.View>
           </ScrollView>
         </SafeAreaView>
       </View>
+
+      {/* Player Selection Modal */}
+      <Modal
+        visible={playerSelectModal?.visible ?? false}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setPlayerSelectModal(null)}
+      >
+        <View className="flex-1 bg-slate-900">
+          <SafeAreaView className="flex-1" edges={Platform.OS === 'android' ? ['top', 'bottom'] : ['bottom']}>
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
+              <Pressable onPress={() => setPlayerSelectModal(null)} className="p-1">
+                <X size={24} color="#64748b" />
+              </Pressable>
+              <Text className="text-white text-lg font-semibold">
+                Select {playerSelectModal ? slotTitle[playerSelectModal.slotType] : ''}
+              </Text>
+              <View style={{ width: 32 }} />
+            </View>
+
+            <ScrollView className="flex-1 px-5 pt-4">
+              {/* Clear selection option */}
+              <Pressable
+                onPress={() => handlePlayerSelect(undefined)}
+                className="flex-row items-center p-4 rounded-xl mb-2 bg-slate-800/60 border border-slate-700/50"
+              >
+                <View className="w-12 h-12 rounded-full bg-slate-700 items-center justify-center">
+                  <X size={20} color="#94a3b8" />
+                </View>
+                <Text className="text-slate-400 ml-4 font-medium">Clear Position</Text>
+              </Pressable>
+
+              {playerSelectModal &&
+                getPlayersForPosition(getPositionType(playerSelectModal.slotType)).map((player, index) => {
+                  const isAssigned = assignedPlayerIds.has(player.id);
+                  return (
+                    <Animated.View
+                      key={player.id}
+                      entering={FadeInDown.delay(index * 30)}
+                    >
+                      <Pressable
+                        onPress={() => handlePlayerSelect(player.id)}
+                        className={cn(
+                          'flex-row items-center p-4 rounded-xl mb-2 border',
+                          isAssigned
+                            ? 'bg-slate-800/40 border-slate-700/30'
+                            : 'bg-slate-800/60 border-slate-700/50'
+                        )}
+                      >
+                        <PlayerAvatar player={player} size={48} />
+                        <View className="flex-1 ml-4">
+                          <Text
+                            className={cn(
+                              'font-semibold',
+                              isAssigned ? 'text-slate-500' : 'text-white'
+                            )}
+                          >
+                            {getPlayerName(player)}
+                          </Text>
+                          <Text className="text-slate-400 text-sm">
+                            #{player.number} · {player.position}
+                          </Text>
+                        </View>
+                        {isAssigned && (
+                          <View className="bg-slate-700 px-2 py-1 rounded">
+                            <Text className="text-slate-400 text-xs">In Lineup</Text>
+                          </View>
+                        )}
+                      </Pressable>
+                    </Animated.View>
+                  );
+                })}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </Modal>
   );
 }
